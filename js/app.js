@@ -2623,6 +2623,10 @@
 
     function refreshActiveView() {
         if (!state.currentPlayer) return;
+        // Nicht refreshen wenn User gerade interagiert (Dropdown offen, Eingabefeld fokussiert, Modal offen)
+        const tag = document.activeElement && document.activeElement.tagName;
+        if (tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (document.querySelector('#modal-overlay.show')) return;
         const activeView = document.querySelector('.view.active');
         if (!activeView) return;
         const viewId = activeView.id.replace('view-', '');
