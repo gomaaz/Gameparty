@@ -1937,8 +1937,8 @@
                         <div class="shop-item ${item.id === 'buy_star' ? 'star-item' : ''}${item.isPenalty ? ' penalty-item' : ''}">
                             <div class="shop-icon">${item.icon}</div>
                             <div class="shop-info">
-                                <div class="shop-name">${t('item_' + item.id + '_name') !== ('item_' + item.id + '_name') ? t('item_' + item.id + '_name') : item.name}${item.isPenalty ? `<span class="penalty-badge">${t('penalty_badge')}</span>` : ''}</div>
-                                <div class="shop-desc">${item.description}${item.isPenalty ? ' • 5 Min. Zeitlimit' : ''}</div>
+                                <div class="shop-name">${t('item_' + item.id + '_name')}${item.isPenalty ? `<span class="penalty-badge">${t('penalty_badge')}</span>` : ''}</div>
+                                <div class="shop-desc">${t('item_' + item.id + '_desc', CONFIG.STAR_PRICE)}${item.isPenalty ? ` • ${t('penalty_timer')}` : ''}</div>
                             </div>
                             <button class="shop-buy-btn" data-item="${item.id}" data-cost="${item.cost}"
                                 ${coins < item.cost ? 'disabled' : ''}>
@@ -2276,7 +2276,7 @@
     async function renderChallenges() {
         const container = $('#view-challenges');
         if (!state.currentPlayer) {
-            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚔️</div><div class="empty-state-text">${t('challenges_not_logged_in')}</div></div>';
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚔️</div><div class="empty-state-text">${t('challenges_not_logged_in')}</div></div>`;
             return;
         }
 
@@ -2351,7 +2351,7 @@
 
             const cardsHTML = challenges.length
                 ? challenges.map(renderCard).join('')
-                : '<div class="empty-state"><div class="empty-state-text">${t('no_duels')}</div></div>';
+                : `<div class="empty-state"><div class="empty-state-text">${t('no_duels')}</div></div>`;
 
             container.innerHTML = `
                 <div class="proposal-form">
@@ -2487,7 +2487,7 @@
 
         } catch (e) {
             console.error('renderChallenges error:', e);
-            container.innerHTML = '<div class="empty-state"><div class="empty-state-text">${t('duel_load_error')}</div></div>';
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-text">${t('duel_load_error')}</div></div>`;
         }
     }
 
