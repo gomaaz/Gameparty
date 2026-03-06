@@ -1,0 +1,14 @@
+{
+  "name": "gameparty",
+  "version": "1.0.0",
+  "description": "Gameparty - LAN Party Gamification App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0"
+  }
+}
