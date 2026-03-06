@@ -1545,6 +1545,22 @@ body {
 }
 
 /* ---- Logout Button ---- */
+.lang-toggle-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.lang-toggle-btn:hover {
+    border-color: var(--accent-gold);
+}
+
 .logout-btn {
     background: none;
     border: 1px solid var(--border);

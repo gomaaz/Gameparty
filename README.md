@@ -1,92 +1,99 @@
 # 🎮 Gameparty
 
-Eine Gamification-App für LAN-Partys. Spieler sammeln Coins durch gemeinsame Gaming-Sessions, kaufen Items im Shop, fordern sich gegenseitig zu Duellen heraus und kämpfen um Controller-Punkte auf der Bestenliste.
+A gamification app for LAN parties. Players earn Coins by playing game sessions together, spend them in the Shop, challenge each other to duels, and compete for Controller Points on the leaderboard.
 
 ## Features
 
-### Coin-System
-Spieler verdienen Coins durch das Abschließen von Gaming-Sessions:
-- **1 Coin** – Session mit mind. 3 Spielern
-- **2 Coins** – Session mit 4+ Spielern
-- **3 Coins** – Session mit allen anwesenden Spielern
+### Coin System
+Players earn Coins by completing gaming sessions:
+- **1 Coin** – Session with at least 3 players
+- **2 Coins** – Session with 4+ players
+- **3 Coins** – Session with all present players
 
 ### Shop
-Coins können für Aktionen ausgegeben werden:
-| Item | Kosten | Beschreibung |
+Spend Coins on actions:
+| Item | Cost | Description |
 |---|---|---|
-| Controller-Punkt 🎮 | 20 Coins | Dauerhafter Siegpunkt auf der Bestenliste |
-| Nächstes Spiel bestimmen | 3 Coins | Du wählst, was als nächstes gespielt wird |
-| Skip-Token | 2 Coins | Überspringe ein Spiel, das du nicht willst |
-| Zwangsspielen | 5 Coins | Zwinge einen Mitspieler zum Mitspielen |
-| Trink-Befehl | 3 Coins | Lass jemanden sofort trinken |
+| Controller Point 🎮 | 20 Coins | Permanent victory point on the leaderboard |
+| Choose Next Game | 3 Coins | You decide which game is played next |
+| Skip Token | 2 Coins | Skip a game you do not want to play |
+| Force Play | 5 Coins | Force one other player to participate |
+| Drink Order | 3 Coins | Order someone to drink immediately |
 
-### Duelle
-Spieler können sich 1-gegen-1 herausfordern und Coins oder Controller-Punkte als Einsatz setzen.
+### Duels
+Players can challenge each other 1-on-1, with Coins or Controller Points as stakes.
 
-### Spieleverwaltung
-- Große Spielebibliothek mit Genre-Filterung
-- Spieler können Interesse an Spielen markieren
-- Spiele-Matcher zeigt an, welches Spiel die meisten Interessenten hat
-- Admin kann neue Spiele vorschlagen oder bestehende bearbeiten
+### Game Library
+- Large game library with genre filtering
+- Players can mark their interest in games
+- Game Matcher shows which game has the most interested players
+- Admin can propose or edit games
 
 ### Sessions & Proposals
-- Spieler können Sessions vorschlagen (sofort oder geplant)
-- Admin genehmigt und startet Sessions
-- Live-Session-Lobby mit Beitrittsfunktion
-- Automatische Coin-Vergabe beim Session-Abschluss
+- Players can propose sessions (immediately or scheduled)
+- Admin approves and starts sessions
+- Live session lobby with join functionality
+- Automatic Coin distribution on session completion
 
-### Bestenliste
-Sortierung nach Controller-Punkten, dann nach Coins. Controller-Punkte sind permanente Siegpunkte und nicht ausgebbar.
+### Leaderboard
+Sorted by Controller Points, then by Coins. Controller Points are permanent victory points and cannot be spent.
 
-### Live-Updates
-Alle Clients werden via Server-Sent Events (SSE) in Echtzeit aktualisiert – kein manuelles Neuladen nötig.
+### Live Updates
+All clients are updated in real time via Server-Sent Events (SSE) — no manual refresh needed.
 
 ## Tech Stack
 
 - **Backend:** Node.js, Express, better-sqlite3 (SQLite)
-- **Frontend:** Vanilla JS, HTML5, CSS3 – kein Framework
-- **Datenbank:** SQLite mit WAL-Modus
+- **Frontend:** Vanilla JS, HTML5, CSS3 – no framework
+- **Database:** SQLite with WAL mode
 - **Realtime:** Server-Sent Events (SSE)
+
+## Internationalization
+
+The UI supports **English** (default) and **German**. Switch languages using the flag button (🇩🇪 / 🇬🇧) in the header. The selection is stored in `localStorage`.
+
+To add another language, extend `js/i18n.js` with a new locale object.
 
 ## Installation & Start
 
 ```bash
-# Abhängigkeiten installieren
+# Install dependencies
 npm install
 
-# Server starten
+# Start server
 npm start
 ```
 
-Der Server läuft auf `http://localhost:3000`.
+The server runs on `http://localhost:3000`.
 
-Alle Geräte im gleichen Netzwerk können über `http://<HOST-IP>:3000` mitspielen.
+All devices on the same network can connect via `http://<HOST-IP>:3000`.
 
-## Projektstruktur
+## Project Structure
 
 ```
 gameparty/
-├── server.js        # Express-Backend + SQLite-API
-├── index.html       # Single-Page App Shell
+├── server.js        # Express backend + SQLite API
+├── index.html       # Single-page app shell
 ├── js/
-│   ├── app.js       # Gesamte Frontend-Logik
-│   └── data.js      # Konfiguration, Spielerliste, Spielebibliothek
+│   ├── app.js       # Complete frontend logic
+│   ├── data.js      # Configuration, player list, game library
+│   └── i18n.js      # Translations (EN/DE) + t() helper
 ├── css/
-│   └── style.css    # Styling
-├── assets/          # Statische Dateien
-└── VERSION          # Aktuelle Versionsnummer
+│   └── style.css    # Dark gaming theme
+├── assets/          # Static files
+└── VERSION          # Current version number
 ```
 
-## Rollen
+## Roles
 
-| Rolle | Rechte |
+| Role | Permissions |
 |---|---|
-| `player` | Coins verdienen, Shop nutzen, Duelle, Interesse markieren |
-| `admin` | + Sessions starten/abschließen, Spieler verwalten, Coins anpassen |
+| `player` | Earn Coins, use Shop, create duels, mark interest |
+| `admin` | + Start/complete sessions, manage players, adjust Coins |
 
-Login erfolgt über PIN (konfigurierbar in `js/data.js`).
+Login via PIN (configurable in `js/data.js`).
 
 ## Versioning
 
-Jede Änderung wird mit Git-Tag versioniert (`v1.0`, `v1.1`, …).
-Alle Versionen sind unter [Releases](https://github.com/gomaaz/Gameparty/releases) einsehbar.
+Every change is tagged with a Git version (`v1.0`, `v1.1`, …).
+All versions are available under [Releases](https://github.com/gomaaz/Gameparty/releases).

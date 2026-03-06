@@ -139,7 +139,7 @@
     function showCoinAnimation(amount) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
-        popup.textContent = `+${amount} Coins`;
+        popup.textContent = t('coins_anim', amount);
         document.body.appendChild(popup);
 
         for (let i = 0; i < 6; i++) {
@@ -309,7 +309,7 @@
                         <div class="leaderboard-name">${p.name}${starsHTML ? '<br>' + starsHTML : ''}</div>
                         <div class="leaderboard-coins">
                             <span>${p.coins}</span>
-                            <span style="font-size:0.9em">Coins</span>
+                            <span style="font-size:0.9em">C</span>
                         </div>
                     </div>`;
             });
@@ -320,7 +320,7 @@
                 const matchPlayers = getMatchingPlayers(topGame);
                 nextGameHTML = `
                     <div class="card next-game-card">
-                        <div class="card-title">Naechstes Spiel - Empfehlung</div>
+                        <div class="card-title">${t('next_game_title')}</div>
                         <div class="match-count">${matchPlayers.length}</div>
                         <div class="next-game-name">${topGame.name}</div>
                         <div class="match-players-list">
@@ -328,16 +328,16 @@
                         </div>
                         <div class="next-game-info">
                             <div class="info-tag">${topGame.genre || '?'}</div>
-                            <div class="info-tag">Max ${topGame.maxPlayers} Spieler</div>
+                            <div class="info-tag">Max ${topGame.maxPlayers}</div>
                         </div>
                     </div>`;
             } else {
                 nextGameHTML = `
                     <div class="card next-game-card">
-                        <div class="card-title">Naechstes Spiel - Empfehlung</div>
+                        <div class="card-title">${t('next_game_title')}</div>
                         <div class="empty-state">
                             <div class="empty-state-icon">🎮</div>
-                            <div class="empty-state-text">Noch keine Spiele mit ${CONFIG.MIN_MATCH}+ Uebereinstimmungen.<br>Tragt euch in der Spieleliste ein!</div>
+                            <div class="empty-state-text">${t('next_game_empty', CONFIG.MIN_MATCH)}</div>
                         </div>
                     </div>`;
             }
@@ -346,7 +346,7 @@
             const activeProposals = allProposals.filter(p => p.status === 'active');
             const plannedProposals = allProposals.filter(p => ['pending', 'approved'].includes(p.status));
             const plannedSessionsHTML = plannedProposals.map(renderProposalCard).join('') ||
-                `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">Keine geplanten Sessions</div>`;
+                `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_planned_sessions')}</div>`;
 
             // Recent sessions
             const recentSessions = sessions.slice(0, 5);
@@ -354,7 +354,7 @@
             if (recentSessions.length > 0) {
                 sessionsHTML = `
                     <div class="card">
-                        <div class="card-title">Letzte Sessions</div>
+                        <div class="card-title">${t('recent_sessions')}</div>
                         <div style="display:flex;flex-direction:column;gap:0.4rem">
                             ${recentSessions.map(s => `
                                 <div class="session-history-item">
@@ -365,7 +365,7 @@
                                     <div class="session-history-players">
                                         ${s.players.map(p => `<span class="player-chip">${p}</span>`).join('')}
                                     </div>
-                                    <div class="session-history-coins">${s.coinsPerPlayer} Coins pro Spieler</div>
+                                    <div class="session-history-coins">${s.coinsPerPlayer} ${t('coins_per_player')}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -386,23 +386,23 @@
                     let actionsHTML = '';
 
                     if (s.status === 'lobby') {
-                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">🚪 Wartezimmer</span>`;
+                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${t('session_lobby')}</span>`;
                         if (!isInSession) {
-                            actionsHTML += `<button class="btn-session-join" data-sid="${s.id}" data-action="join">+ Beitreten</button>`;
+                            actionsHTML += `<button class="btn-session-join" data-sid="${s.id}" data-action="join">${t('btn_join')}</button>`;
                         } else if (!isLeader) {
-                            actionsHTML += `<button class="btn-session-leave" data-sid="${s.id}" data-action="leave">Verlassen</button>`;
+                            actionsHTML += `<button class="btn-session-leave" data-sid="${s.id}" data-action="leave">${t('btn_leave')}</button>`;
                         }
                         if (isLeader || isAdmin()) {
-                            actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="start">▶ Session starten</button>`;
-                            actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">Abbrechen</button>`;
+                            actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="start">${t('btn_start_session')}</button>`;
+                            actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">${t('btn_cancel')}</button>`;
                         }
                     } else if (s.status === 'running') {
-                        statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">● läuft${duration ? ` · ${duration}` : ''}</span>`;
+                        statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('session_running')}${duration ? ` · ${duration}` : ''}</span>`;
                         if (isLeader || isAdmin()) {
-                            actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">Beenden</button>`;
+                            actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
                         }
                     } else if (s.status === 'ended') {
-                        statusBadge = `<span class="pending-approval-badge">⏳ Wartet auf Admin-Freigabe</span>`;
+                        statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
                     }
 
                     return `
@@ -411,7 +411,7 @@
                                 <span class="live-session-game">${s.game}</span>
                                 ${statusBadge}
                             </div>
-                            <div class="live-session-meta">Gruppenleiter: ${s.leader}</div>
+                            <div class="live-session-meta">${t('session_group_leader')} ${s.leader}</div>
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>`;
@@ -424,23 +424,23 @@
             container.innerHTML = `
                 <div class="card" id="live-sessions-container">
                     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                        Laufende Sessions
-                        ${state.currentPlayer ? `<button class="btn-session-join" id="btn-start-session">+ Raum erstellen</button>` : ''}
+                        ${t('live_sessions')}
+                        ${state.currentPlayer ? `<button class="btn-session-join" id="btn-start-session">${t('btn_create_room')}</button>` : ''}
                     </div>
                     ${hasAnything
                         ? liveSessionsHTML + activeProposalsHTML
-                        : `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">Keine aktiven Sessions</div>`}
+                        : `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_active_sessions')}</div>`}
                 </div>
                 <div class="card" id="planned-sessions-container">
                     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
-                        Geplante Sessions
-                        ${state.currentPlayer ? `<button class="btn-session-join" id="btn-plan-session">+ Planen</button>` : ''}
+                        ${t('planned_sessions')}
+                        ${state.currentPlayer ? `<button class="btn-session-join" id="btn-plan-session">${t('btn_plan_session')}</button>` : ''}
                     </div>
                     ${plannedSessionsHTML}
                 </div>
                 ${nextGameHTML}
                 <div class="card">
-                    <div class="card-title">Leaderboard</div>
+                    <div class="card-title">${t('leaderboard')}</div>
                     <div class="leaderboard">${leaderboardHTML}</div>
                 </div>
                 ${sessionsHTML}
@@ -467,16 +467,16 @@
                         } else if (action === 'start') {
                             await api('PUT', `/live-sessions/${sid}/start`);
                         } else if (action === 'end') {
-                            if (confirm('Session beenden? Sie landet dann in der Admin-Freigabe.')) {
+                            if (confirm(t('confirm_end_session'))) {
                                 await api('PUT', `/live-sessions/${sid}/end`);
                             }
                         } else if (action === 'cancel') {
-                            if (confirm('Raum abbrechen ohne Coins zu vergeben?')) {
+                            if (confirm(t('confirm_cancel_room'))) {
                                 await api('DELETE', `/live-sessions/${sid}`);
                             }
                         }
                     } catch (e) {
-                        showToast(e.message || 'Fehler', 'error');
+                        showToast(e.message || t('save_error'), 'error');
                     }
                     renderDashboard();
                 });
@@ -510,7 +510,7 @@
 
             const attendeesHTML = admin ? `
                 <div class="attendees-config card">
-                    <div class="card-title">Wer ist auf der LAN? <span class="admin-badge">Admin</span></div>
+                    <div class="card-title">${t('who_is_present')} <span class="admin-badge">Admin</span></div>
                     <div class="attendees-grid" id="attendees-grid">
                         ${state.players.map(p => `
                             <button class="attendee-toggle ${state.attendees.includes(p) ? 'active' : ''}" data-player="${p}">
@@ -520,7 +520,7 @@
                     </div>
                 </div>` : `
                 <div class="card">
-                    <div class="card-title">Anwesend</div>
+                    <div class="card-title">${t('present')}</div>
                     <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
                         ${state.attendees.map(p => `<span class="player-chip">${p}</span>`).join('')}
                     </div>
@@ -528,45 +528,45 @@
 
             // Genre-Dropdown fuer Suggest-Form
             const genreSelectHTML = `<select id="suggest-genre" class="genre-select">
-                <option value="">Genre waehlen...</option>
+                <option value="">${t('select_genre')}</option>
                 ${genresData.map(g => `<option value="${g}">${g}</option>`).join('')}
             </select>`;
 
             const suggestFormHTML = state.currentPlayer ? `
                 <div class="card">
-                    <div class="card-title">Spiel vorschlagen</div>
+                    <div class="card-title">${t('suggest_game')}</div>
                     <div class="proposal-form">
-                        <input type="text" id="suggest-name" placeholder="Spielname">
+                        <input type="text" id="suggest-name" placeholder="${t('label_name')}">
                         ${genreSelectHTML}
                         <div class="proposal-row">
-                            <input type="number" id="suggest-maxplayers" placeholder="Max Spieler" min="2" max="64" inputmode="numeric">
+                            <input type="number" id="suggest-maxplayers" placeholder="${t('label_max_players')}" min="2" max="64" inputmode="numeric">
                         </div>
-                        <button class="btn-propose" id="btn-suggest-game" disabled>Vorschlagen</button>
+                        <button class="btn-propose" id="btn-suggest-game" disabled>${t('btn_suggest')}</button>
                     </div>
                 </div>` : '';
 
             let suggestedHTML = '';
             if (suggestedGames.length > 0) {
                 suggestedHTML = `
-                    <div class="proposal-section-title">Vorgeschlagene Spiele (${suggestedGames.length})</div>
+                    <div class="proposal-section-title">${t('suggested_games', suggestedGames.length)}</div>
                     <div class="game-list" id="suggested-game-list">
                         ${suggestedGames.map(g => renderSuggestedGameCard(g, admin)).join('')}
                     </div>`;
             }
 
             container.innerHTML = `
-                <div class="section-title">Spieleliste</div>
+                <div class="section-title">${t('games_title')}</div>
                 ${attendeesHTML}
                 ${suggestFormHTML}
                 ${suggestedHTML}
-                <div class="proposal-section-title">Freigegebene Spiele (${approvedGames.length})</div>
+                <div class="proposal-section-title">${t('approved_games', approvedGames.length)}</div>
                 <div class="filter-bar">
-                    <input type="text" id="filter-search" class="search-input" placeholder="Spiel suchen..." style="margin-bottom:0">
+                    <input type="text" id="filter-search" class="search-input" placeholder="${t('search_game')}" style="margin-bottom:0">
                     <select id="filter-genre">
-                        <option value="">Alle Genres</option>
+                        <option value="">${t('all_genres')}</option>
                         ${genresData.map(g => `<option value="${g}">${g}</option>`).join('')}
                     </select>
-                    <input type="number" id="filter-min-players" min="0" max="99" step="1" value="0" placeholder="Min. Uebereinstimmungen" title="Min. Uebereinstimmungen">
+                    <input type="number" id="filter-min-players" min="0" max="99" step="1" value="0" placeholder="${t('min_matches')}" title="${t('min_matches')}">
                 </div>
                 <div class="filter-bar">
                     <div class="player-filter-chips" id="player-filter-chips">
@@ -576,12 +576,12 @@
                     </div>
                 </div>
                 <div class="game-table-header ${admin ? 'admin-header' : ''}" id="game-table-header">
-                    ${admin ? '<input type="checkbox" id="select-all-games" title="Alle auswählen">' : ''}
-                    <span class="gth-nr">#</span>
-                    <span class="gth-name">Spiel / Genre / Max</span>
-                    <span class="gth-like">Like</span>
-                    ${admin ? '<span class="gth-coins">Coins</span>' : ''}
-                    ${admin ? '<span class="gth-actions">Edit</span>' : ''}
+                    ${admin ? `<input type="checkbox" id="select-all-games" title="${t('btn_deselect')}">` : ''}
+                    <span class="gth-nr">${t('col_number')}</span>
+                    <span class="gth-name">${t('col_game_genre_max')}</span>
+                    <span class="gth-like">${t('col_like')}</span>
+                    ${admin ? `<span class="gth-coins">${t('col_coins')}</span>` : ''}
+                    ${admin ? `<span class="gth-actions">${t('col_edit')}</span>` : ''}
                 </div>
                 <div class="game-list" id="game-list"></div>
             `;
@@ -633,11 +633,11 @@
                     if (!name) return;
                     try {
                         await api('POST', '/games/suggest', { name, genre, maxPlayers, suggestedBy: state.currentPlayer });
-                        showToast(`"${name}" vorgeschlagen!`, 'success');
+                        showToast(t('game_suggested', name), 'success');
                         playSound('coin');
                         renderMatcher();
                     } catch (e) {
-                        showToast('Spiel existiert bereits!', 'error');
+                        showToast(t('game_already_exists'), 'error');
                         playSound('error');
                     }
                 });
@@ -682,8 +682,8 @@
                 </div>
                 <div class="proposal-players">
                     ${playerChips}
-                    ${!g.players[state.currentPlayer] ? `<button class="btn-join" data-game="${g.name}" data-action="interest">Interesse</button>` :
-                    (g.suggestedBy !== state.currentPlayer ? `<button class="btn-leave" data-game="${g.name}" data-action="interest">Austragen</button>` : '')}
+                    ${!g.players[state.currentPlayer] ? `<button class="btn-join" data-game="${g.name}" data-action="interest">${t('btn_interest')}</button>` :
+                    (g.suggestedBy !== state.currentPlayer ? `<button class="btn-leave" data-game="${g.name}" data-action="interest">${t('btn_unregister')}</button>` : '')}
                 </div>
                 ${adminHTML}
             </div>`;
@@ -697,7 +697,7 @@
                 const coins = parseInt((coinsInput || {}).value) || 0;
                 try {
                     await api('PUT', `/games/${encodeURIComponent(gameName)}/approve`, { sessionCoins: coins });
-                    showToast(`"${gameName}" freigegeben (${coins} Coins/Session)!`, 'success');
+                    showToast(`"${gameName}" ${t('btn_release')} (${coins} C/Session)!`, 'success');
                     playSound('coin');
                     renderMatcher();
                 } catch (e) { console.error(e); }
@@ -706,10 +706,10 @@
 
         container.querySelectorAll('#suggested-game-list .btn-reject').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if (confirm(`"${btn.dataset.game}" ablehnen und entfernen?`)) {
+                if (confirm(t('confirm_reject_game', btn.dataset.game))) {
                     try {
                         await api('DELETE', `/games/${encodeURIComponent(btn.dataset.game)}`);
-                        showToast('Vorschlag abgelehnt.', 'error');
+                        showToast(t('proposal_rejected'), 'error');
                         renderMatcher();
                     } catch (e) { console.error(e); }
                 }
@@ -748,14 +748,14 @@
             if (bulkDeleteBtn) {
                 const names = [...selectedGames];
                 if (!names.length) return;
-                if (!confirm(`${names.length} Spiel(e) wirklich löschen?`)) return;
+                if (!confirm(t('confirm_delete_games', names.length))) return;
                 for (const name of names) {
                     try {
                         await api('DELETE', `/games/${encodeURIComponent(name)}`);
                     } catch (err) { console.error(err); }
                 }
                 selectedGames.clear();
-                showToast(`${names.length} Spiel(e) gelöscht.`, 'error');
+                showToast(t('n_games_deleted', names.length), 'error');
                 renderMatcher();
                 return;
             }
@@ -788,10 +788,10 @@
             const deleteBtn = e.target.closest('.game-delete-btn');
             if (deleteBtn) {
                 e.stopPropagation();
-                if (confirm(`"${deleteBtn.dataset.game}" wirklich loeschen?`)) {
+                if (confirm(t('confirm_delete_game', deleteBtn.dataset.game))) {
                     try {
                         await api('DELETE', `/games/${encodeURIComponent(deleteBtn.dataset.game)}`);
-                        showToast('Spiel geloescht.', 'error');
+                        showToast(t('game_deleted'), 'error');
                         renderMatcher();
                     } catch (e2) { console.error(e2); }
                 }
@@ -812,7 +812,7 @@
             if (coinsInput) {
                 try {
                     await api('PUT', `/games/${encodeURIComponent(coinsInput.dataset.game)}`, { sessionCoins: parseInt(coinsInput.value) || 0 });
-                    showToast('Coins aktualisiert.', 'gold');
+                    showToast(t('coins_updated'), 'gold');
                 } catch (err) { console.error(err); }
             }
         });
@@ -839,7 +839,7 @@
         if (!bar) return;
         if (selectedGames.size > 0) {
             bar.classList.add('show');
-            if (count) count.textContent = `${selectedGames.size} Spiel(e) ausgewählt`;
+            if (count) count.textContent = t('selected_count', selectedGames.size);
         } else {
             bar.classList.remove('show');
         }
@@ -849,18 +849,18 @@
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
         modal.innerHTML = `
-            <div class="modal-title">Mehrere Spiele bearbeiten (${names.length})</div>
+            <div class="modal-title">${t('modal_bulk_edit_title', names.length)}</div>
             <div class="proposal-form">
                 <p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.75rem">
-                    Nur ausgefüllte Felder werden übernommen.
+                    ${t('bulk_edit_note')}
                 </p>
-                <label style="font-size:0.75rem;color:var(--text-secondary)">Genre (alle überschreiben)</label>
-                <input type="text" id="bulk-genre" placeholder="z.B. Strategie, Taktik">
-                <label style="font-size:0.75rem;color:var(--text-secondary)">Max. Spieler (alle überschreiben)</label>
-                <input type="number" id="bulk-maxplayers" placeholder="z.B. 4" min="2" max="64" inputmode="numeric">
+                <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_genre_overwrite')}</label>
+                <input type="text" id="bulk-genre" placeholder="${t('placeholder_genre')}">
+                <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_max_players_overwrite')}</label>
+                <input type="number" id="bulk-maxplayers" placeholder="${t('placeholder_max_players')}" min="2" max="64" inputmode="numeric">
                 <div class="proposal-row" style="margin-top:0.75rem">
-                    <button class="btn-propose" id="bulk-save">Speichern</button>
-                    <button class="btn-leave" id="bulk-cancel">Abbrechen</button>
+                    <button class="btn-propose" id="bulk-save">${t('btn_save')}</button>
+                    <button class="btn-leave" id="bulk-cancel">${t('btn_cancel')}</button>
                 </div>
             </div>
         `;
@@ -872,7 +872,7 @@
             const payload = {};
             if (genre) payload.genre = genre;
             if (!isNaN(maxPlayers) && maxPlayers >= 2) payload.maxPlayers = maxPlayers;
-            if (!Object.keys(payload).length) { showToast('Kein Feld ausgefüllt.', 'error'); return; }
+            if (!Object.keys(payload).length) { showToast(t('no_field_filled'), 'error'); return; }
             for (const name of names) {
                 try {
                     await api('PUT', `/games/${encodeURIComponent(name)}`, payload);
@@ -880,7 +880,7 @@
             }
             overlay.classList.remove('show');
             selectedGames.clear();
-            showToast(`${names.length} Spiel(e) aktualisiert.`, 'success');
+            showToast(t('games_updated', names.length), 'success');
             renderMatcher();
         });
     }
@@ -889,25 +889,25 @@
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
         modal.innerHTML = `
-            <div class="modal-title">Spiel bearbeiten</div>
+            <div class="modal-title">${t('modal_edit_game_title')}</div>
             <div class="proposal-form">
-                <label style="font-size:0.75rem;color:var(--text-secondary)">Name</label>
+                <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_name')}</label>
                 <input type="text" id="edit-game-name" value="${game.name}">
-                <label style="font-size:0.75rem;color:var(--text-secondary)">Genre</label>
+                <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_genre')}</label>
                 <input type="text" id="edit-game-genre" value="${game.genre || ''}">
                 <div class="proposal-row">
                     <div>
-                        <label style="font-size:0.75rem;color:var(--text-secondary)">Max Spieler</label>
+                        <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_max_players')}</label>
                         <input type="number" id="edit-game-maxplayers" value="${game.maxPlayers}" min="2" max="64" inputmode="numeric">
                     </div>
                     <div>
-                        <label style="font-size:0.75rem;color:var(--text-secondary)">Vorschau-Link (YouTube)</label>
+                        <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_preview_url')}</label>
                         <input type="url" id="edit-game-previewurl" value="${game.previewUrl || ''}" placeholder="https://www.youtube.com/watch?v=...">
                     </div>
                 </div>
                 <div class="proposal-row" style="margin-top:0.75rem">
-                    <button class="btn-propose" id="edit-game-save">Speichern</button>
-                    <button class="btn-leave" id="edit-game-cancel">Abbrechen</button>
+                    <button class="btn-propose" id="edit-game-save">${t('btn_save')}</button>
+                    <button class="btn-leave" id="edit-game-cancel">${t('btn_cancel')}</button>
                 </div>
             </div>
         `;
@@ -924,10 +924,10 @@
                     previewUrl: $('#edit-game-previewurl').value.trim()
                 });
                 overlay.classList.remove('show');
-                showToast('Spiel aktualisiert.', 'success');
+                showToast(t('game_updated'), 'success');
                 renderMatcher();
             } catch (e) {
-                showToast('Fehler beim Speichern.', 'error');
+                showToast(t('save_error'), 'error');
             }
         });
 
@@ -946,16 +946,16 @@
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
         modal.innerHTML = videoId ? `
-            <div class="modal-title">Spielvorschau</div>
+            <div class="modal-title">${t('modal_preview_title')}</div>
             <div class="video-container">
                 <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1"
                     frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
             </div>
-            <button class="modal-close-btn" id="modal-cancel">Schliessen</button>
+            <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
         ` : `
-            <div class="modal-title">Ungültiger Link</div>
-            <p style="padding:1rem;color:var(--text-secondary)">Kein gültiges YouTube-Video gefunden.</p>
-            <button class="modal-close-btn" id="modal-cancel">Schliessen</button>
+            <div class="modal-title">${t('invalid_link')}</div>
+            <p style="padding:1rem;color:var(--text-secondary)">${t('invalid_link_text')}</p>
+            <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
         `;
         overlay.classList.add('show');
         $('#modal-cancel').addEventListener('click', () => overlay.classList.remove('show'));
@@ -1012,17 +1012,17 @@
             container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">🔍</div>
-                    <div class="empty-state-text">Keine Spiele gefunden</div>
+                    <div class="empty-state-text">${t('no_games_found')}</div>
                 </div>`;
             return;
         }
 
         const bulkBar = admin ? `
             <div id="bulk-action-bar" class="bulk-action-bar ${selectedGames.size > 0 ? 'show' : ''}">
-                <span id="bulk-count">${selectedGames.size} Spiel(e) ausgewählt</span>
-                <button id="bulk-edit-btn" class="btn-bulk-action">Genre / Spieler</button>
-                <button id="bulk-delete-btn" class="btn-bulk-action danger">Löschen</button>
-                <button id="bulk-deselect-btn" class="btn-bulk-clear">✕ Abwählen</button>
+                <span id="bulk-count">${t('selected_count', selectedGames.size)}</span>
+                <button id="bulk-edit-btn" class="btn-bulk-action">${t('btn_bulk_edit')}</button>
+                <button id="bulk-delete-btn" class="btn-bulk-action danger">${t('btn_bulk_delete')}</button>
+                <button id="bulk-deselect-btn" class="btn-bulk-clear">${t('btn_deselect')}</button>
             </div>` : '';
 
         container.innerHTML = bulkBar + games.map((g, idx) => {
@@ -1090,15 +1090,15 @@
         const admin = isAdmin();
 
         const statusLabels = {
-            pending: 'Ausstehend', approved: 'Freigegeben',
-            active: 'Laeuft', completed: 'Beendet', rejected: 'Abgelehnt'
+            pending: t('status_pending'), approved: t('status_approved'),
+            active: t('status_active'), completed: t('status_completed'), rejected: t('status_rejected')
         };
 
         let coinStatusHTML = '';
         if (p.status === 'completed' && p.coinsApproved === false) {
-            coinStatusHTML = `<div class="proposal-schedule" style="color:var(--accent-gold)">&#x1FA99; ${p.pendingCoins || 0} Coins warten auf Freigabe</div>`;
+            coinStatusHTML = `<div class="proposal-schedule" style="color:var(--accent-gold)">🪙 ${p.pendingCoins || 0} C ${t('session_awaiting_approval')}</div>`;
         } else if (p.status === 'completed' && p.coinsApproved === true) {
-            coinStatusHTML = `<div class="proposal-schedule" style="color:var(--accent-green)">&#x2713; ${p.pendingCoins || 0} Coins ausgezahlt</div>`;
+            coinStatusHTML = `<div class="proposal-schedule" style="color:var(--accent-green)">✓ ${p.pendingCoins || 0} C paid out</div>`;
         }
 
         let scheduleHTML = '';
@@ -1124,29 +1124,29 @@
         const actions = [];
 
         if (!isJoined && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-join" data-id="${p.id}">Mitmachen</button>`);
+            actions.push(`<button class="btn-join" data-id="${p.id}">${t('btn_join_session')}</button>`);
         }
         if (isJoined && !isLeader && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-leave" data-id="${p.id}">Austragen</button>`);
+            actions.push(`<button class="btn-leave" data-id="${p.id}">${t('btn_leave_session')}</button>`);
         }
 
         if (isLeader && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-start-session" data-id="${p.id}">▶ Jetzt starten</button>`);
+            actions.push(`<button class="btn-start-session" data-id="${p.id}">${t('btn_start_now')}</button>`);
         }
         if (isLeader && p.status === 'active') {
-            actions.push(`<button class="btn-end-session" data-id="${p.id}">Session beenden</button>`);
+            actions.push(`<button class="btn-end-session" data-id="${p.id}">${t('btn_end_session')}</button>`);
         }
         if (isLeader && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-withdraw" data-id="${p.id}" style="font-size:0.75rem;opacity:0.6">Zurückziehen</button>`);
+            actions.push(`<button class="btn-withdraw" data-id="${p.id}" style="font-size:0.75rem;opacity:0.6">${t('btn_withdraw')}</button>`);
         }
 
         if (admin && p.status === 'pending') {
-            actions.push(`<button class="btn-approve" data-id="${p.id}">Freigeben</button>`);
-            actions.push(`<button class="btn-reject" data-id="${p.id}">Ablehnen</button>`);
+            actions.push(`<button class="btn-approve" data-id="${p.id}">${t('btn_approve')}</button>`);
+            actions.push(`<button class="btn-reject" data-id="${p.id}">${t('btn_reject')}</button>`);
         }
 
         if (admin && p.status === 'completed' && p.coinsApproved === false) {
-            actions.push(`<button class="btn-approve-coins" data-id="${p.id}">&#x1FA99; ${p.pendingCoins || '?'} Coins freigeben</button>`);
+            actions.push(`<button class="btn-approve-coins" data-id="${p.id}">${t('btn_approve_coins', p.pendingCoins || '?')}</button>`);
         }
 
         if (admin) {
@@ -1160,7 +1160,7 @@
         return `
             <div class="proposal-card ${p.status === 'active' ? 'status-active' : ''}" data-proposal-id="${p.id}">
                 <div class="proposal-card-header">
-                    <span class="proposal-game-name">${p.game}${p.isNewGame ? ' <span class="genre-tag">Neu</span>' : ''}</span>
+                    <span class="proposal-game-name">${p.game}${p.isNewGame ? ` <span class="genre-tag">${t('status_new')}</span>` : ''}</span>
                     <span class="status-badge ${p.status}">${statusLabels[p.status]}</span>
                 </div>
                 <div class="leader-badge">👑 ${p.leader}</div>
@@ -1180,7 +1180,7 @@
             btn.addEventListener('click', async () => {
                 try {
                     await api('POST', `/proposals/${btn.dataset.id}/join`, { player: state.currentPlayer });
-                    showToast('Eingetragen!', 'success');
+                    showToast(t('joined'), 'success');
                     renderProposals();
                 } catch (e) { console.error(e); }
             });
@@ -1190,7 +1190,7 @@
             btn.addEventListener('click', async () => {
                 try {
                     await api('POST', `/proposals/${btn.dataset.id}/leave`, { player: state.currentPlayer });
-                    showToast('Ausgetragen.', 'gold');
+                    showToast(t('left'), 'gold');
                     renderProposals();
                 } catch (e) { console.error(e); }
             });
@@ -1200,7 +1200,7 @@
             btn.addEventListener('click', async () => {
                 try {
                     await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'active', startedAt: Date.now() });
-                    showToast('Session gestartet!', 'success');
+                    showToast(t('session_started'), 'success');
                     playSound('coin');
                     renderProposals();
                 } catch (e) { console.error(e); }
@@ -1222,7 +1222,7 @@
                         pendingCoins: coinsAmount,
                         coinsApproved: 0
                     });
-                    showToast(`Session beendet. ${coinsAmount} Coins warten auf Freigabe.`, 'gold');
+                    showToast(t('session_ended', coinsAmount), 'gold');
                     renderProposals();
                 } catch (e) { console.error(e); }
             });
@@ -1259,7 +1259,7 @@
 
                     await api('PUT', `/proposals/${btn.dataset.id}`, { coinsApproved: 1 });
                     showCoinAnimation(coinsPerPlayer);
-                    showToast(`${coinsPerPlayer} Coins an ${proposal.players.length} Spieler freigegeben!`, 'success');
+                    showToast(t('coins_released', coinsPerPlayer, proposal.players.length), 'success');
                     renderProposals();
                 } catch (e) { console.error(e); }
             });
@@ -1268,11 +1268,11 @@
         container.querySelectorAll('.btn-withdraw').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const isAdminDelete = btn.dataset.adminDelete === 'true';
-                const label = isAdminDelete ? 'Vorschlag loeschen?' : 'Vorschlag zurueckziehen?';
+                const label = isAdminDelete ? t('confirm_delete_proposal') : t('confirm_withdraw');
                 if (confirm(label)) {
                     try {
                         await api('DELETE', `/proposals/${btn.dataset.id}`);
-                        showToast('Vorschlag entfernt.', 'error');
+                        showToast(t('proposal_removed'), 'error');
                         renderProposals();
                     } catch (e) { console.error(e); }
                 }
@@ -1283,7 +1283,7 @@
             btn.addEventListener('click', async () => {
                 try {
                     await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'approved', approvedAt: Date.now() });
-                    showToast('Vorschlag freigegeben!', 'success');
+                    showToast(t('proposal_approved'), 'success');
                     playSound('coin');
                     renderProposals();
                 } catch (e) { console.error(e); }
@@ -1292,10 +1292,10 @@
 
         container.querySelectorAll('.btn-reject').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if (confirm('Vorschlag ablehnen?')) {
+                if (confirm(t('confirm_reject_proposal'))) {
                     try {
                         await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'rejected' });
-                        showToast('Vorschlag abgelehnt.', 'error');
+                        showToast(t('proposal_rejected'), 'error');
                         renderProposals();
                     } catch (e) { console.error(e); }
                 }
@@ -1329,7 +1329,7 @@
             container.innerHTML = `
                 <div class="empty-state mt-2">
                     <div class="empty-state-icon">👤</div>
-                    <div class="empty-state-text">Waehle oben deinen Namen aus,<br>um dein Profil zu sehen.</div>
+                    <div class="empty-state-text">${t('profile_not_logged_in').replace('\n', '<br>')}</div>
                 </div>`;
             return;
         }
@@ -1359,13 +1359,13 @@
             if (skipTokens.length || forceTokens.length || chooseTokens.length) {
                 tokensHTML = `
                     <div class="card">
-                        <div class="card-title">Aktive Tokens</div>
+                        <div class="card-title">${t('active_tokens')}</div>
                         <div class="tokens-row">
-                            ${skipTokens.map((_, i) => `<button class="token-badge" data-type="skip_token" data-idx="${i}">Skip-Token</button>`).join('')}
-                            ${forceTokens.map((_, i) => `<button class="token-badge force-play" data-type="force_play" data-idx="${i}">Zwangsspielen</button>`).join('')}
-                            ${chooseTokens.map((_, i) => `<button class="token-badge choose-next" data-type="choose_next" data-idx="${i}">Spiel bestimmen</button>`).join('')}
+                            ${skipTokens.map((_, i) => `<button class="token-badge" data-type="skip_token" data-idx="${i}">${t('token_names_skip')}</button>`).join('')}
+                            ${forceTokens.map((_, i) => `<button class="token-badge force-play" data-type="force_play" data-idx="${i}">${t('token_names_force')}</button>`).join('')}
+                            ${chooseTokens.map((_, i) => `<button class="token-badge choose-next" data-type="choose_next" data-idx="${i}">${t('token_names_choose')}</button>`).join('')}
                         </div>
-                        <div class="text-sm text-muted mt-1">Antippen zum Einloesen</div>
+                        <div class="text-sm text-muted mt-1">${t('token_tap_to_redeem')}</div>
                     </div>`;
             }
 
@@ -1374,7 +1374,7 @@
             if (recentHistory.length > 0) {
                 historyHTML = `
                     <div class="card">
-                        <div class="card-title">Verlauf</div>
+                        <div class="card-title">${t('history_title')}</div>
                         <div class="history-list">
                             ${recentHistory.map(h => {
                                 const cls = h.amount > 0 ? 'positive' : 'negative';
@@ -1400,52 +1400,52 @@
                     <div class="profile-stats">
                         <div class="stat-box">
                             <div class="stat-value earned">${earned}</div>
-                            <div class="stat-label">Verdient</div>
+                            <div class="stat-label">${t('stat_earned')}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-value spent">${spent}</div>
-                            <div class="stat-label">Ausgegeben</div>
+                            <div class="stat-label">${t('stat_spent')}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-value sessions">${sessionCount}</div>
-                            <div class="stat-label">Sessions</div>
+                            <div class="stat-label">${t('stat_sessions')}</div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-value">${playerStars}</div>
-                            <div class="stat-label">Controller-Punkte</div>
+                            <div class="stat-label">${t('stat_ctrl_points')}</div>
                         </div>
                     </div>
                 </div>
                 ${tokensHTML}
                 <div class="card">
-                    <div class="card-title">PIN aendern</div>
+                    <div class="card-title">${t('change_pin')}</div>
                     <div class="admin-coins-form">
-                        <input type="number" id="pin-old" placeholder="Alte PIN" inputmode="numeric" maxlength="4" autocomplete="off">
-                        <input type="number" id="pin-new1" placeholder="Neue PIN (4 Ziffern)" inputmode="numeric" maxlength="4" autocomplete="off">
-                        <input type="number" id="pin-new2" placeholder="Neue PIN wiederholen" inputmode="numeric" maxlength="4" autocomplete="off">
-                        <button class="btn-admin-coins" id="btn-change-pin" disabled>PIN aendern</button>
+                        <input type="number" id="pin-old" placeholder="${t('placeholder_old_pin')}" inputmode="numeric" maxlength="4" autocomplete="off">
+                        <input type="number" id="pin-new1" placeholder="${t('placeholder_new_pin')}" inputmode="numeric" maxlength="4" autocomplete="off">
+                        <input type="number" id="pin-new2" placeholder="${t('placeholder_new_pin_repeat')}" inputmode="numeric" maxlength="4" autocomplete="off">
+                        <button class="btn-admin-coins" id="btn-change-pin" disabled>${t('btn_change_pin')}</button>
                         <div class="pin-error" id="pin-change-error"></div>
                     </div>
                 </div>
                 ${historyHTML}
                 <div class="card">
-                    <div class="card-title">🔔 Benachrichtigungen</div>
+                    <div class="card-title">${t('notifications_title')}</div>
                     <div class="notif-settings">
                         <div class="notif-row">
-                            <span>Browser-Benachrichtigung (visuell)</span>
+                            <span>${t('notif_visual')}</span>
                             <button class="notif-toggle ${getNotifPref('visual') ? 'active' : ''}" id="notif-visual-btn">
-                                ${getNotifPref('visual') ? 'An' : 'Aus'}
+                                ${getNotifPref('visual') ? t('on') : t('off')}
                             </button>
                         </div>
                         <div class="notif-row">
-                            <span>Ton bei Herausforderung</span>
+                            <span>${t('notif_sound')}</span>
                             <button class="notif-toggle ${getNotifPref('sound') ? 'active' : ''}" id="notif-sound-btn">
-                                ${getNotifPref('sound') ? 'An' : 'Aus'}
+                                ${getNotifPref('sound') ? t('on') : t('off')}
                             </button>
                         </div>
                         ${getNotifPref('visual') && Notification.permission === 'granted' ? `
                         <div class="notif-row">
-                            <span>Test-Benachrichtigung senden</span>
+                            <span>${t('notif_test')}</span>
                             <button class="btn-secondary" id="notif-test-btn">🔔 Testen</button>
                         </div>` : ''}
                     </div>
@@ -1456,11 +1456,11 @@
             container.querySelectorAll('.token-badge').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const type = btn.dataset.type;
-                    const names = { skip_token: 'Skip-Token', force_play: 'Zwangsspielen', choose_next: 'Spiel bestimmen' };
-                    if (confirm(`${names[type]} jetzt einloesen?`)) {
+                    const names = { skip_token: t('token_names_skip'), force_play: t('token_names_force'), choose_next: t('token_names_choose') };
+                    if (confirm(t('token_redeem_confirm', names[type]))) {
                         try {
                             await api('DELETE', `/tokens/${encodeURIComponent(player)}/${type}`);
-                            showToast(`${names[type]} eingeloest!`, 'gold');
+                            showToast(t('token_redeemed', names[type]), 'gold');
                             playSound('spend');
                             renderProfile();
                         } catch (e) { console.error(e); }
@@ -1482,12 +1482,12 @@
 
             pinBtn.addEventListener('click', async () => {
                 if (pinNew1.value !== pinNew2.value) {
-                    pinError.textContent = 'Neue PINs stimmen nicht ueberein!';
+                    pinError.textContent = t('pin_mismatch');
                     playSound('error');
                     return;
                 }
                 if (pinNew1.value.length < 4) {
-                    pinError.textContent = 'PIN muss 4 Ziffern haben!';
+                    pinError.textContent = t('pin_too_short');
                     playSound('error');
                     return;
                 }
@@ -1498,10 +1498,10 @@
                     pinNew1.value = '';
                     pinNew2.value = '';
                     pinBtn.disabled = true;
-                    showToast('PIN erfolgreich geaendert!', 'success');
+                    showToast(t('pin_changed'), 'success');
                     playSound('coin');
                 } catch (e) {
-                    pinError.textContent = 'Alte PIN ist falsch!';
+                    pinError.textContent = t('pin_wrong_old');
                     playSound('error');
                 }
             });
@@ -1513,13 +1513,13 @@
                 const current = getNotifPref('visual');
                 if (!current) {
                     if (!('Notification' in window)) {
-                        showToast('Browser unterstützt keine Benachrichtigungen', 'error'); return;
+                        showToast(t('notif_no_support'), 'error'); return;
                     }
                     if (Notification.permission === 'default') {
                         const perm = await Notification.requestPermission();
-                        if (perm !== 'granted') { showToast('Berechtigung verweigert', 'error'); return; }
+                        if (perm !== 'granted') { showToast(t('notif_permission_rejected'), 'error'); return; }
                     } else if (Notification.permission === 'denied') {
-                        showToast('Berechtigung in Browser-Einstellungen blockiert', 'error'); return;
+                        showToast(t('notif_permission_denied'), 'error'); return;
                     }
                 }
                 setNotifPref('visual', !current);
@@ -1536,8 +1536,8 @@
             const testBtn = container.querySelector('#notif-test-btn');
             if (testBtn) {
                 testBtn.addEventListener('click', () => {
-                    new Notification('🔔 Test-Benachrichtigung', {
-                        body: `Hey ${player}, Benachrichtigungen funktionieren!`
+                    new Notification(t('notif_test_title'), {
+                        body: t('notif_test_body', player)
                     });
                 });
             }
@@ -1558,7 +1558,7 @@
             container.innerHTML = `
                 <div class="empty-state mt-2">
                     <div class="empty-state-icon">🔒</div>
-                    <div class="empty-state-text">Nur die Turnierleitung kann Sessions starten.</div>
+                    <div class="empty-state-text">${t('session_admin_only')}</div>
                 </div>`;
             return;
         }
@@ -1582,17 +1582,17 @@
             const hasFreigabe = endedSessions.length > 0 || completedProposals.length > 0;
             const freigabeHTML = hasFreigabe ? `
                 <div class="freigabe-section" id="freigabe-container">
-                    <div class="section-title" style="color:#ff9800">⏳ Freigabe ausstehend</div>
+                    <div class="section-title" style="color:#ff9800">${t('freigabe_pending')}</div>
                     ${endedSessions.map(s => {
                         const coins = calculateSessionCoins(s.players.length, state.attendees.length);
                         return `
                             <div class="freigabe-item">
-                                <strong>${s.game}</strong> · GL: ${s.leader} · ${s.players.length} Spieler<br>
+                                <strong>${s.game}</strong> · ${t('session_group_leader')} ${s.leader} · ${s.players.length} Spieler<br>
                                 <div>${s.players.map(p => `<span class="player-chip">${p}</span>`).join('')}</div>
                                 <div class="freigabe-coins-row">
-                                    <span style="font-size:0.85rem;color:var(--text-secondary)">Coins/Spieler:</span>
+                                    <span style="font-size:0.85rem;color:var(--text-secondary)">${t('coins_per_player_label')}</span>
                                     <input type="number" class="freigabe-coins-input" data-sid="${s.id}" value="${coins}" min="0" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
-                                    <button class="btn-approve freigabe-approve-btn" data-sid="${s.id}">✅ Freigeben</button>
+                                    <button class="btn-approve freigabe-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve')}</button>
                                     <button class="btn-danger freigabe-cancel-btn" data-sid="${s.id}" style="padding:4px 10px;font-size:0.8rem">🗑️</button>
                                 </div>
                             </div>`;
@@ -1602,11 +1602,11 @@
 
             container.innerHTML = `
                 ${freigabeHTML}
-                <div class="section-title"><span class="admin-badge">Admin</span> Session starten</div>
+                <div class="section-title"><span class="admin-badge">Admin</span> ${t('session_start_title')}</div>
 
                 <div class="session-step">
-                    <div class="mb-1"><span class="step-number">1</span> <strong>Spiel auswaehlen</strong></div>
-                    <input type="text" id="session-game-search" class="search-input" placeholder="Spiel suchen...">
+                    <div class="mb-1"><span class="step-number">1</span> <strong>${t('step_select_game')}</strong></div>
+                    <input type="text" id="session-game-search" class="search-input" placeholder="${t('search_game_placeholder')}">
                     <div class="game-select-grid" id="session-game-grid">
                         ${sortedGames.map(g => {
                             const mc = getMatchCount(g);
@@ -1618,7 +1618,7 @@
                 </div>
 
                 <div class="session-step">
-                    <div class="mb-1"><span class="step-number">2</span> <strong>Wer war dabei?</strong></div>
+                    <div class="mb-1"><span class="step-number">2</span> <strong>${t('step_who_played')}</strong></div>
                     <div class="player-toggle-grid" id="session-player-grid">
                         ${state.attendees.map(p => `
                             <div class="player-toggle ${sessionState.selectedPlayers.includes(p) ? 'active' : ''}" data-player="${p}">
@@ -1630,27 +1630,27 @@
                 </div>
 
                 <div class="session-step">
-                    <div class="mb-1"><span class="step-number">3</span> <strong>Bestaetigen</strong></div>
+                    <div class="mb-1"><span class="step-number">3</span> <strong>${t('step_confirm')}</strong></div>
                     <div id="session-preview" class="card" style="display:${sessionState.selectedGame ? 'block' : 'none'}">
                         <div style="text-align:center">
-                            <div class="text-muted text-sm">Spiel</div>
+                            <div class="text-muted text-sm">${t('label_game')}</div>
                             <div style="font-size:1.2rem;font-weight:700">${sessionState.selectedGame || '-'}</div>
-                            <div class="text-muted text-sm mt-1">Spieler: ${sessionState.selectedPlayers.length}</div>
+                            <div class="text-muted text-sm mt-1">${t('label_players', sessionState.selectedPlayers.length)}</div>
                             <div style="font-size:1.5rem;font-weight:800;color:var(--accent-gold);margin-top:0.5rem">
-                                ${calculateSessionCoins(sessionState.selectedPlayers.length, state.attendees.length)} Coins pro Spieler
+                                ${calculateSessionCoins(sessionState.selectedPlayers.length, state.attendees.length)} C
                             </div>
                         </div>
                     </div>
                     <button class="btn-session-confirm" id="btn-confirm-session"
                         ${(!sessionState.selectedGame || sessionState.selectedPlayers.length < 3) ? 'disabled' : ''}>
-                        Session bestaetigen & Coins verteilen
+                        ${t('btn_confirm_session')}
                     </button>
                     ${sessionState.selectedPlayers.length > 0 && sessionState.selectedPlayers.length < 3
-                        ? '<div class="text-muted text-sm text-center mt-1">Mindestens 3 Spieler noetig</div>' : ''}
+                        ? `<div class="text-muted text-sm text-center mt-1">${t('min_players_needed')}</div>` : ''}
                 </div>
 
                 <div class="card">
-                    <div class="card-title">Spielerverwaltung <span class="admin-badge">Admin</span></div>
+                    <div class="card-title">${t('player_management')} <span class="admin-badge">Admin</span></div>
                     <div class="player-mgmt-list" id="player-mgmt-list">
                         ${usersData.map(u => `
                             <div class="player-mgmt-item">
@@ -1660,40 +1660,40 @@
                                 </div>
                                 <div class="player-mgmt-actions">
                                     <button class="player-mgmt-btn edit" data-name="${u.name}" title="Bearbeiten">&#x270E;</button>
-                                    <button class="player-mgmt-btn pin" data-name="${u.name}" title="PIN zuruecksetzen">&#x1F511;</button>
+                                    <button class="player-mgmt-btn pin" data-name="${u.name}" title="${t('modal_reset_pin_title')}">&#x1F511;</button>
                                     ${u.name !== state.currentPlayer ? `<button class="player-mgmt-btn delete" data-name="${u.name}" title="Loeschen">&#x2716;</button>` : ''}
                                 </div>
                             </div>
                         `).join('')}
                     </div>
                     <div class="admin-coins-form mt-2" id="add-player-form">
-                        <div class="card-title" style="margin-bottom:0.25rem">Neuer Spieler</div>
-                        <input type="text" id="new-player-name" placeholder="Name">
-                        <input type="number" id="new-player-pin" placeholder="PIN (4 Ziffern)" inputmode="numeric" maxlength="4">
+                        <div class="card-title" style="margin-bottom:0.25rem">${t('new_player')}</div>
+                        <input type="text" id="new-player-name" placeholder="${t('placeholder_name')}">
+                        <input type="number" id="new-player-pin" placeholder="${t('placeholder_pin')}" inputmode="numeric" maxlength="4">
                         <select id="new-player-role">
-                            <option value="player">Spieler</option>
-                            <option value="admin">Admin</option>
+                            <option value="player">${t('role_player')}</option>
+                            <option value="admin">${t('role_admin')}</option>
                         </select>
-                        <button class="btn-admin-coins" id="btn-add-player" disabled>Spieler hinzufuegen</button>
+                        <button class="btn-admin-coins" id="btn-add-player" disabled>${t('btn_add_player')}</button>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">Coins manuell vergeben <span class="admin-badge">Admin</span></div>
+                    <div class="card-title">${t('manual_coins')} <span class="admin-badge">Admin</span></div>
                     <div class="admin-coins-form">
                         <select id="admin-coin-player">
-                            <option value="">Spieler waehlen...</option>
+                            <option value="">${t('placeholder_select_player')}</option>
                             ${state.players.map(p => `<option value="${p}">${p}</option>`).join('')}
                         </select>
-                        <input type="number" id="admin-coin-amount" placeholder="Anzahl (z.B. 5 oder -2)" inputmode="numeric">
-                        <input type="text" id="admin-coin-reason" placeholder="Grund (z.B. Turniersieg)">
-                        <button class="btn-admin-coins" id="btn-admin-coins" disabled>Coins vergeben</button>
+                        <input type="number" id="admin-coin-amount" placeholder="${t('placeholder_coin_amount')}" inputmode="numeric">
+                        <input type="text" id="admin-coin-reason" placeholder="${t('placeholder_coin_reason')}">
+                        <button class="btn-admin-coins" id="btn-admin-coins" disabled>${t('btn_assign_coins')}</button>
                     </div>
                 </div>
 
                 <div class="danger-zone">
-                    <div class="card-title">Gefahrenzone <span class="admin-badge">Admin</span></div>
-                    <button class="btn-danger" id="btn-reset-all">Alle Daten zuruecksetzen</button>
+                    <div class="card-title">${t('danger_zone')} <span class="admin-badge">Admin</span></div>
+                    <button class="btn-danger" id="btn-reset-all">${t('btn_reset_all')}</button>
                 </div>
             `;
 
@@ -1710,14 +1710,14 @@
                     try {
                         await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer });
                         showCoinAnimation(coinsPerPlayer);
-                        showToast(`Session freigegeben! ${coinsPerPlayer} Coins verteilt.`, 'success');
+                        showToast(t('session_approved', coinsPerPlayer), 'success');
                         renderSession();
-                    } catch (e) { showToast('Fehler beim Freigeben.', 'error'); }
+                    } catch (e) { showToast(t('session_error_approve'), 'error'); }
                 });
             });
             container.querySelectorAll('.freigabe-cancel-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    if (confirm('Session verwerfen ohne Coins zu vergeben?')) {
+                    if (confirm(t('discard_confirm'))) {
                         await api('DELETE', `/live-sessions/${btn.dataset.sid}`);
                         renderSession();
                     }
@@ -1769,10 +1769,10 @@
             $$('#player-mgmt-list .player-mgmt-btn.delete').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const name = btn.dataset.name;
-                    if (confirm(`"${name}" wirklich loeschen? Coins und History bleiben erhalten.`)) {
+                    if (confirm(t('delete_player_confirm', name))) {
                         try {
                             await api('DELETE', `/users/${encodeURIComponent(name)}`);
-                            showToast(`${name} geloescht.`, 'error');
+                            showToast(t('player_deleted', name), 'error');
                             await refreshPlayers();
                             renderSession();
                         } catch (e) { console.error(e); }
@@ -1799,12 +1799,12 @@
                 if (!name || pin.length < 4) return;
                 try {
                     await api('POST', '/users', { name, pin, role });
-                    showToast(`${name} hinzugefuegt!`, 'success');
+                    showToast(t('player_added', name), 'success');
                     playSound('coin');
                     await refreshPlayers();
                     renderSession();
                 } catch (e) {
-                    showToast(`"${name}" existiert bereits!`, 'error');
+                    showToast(t('player_exists', name), 'error');
                     playSound('error');
                 }
             });
@@ -1833,10 +1833,10 @@
                     if (amount > 0) {
                         await api('POST', '/coins/add', { player, amount, reason });
                         showCoinAnimation(amount);
-                        showToast(`${amount} Coins an ${player} vergeben!`, 'success');
+                        showToast(t('coins_given', amount, player), 'success');
                     } else {
                         await api('POST', '/coins/add', { player, amount, reason });
-                        showToast(`${amount} Coins bei ${player} abgezogen.`, 'error');
+                        showToast(t('coins_deducted', amount, player), 'error');
                         playSound('spend');
                     }
                     adminCoinPlayer.value = '';
@@ -1848,8 +1848,8 @@
 
             // Event: Reset
             $('#btn-reset-all').addEventListener('click', async () => {
-                if (confirm('WIRKLICH alle Gameparty Daten loeschen? Das kann nicht rueckgaengig gemacht werden!')) {
-                    if (confirm('Bist du SICHER?')) {
+                if (confirm(t('reset_confirm_1'))) {
+                    if (confirm(t('reset_confirm_2'))) {
                         try {
                             await api('DELETE', '/reset');
                             state.currentPlayer = null;
@@ -1857,7 +1857,7 @@
                             localStorage.removeItem(LOCAL_KEYS.PLAYER);
                             localStorage.removeItem(LOCAL_KEYS.ROLE);
                             sessionState = { selectedGame: null, selectedPlayers: [] };
-                            showToast('Alle Daten geloescht.', 'error');
+                            showToast(t('all_data_deleted'), 'error');
                             updateHeader();
                             navigateTo('dashboard');
                         } catch (e) { console.error(e); }
@@ -1896,13 +1896,13 @@
             await api('POST', '/sessions', { game, players: [...players], coinsPerPlayer });
 
             showCoinAnimation(coinsPerPlayer);
-            showToast(`${coinsPerPlayer} Coins an ${players.length} Spieler verteilt!`, 'success');
+            showToast(t('session_confirmed', coinsPerPlayer, players.length), 'success');
 
             sessionState = { selectedGame: null, selectedPlayers: [] };
             setTimeout(() => navigateTo('dashboard'), 1500);
         } catch (e) {
             console.error('Session confirm error:', e);
-            showToast('Fehler beim Session-Erstellen.', 'error');
+            showToast(t('session_error'), 'error');
         }
     }
 
@@ -1912,10 +1912,10 @@
 
         if (!state.currentPlayer) {
             container.innerHTML = `
-                <div class="section-title">Shop</div>
+                <div class="section-title">${t('shop_title')}</div>
                 <div class="empty-state mt-2">
                     <div class="empty-state-icon">?</div>
-                    <div class="empty-state-text">Waehle oben deinen Namen aus,<br>um den Shop zu nutzen.</div>
+                    <div class="empty-state-text">${t('profile_not_logged_in').replace('\n', '<br>')}</div>
                 </div>`;
             return;
         }
@@ -1927,9 +1927,9 @@
             const coins = coinsData[player] || 0;
 
             container.innerHTML = `
-                <div class="section-title">Shop</div>
+                <div class="section-title">${t('shop_title')}</div>
                 <div class="card" style="text-align:center">
-                    <div class="text-muted text-sm">Dein Guthaben</div>
+                    <div class="text-muted text-sm">${t('your_balance')}</div>
                     <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${coins} Coins</div>
                 </div>
                 <div class="shop-grid">
@@ -1937,7 +1937,7 @@
                         <div class="shop-item ${item.id === 'buy_star' ? 'star-item' : ''}${item.isPenalty ? ' penalty-item' : ''}">
                             <div class="shop-icon">${item.icon}</div>
                             <div class="shop-info">
-                                <div class="shop-name">${item.name}${item.isPenalty ? '<span class="penalty-badge">⏱ Strafbefehl</span>' : ''}</div>
+                                <div class="shop-name">${t('item_' + item.id + '_name') !== ('item_' + item.id + '_name') ? t('item_' + item.id + '_name') : item.name}${item.isPenalty ? `<span class="penalty-badge">${t('penalty_badge')}</span>` : ''}</div>
                                 <div class="shop-desc">${item.description}${item.isPenalty ? ' • 5 Min. Zeitlimit' : ''}</div>
                             </div>
                             <button class="shop-buy-btn" data-item="${item.id}" data-cost="${item.cost}"
@@ -1971,34 +1971,34 @@
         if (!item) return;
 
         if (itemId === 'buy_star') {
-            if (confirm(`Einen Controller-Punkt für ${cost} Coins kaufen?`)) {
+            if (confirm(t('buy_star_confirm', cost))) {
                 try {
-                    await api('POST', '/coins/spend', { player, amount: cost, reason: 'Shop: Controller-Punkt gekauft' });
+                    await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${t('item_buy_star_name')}` });
                     await api('POST', '/stars/add', { player, amount: 1 });
                     state.coins[player] = (state.coins[player] || 0) - cost;
                     state.stars[player] = (state.stars[player] || 0) + 1;
-                    showToast('🎮 Controller-Punkt gekauft! Du hast jetzt ' + state.stars[player] + ' Punkt(e)!', 'success');
+                    showToast(t('star_bought', state.stars[player]), 'success');
                     updateHeader();
                     renderShop();
-                } catch (e) { showToast('Nicht genug Coins!', 'error'); }
+                } catch (e) { showToast(t('not_enough_coins'), 'error'); }
             }
             return;
         }
 
         if (itemId === 'force_play') {
-            showTargetModal(itemId, cost, 'Wen willst du zwingen?', (target) => `${item.name} - ${target} muss mitspielen!`);
+            showTargetModal(itemId, cost, t('who_to_force'), (target) => t('force_toast', item.name, target));
         } else if (itemId === 'drink_order') {
-            showTargetModal(itemId, cost, 'Wer muss trinken? 🍺', (target) => `🍺 ${state.currentPlayer} befiehlt: ${target} TRINKEN!`);
+            showTargetModal(itemId, cost, t('who_to_drink'), (target) => t('drink_toast', state.currentPlayer, target));
         } else {
-            if (confirm(`"${item.name}" fuer ${cost} Coins kaufen?`)) {
+            if (confirm(t('buy_item_confirm', item.name, cost))) {
                 try {
                     await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${item.name}` });
                     await api('POST', '/tokens', { player, type: itemId });
-                    showToast(`${item.name} gekauft!`, 'gold');
+                    showToast(t('item_bought', item.name), 'gold');
                     playSound('spend');
                     renderShop();
                 } catch (e) {
-                    showToast('Nicht genug Coins!', 'error');
+                    showToast(t('not_enough_coins'), 'error');
                     playSound('error');
                 }
             }
@@ -2019,7 +2019,7 @@
                     <button class="shop-target-btn" data-target="${p}">${p}</button>
                 `).join('')}
             </div>
-            <button class="modal-close-btn" id="modal-cancel">Abbrechen</button>
+            <button class="modal-close-btn" id="modal-cancel">${t('btn_cancel')}</button>
         `;
 
         overlay.classList.add('show');
@@ -2069,15 +2069,15 @@
                     ⏱️ ${m}:${s.toString().padStart(2,'0')}
                 </div>
                 <div style="text-align:center;font-size:0.78rem;color:var(--text-secondary);padding-bottom:0.5rem">
-                    Strafe bei Ablauf: −${item?.cost ?? '?'} Coins
+                    ${t('task_penalty_label', item?.cost ?? '?')}
                 </div>` : '';
         }
 
         modal.innerHTML = `
-            <div class="modal-title">🎯 Aufgabe für dich!</div>
+            <div class="modal-title">${t('task_title')}</div>
             <div style="text-align:center;padding:1rem;font-size:1.1rem">${ev.message}</div>
             ${renderTimer(ev.deadline ? ev.deadline - Date.now() : 0)}
-            <button class="btn-propose" id="task-confirm-btn">✅ OK (Erledigt)</button>
+            <button class="btn-propose" id="task-confirm-btn">${t('task_confirm_btn')}</button>
         `;
         overlay.classList.add('show');
 
@@ -2123,12 +2123,12 @@
             });
         } catch { /* ignorieren wenn nicht genug Coins */ }
         modal.innerHTML = `
-            <div class="modal-title">⏰ Zeit abgelaufen!</div>
+            <div class="modal-title">${t('time_up_title')}</div>
             <div style="text-align:center;padding:1rem;font-size:1.1rem">
-                Du hast die Aufgabe nicht rechtzeitig erledigt!<br>
+                ${t('time_up_text', penalty).split('\n')[0]}<br>
                 <span style="color:var(--accent-red);font-weight:700">−${penalty} Coins</span> wurden abgezogen.
             </div>
-            <button class="btn-propose" id="penalty-close-btn">OK</button>
+            <button class="btn-propose" id="penalty-close-btn">${t('time_up_ok')}</button>
         `;
         overlay.classList.add('show');
         $('#penalty-close-btn').addEventListener('click', () => overlay.classList.remove('show'));
@@ -2145,7 +2145,7 @@
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
         modal.innerHTML = `
-            <div class="modal-title">✅ Bestätigung</div>
+            <div class="modal-title">${t('ack_title')}</div>
             <div style="text-align:center; padding: 1rem; font-size: 1.1rem;">${msg}</div>
             <button class="btn-propose" id="ack-close-btn">OK</button>
         `;
@@ -2159,12 +2159,12 @@
         const gamesData = await api('GET', '/games');
         const sortedGames = [...gamesData].sort((a, b) => getMatchCount(b) - getMatchCount(a));
         modal.innerHTML = `
-            <div class="modal-title">🎮 Raum erstellen</div>
-            <input type="text" id="ss-search" class="search-input" placeholder="Spiel suchen..." style="margin-bottom:0.5rem">
+            <div class="modal-title">${t('modal_create_room_title')}</div>
+            <input type="text" id="ss-search" class="search-input" placeholder="${t('search_game_placeholder')}" style="margin-bottom:0.5rem">
             <div class="game-select-grid" id="ss-game-grid" style="max-height:50vh;overflow-y:auto">
                 ${sortedGames.map(g => `<div class="game-select-item" data-game="${g.name}">${g.name}</div>`).join('')}
             </div>
-            <button class="modal-close-btn" id="ss-cancel">Abbrechen</button>
+            <button class="modal-close-btn" id="ss-cancel">${t('btn_cancel')}</button>
         `;
         overlay.classList.add('show');
         $('#ss-search').addEventListener('input', e => {
@@ -2178,9 +2178,9 @@
                 overlay.classList.remove('show');
                 try {
                     await api('POST', '/live-sessions', { game: el.dataset.game, leader: state.currentPlayer });
-                    showToast(`Raum "${el.dataset.game}" erstellt — warte auf Spieler.`, 'success');
+                    showToast(t('room_created', el.dataset.game), 'success');
                     renderDashboard();
-                } catch (e) { showToast(e.message || 'Fehler beim Erstellen des Raums.', 'error'); }
+                } catch (e) { showToast(e.message || t('room_error'), 'error'); }
             });
         });
         $('#ss-cancel').addEventListener('click', () => overlay.classList.remove('show'));
@@ -2193,7 +2193,7 @@
         const sortedGames = [...gamesData].sort((a, b) => getMatchCount(b) - getMatchCount(a));
         let selectedGame = null;
         modal.innerHTML = `
-            <div class="modal-title">📅 Session planen</div>
+            <div class="modal-title">${t('modal_plan_session_title')}</div>
             <input type="text" id="ps-search" class="search-input" placeholder="Spiel suchen..." style="margin-bottom:0.5rem">
             <div class="game-select-grid" id="ps-game-grid" style="max-height:35vh;overflow-y:auto">
                 ${sortedGames.map(g => `<div class="game-select-item" data-game="${g.name}">${g.name}</div>`).join('')}
@@ -2203,8 +2203,8 @@
                 <input type="time" id="ps-time" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
             </div>
             <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
-                <button class="btn-propose" id="ps-confirm" disabled>Planen</button>
-                <button class="modal-close-btn" id="ps-cancel">Abbrechen</button>
+                <button class="btn-propose" id="ps-confirm" disabled>${t('btn_plan')}</button>
+                <button class="modal-close-btn" id="ps-cancel">${t('btn_cancel')}</button>
             </div>
         `;
         overlay.classList.add('show');
@@ -2235,9 +2235,9 @@
                     scheduledTime: time,
                     isNewGame: 0
                 });
-                showToast(`"${selectedGame}" geplant!`, 'success');
+                showToast(t('session_planned', selectedGame), 'success');
                 renderDashboard();
-            } catch (e) { showToast('Fehler beim Planen.', 'error'); }
+            } catch (e) { showToast(t('plan_error'), 'error'); }
         });
         $('#ps-cancel').addEventListener('click', () => overlay.classList.remove('show'));
     }
@@ -2261,7 +2261,7 @@
                 starsDisplay.parentElement.style.display = playerStars > 0 ? 'flex' : 'none';
             }
         } else {
-            playerBtn.textContent = 'Einloggen';
+            playerBtn.textContent = t('header_login');
             playerBtn.style.display = 'inline-block';
             logoutBtn.style.display = 'none';
             coinsDisplay.parentElement.style.display = 'none';
@@ -2276,7 +2276,7 @@
     async function renderChallenges() {
         const container = $('#view-challenges');
         if (!state.currentPlayer) {
-            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚔️</div><div class="empty-state-text">Bitte einloggen um Duelle zu sehen.</div></div>';
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚔️</div><div class="empty-state-text">${t('challenges_not_logged_in')}</div></div>';
             return;
         }
 
@@ -2293,7 +2293,7 @@
             const myStars = getPlayerStars(state.currentPlayer);
             const opponents = state.players.filter(p => p !== state.currentPlayer);
 
-            const statusLabels = { pending: 'Offen', accepted: 'Angenommen', completed: 'Gewinner steht', paid: 'Ausgezahlt', rejected: 'Abgelehnt' };
+            const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected') };
 
             function renderCard(c) {
                 const isChallenger = c.challenger === state.currentPlayer;
@@ -2302,35 +2302,35 @@
                 const pot = [];
                 if (c.stakeCoins > 0) pot.push(`${c.stakeCoins * 2} Coins`);
                 if (c.stakeStars > 0) pot.push(`${c.stakeStars * 2} 🎮`);
-                const potStr = pot.length ? pot.join(' + ') : 'Kein Einsatz';
+                const potStr = pot.length ? pot.join(' + ') : t('no_stake');
 
                 let actionsHTML = '';
 
                 if (c.status === 'pending' && isOpponent) {
                     actionsHTML = `
                         <div class="proposal-actions">
-                            <button class="btn-join ch-accept" data-id="${c.id}">Annehmen</button>
-                            <button class="btn-leave ch-reject" data-id="${c.id}">Ablehnen</button>
+                            <button class="btn-join ch-accept" data-id="${c.id}">${t('notif_accept')}</button>
+                            <button class="btn-leave ch-reject" data-id="${c.id}">${t('notif_reject')}</button>
                         </div>`;
                 } else if (c.status === 'accepted' && isChallenger) {
                     actionsHTML = `
                         <div class="proposal-actions">
                             <select class="ch-winner-select" data-id="${c.id}" style="background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem 0.5rem;font-size:0.85rem;">
-                                <option value="">Gewinner wählen…</option>
+                                <option value="">${t('select_winner')}</option>
                                 <option value="${c.challenger}">${c.challenger}</option>
                                 <option value="${c.opponent}">${c.opponent}</option>
                             </select>
-                            <button class="btn-approve ch-complete" data-id="${c.id}">Bestätigen</button>
+                            <button class="btn-approve ch-complete" data-id="${c.id}">${t('btn_confirm_winner')}</button>
                         </div>`;
                 } else if (c.status === 'completed' && admin) {
                     actionsHTML = `
                         <div class="proposal-actions">
-                            <button class="btn-approve ch-payout" data-id="${c.id}">🏆 Pott freigeben</button>
+                            <button class="btn-approve ch-payout" data-id="${c.id}">${t('btn_payout_pot')}</button>
                         </div>`;
                 }
 
                 if (admin && c.status !== 'paid') {
-                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave ch-delete" data-id="${c.id}">✖ Löschen</button></div>`;
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave ch-delete" data-id="${c.id}">${t('btn_delete_duel')}</button></div>`;
                 }
 
                 const winnerInfo = c.winner ? `<div class="game-meta" style="margin-top:0.3rem;">🏆 ${c.winner}</div>` : '';
@@ -2343,7 +2343,7 @@
                             <span class="status-badge ${c.status}">${statusLabels[c.status] || c.status}</span>
                         </div>
                         <div class="game-meta">${c.game}</div>
-                        <div class="game-meta">Pott: ${potStr}</div>
+                        <div class="game-meta">${t('pot', potStr)}</div>
                         ${winnerInfo}
                         ${actionsHTML}
                     </div>`;
@@ -2351,20 +2351,20 @@
 
             const cardsHTML = challenges.length
                 ? challenges.map(renderCard).join('')
-                : '<div class="empty-state"><div class="empty-state-text">Noch keine Duelle. Fordere jemanden heraus!</div></div>';
+                : '<div class="empty-state"><div class="empty-state-text">${t('no_duels')}</div></div>';
 
             container.innerHTML = `
                 <div class="proposal-form">
-                    <div class="card-title" style="margin-bottom:0.75rem;">⚔️ Neues Duell</div>
+                    <div class="card-title" style="margin-bottom:0.75rem;">${t('new_duel')}</div>
                     <div class="proposal-row">
                         <select id="ch-opponent" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
-                            <option value="">Gegner wählen…</option>
+                            <option value="">${t('select_opponent')}</option>
                             ${opponents.map(p => `<option value="${p}">${p}</option>`).join('')}
                         </select>
                     </div>
                     <div class="proposal-row">
                         <select id="ch-game" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
-                            <option value="">Spiel wählen…</option>
+                            <option value="">${t('select_game')}</option>
                             ${state.games.filter(g => g.status === 'approved').sort((a, b) => a.name.localeCompare(b.name)).map(g => `<option value="${g.name}">${g.name}</option>`).join('')}
                         </select>
                     </div>
@@ -2372,7 +2372,7 @@
                         <input id="ch-coins" type="number" min="0" max="${myCoins}" placeholder="Coins (max ${myCoins})" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
                         <input id="ch-stars" type="number" min="0" max="${myStars}" placeholder="🎮 (max ${myStars})" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
                     </div>
-                    <button class="btn-propose" id="ch-create">Herausfordern!</button>
+                    <button class="btn-propose" id="ch-create">${t('btn_challenge')}</button>
                 </div>
                 ${cardsHTML}
             `;
@@ -2383,12 +2383,12 @@
                 const game = $('#ch-game').value;
                 const stakeCoins = parseInt($('#ch-coins').value) || 0;
                 const stakeStars = parseInt($('#ch-stars').value) || 0;
-                if (!opponent) { showToast('Bitte Gegner wählen', 'error'); playSound('error'); return; }
-                if (!game) { showToast('Bitte Spiel angeben', 'error'); playSound('error'); return; }
-                if (stakeCoins === 0 && stakeStars === 0) { showToast('Bitte einen Einsatz angeben', 'error'); playSound('error'); return; }
+                if (!opponent) { showToast(t('select_opponent_error'), 'error'); playSound('error'); return; }
+                if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
+                if (stakeCoins === 0 && stakeStars === 0) { showToast(t('select_stake_error'), 'error'); playSound('error'); return; }
                 try {
                     await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars });
-                    showToast(`Duell gegen ${opponent} erstellt!`, 'success');
+                    showToast(t('duel_created', opponent), 'success');
                     playSound('coin');
                     renderChallenges();
                 } catch (e) {
@@ -2402,7 +2402,7 @@
                 btn.addEventListener('click', async () => {
                     try {
                         await api('PUT', `/challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
-                        showToast('Duell angenommen!', 'success');
+                        showToast(t('duel_accepted'), 'success');
                         playSound('coin');
                         renderChallenges();
                     } catch (e) {
@@ -2417,7 +2417,7 @@
                 btn.addEventListener('click', async () => {
                     try {
                         await api('PUT', `/challenges/${btn.dataset.id}/reject`, { player: state.currentPlayer });
-                        showToast('Duell abgelehnt', 'success');
+                        showToast(t('duel_rejected'), 'success');
                         renderChallenges();
                     } catch (e) {
                         showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -2431,10 +2431,10 @@
                 btn.addEventListener('click', async () => {
                     const select = container.querySelector(`.ch-winner-select[data-id="${btn.dataset.id}"]`);
                     const winner = select ? select.value : '';
-                    if (!winner) { showToast('Bitte Gewinner wählen', 'error'); playSound('error'); return; }
+                    if (!winner) { showToast(t('select_winner_error'), 'error'); playSound('error'); return; }
                     try {
                         await api('PUT', `/challenges/${btn.dataset.id}/complete`, { player: state.currentPlayer, winner });
-                        showToast(`Gewinner: ${winner}`, 'success');
+                        showToast(t('winner_set', winner), 'success');
                         playSound('coin');
                         renderChallenges();
                     } catch (e) {
@@ -2449,7 +2449,7 @@
                 btn.addEventListener('click', async () => {
                     try {
                         const result = await api('PUT', `/challenges/${btn.dataset.id}/payout`);
-                        showToast(`Pott ausgezahlt! ${result.winner} gewinnt!`, 'success');
+                        showToast(t('duel_payout', result.winner), 'success');
                         playSound('coin');
                         showCoinAnimation(0);
                         const coinsData = await api('GET', '/coins');
@@ -2468,10 +2468,10 @@
                 btn.addEventListener('click', async () => {
                     try {
                         await api('DELETE', `/challenges/${btn.dataset.id}`);
-                        showToast('Duell gelöscht', 'success');
+                        showToast(t('duel_deleted'), 'success');
                         renderChallenges();
                     } catch (e) {
-                        showToast('Fehler beim Löschen', 'error');
+                        showToast(t('duel_delete_error'), 'error');
                         playSound('error');
                     }
                 });
@@ -2487,7 +2487,7 @@
 
         } catch (e) {
             console.error('renderChallenges error:', e);
-            container.innerHTML = '<div class="empty-state"><div class="empty-state-text">Fehler beim Laden der Duelle.</div></div>';
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-text">${t('duel_load_error')}</div></div>';
         }
     }
 
@@ -2508,18 +2508,18 @@
 
         panel.innerHTML = `
             <div class="notif-panel-header">
-                <span>⚔️ Herausforderungen</span>
+                <span>${t('notif_panel_title')}</span>
                 <button class="notif-panel-close" id="notif-panel-close">✕</button>
             </div>
             ${pendingNotifications.map(n => `
                 <div class="notif-panel-item" data-id="${n.id}">
                     <div class="notif-panel-body">
-                        <div class="notif-panel-title">${n.challenger} fordert dich heraus!</div>
+                        <div class="notif-panel-title">${n.challenger} ${t('notif_challenge_from', n.challenger)}</div>
                         <div class="notif-panel-sub">${n.game} · ${n.stakeStr}</div>
                     </div>
                     <div class="notif-panel-actions">
-                        <button class="notif-accept" data-id="${n.id}" title="Annehmen">✓</button>
-                        <button class="notif-reject" data-id="${n.id}" title="Ablehnen">✕</button>
+                        <button class="notif-accept" data-id="${n.id}" title="${t('notif_accept')}">✓</button>
+                        <button class="notif-reject" data-id="${n.id}" title="${t('notif_reject')}">✕</button>
                     </div>
                 </div>
             `).join('')}
@@ -2610,8 +2610,8 @@
                 notifPanelOpen = true;
                 renderNotifPanel();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
-                    new Notification('⚔️ Duell-Herausforderung!', {
-                        body: `${c.challenger} fordert dich heraus!\n${c.game} – Einsatz: ${stakeStr}`
+                    new Notification(t('duel_challenge_notif_title'), {
+                        body: t('duel_challenge_notif_body', c.challenger, c.game, stakeStr)
                     });
                 }
                 if (getNotifPref('sound')) {
@@ -2696,7 +2696,7 @@
         try {
             const users = await api('GET', '/users');
             modal.innerHTML = `
-                <div class="modal-title">Einloggen</div>
+                <div class="modal-title">${t('modal_login_title')}</div>
                 <div class="modal-player-grid">
                     ${users.map(u => `
                         <button class="modal-player-btn" data-player="${u.name}">${u.name}${u.role === 'admin' ? ' <span class="admin-badge">Admin</span>' : ''}</button>
@@ -2722,9 +2722,9 @@
 
         modal.innerHTML = `
             <div class="login-step">
-                <button class="login-back-btn" id="pin-back">\u2190 Zurueck</button>
+                <button class="login-back-btn" id="pin-back">${t('modal_pin_back')}</button>
                 <div class="login-player-name">${playerName}</div>
-                <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">PIN eingeben</div>
+                <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:1rem">${t('modal_pin_enter')}</div>
                 <div class="pin-input-row">
                     <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="0" autocomplete="off">
                     <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="1" autocomplete="off">
@@ -2732,7 +2732,7 @@
                     <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="3" autocomplete="off">
                 </div>
                 <div class="pin-error" id="pin-error"></div>
-                <div class="pin-hint">4-stellige PIN</div>
+                <div class="pin-hint">${t('modal_pin_hint')}</div>
             </div>
         `;
 
@@ -2779,14 +2779,14 @@
 
             updateHeader();
             updateNavVisibility();
-            showToast(`Willkommen, ${playerName}!`, result.role === 'admin' ? 'gold' : 'success');
+            showToast(t('welcome', playerName), result.role === 'admin' ? 'gold' : 'success');
             playSound('coin');
 
             const activeNav = document.querySelector('.nav-item.active');
             if (activeNav) navigateTo(activeNav.dataset.view);
         } catch (e) {
             const errorEl = document.querySelector('#pin-error');
-            if (errorEl) errorEl.textContent = 'Falsche PIN!';
+            if (errorEl) errorEl.textContent = t('pin_wrong');
             playSound('error');
             document.querySelectorAll('.pin-digit').forEach(d => { d.value = ''; });
             document.querySelector('.pin-digit').focus();
@@ -2802,16 +2802,16 @@
         const role = user ? user.role : 'player';
 
         modal.innerHTML = `
-            <div class="modal-title">Spieler bearbeiten</div>
+            <div class="modal-title">${t('modal_edit_player_title')}</div>
             <div class="admin-coins-form">
                 <input type="text" id="edit-player-name" value="${playerName}" placeholder="Name">
                 <select id="edit-player-role">
-                    <option value="player" ${role === 'player' ? 'selected' : ''}>Spieler</option>
+                    <option value="player" ${role === 'player' ? 'selected' : ''}>${t('role_player')}</option>
                     <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
                 </select>
-                <button class="btn-admin-coins" id="btn-save-player">Speichern</button>
+                <button class="btn-admin-coins" id="btn-save-player">${t('btn_save')}</button>
             </div>
-            <button class="modal-close-btn" id="modal-cancel">Abbrechen</button>
+            <button class="modal-close-btn" id="modal-cancel">${t('btn_cancel')}</button>
         `;
 
         overlay.classList.add('show');
@@ -2823,7 +2823,7 @@
             try {
                 await api('PUT', `/users/${encodeURIComponent(playerName)}`, { newName, role: newRole });
                 overlay.classList.remove('show');
-                showToast(`${newName} aktualisiert!`, 'success');
+                showToast(t('player_updated', newName), 'success');
                 if (state.currentPlayer === playerName) {
                     state.currentPlayer = newName;
                     state.role = newRole;
@@ -2834,7 +2834,7 @@
                 updateHeader();
                 renderSession();
             } catch (e) {
-                showToast('Name existiert bereits!', 'error');
+                showToast(t('name_exists'), 'error');
                 playSound('error');
             }
         });
@@ -2849,16 +2849,16 @@
         const modal = overlay.querySelector('.modal');
 
         modal.innerHTML = `
-            <div class="modal-title">PIN zuruecksetzen</div>
+            <div class="modal-title">${t('modal_reset_pin_title')}</div>
             <div style="text-align:center;margin-bottom:1rem">
-                <div style="color:var(--text-secondary)">Spieler</div>
+                <div style="color:var(--text-secondary)">${t('label_player')}</div>
                 <div style="font-size:1.2rem;font-weight:700;color:var(--accent-gold)">${playerName}</div>
             </div>
             <div class="admin-coins-form">
                 <input type="number" id="admin-new-pin" placeholder="Neue PIN (4 Ziffern)" inputmode="numeric" maxlength="4" autocomplete="off">
-                <button class="btn-admin-coins" id="btn-admin-set-pin" disabled>PIN setzen</button>
+                <button class="btn-admin-coins" id="btn-admin-set-pin" disabled>${t('btn_set_pin')}</button>
             </div>
-            <button class="modal-close-btn" id="modal-cancel">Abbrechen</button>
+            <button class="modal-close-btn" id="modal-cancel">${t('btn_cancel')}</button>
         `;
 
         overlay.classList.add('show');
@@ -2876,7 +2876,7 @@
             try {
                 await api('PUT', `/users/${encodeURIComponent(playerName)}/pin`, { newPin });
                 overlay.classList.remove('show');
-                showToast(`PIN von ${playerName} geaendert!`, 'gold');
+                showToast(t('pin_reset_done', playerName), 'gold');
                 playSound('coin');
             } catch (e) { console.error(e); }
         });
@@ -2929,13 +2929,23 @@
             console.log(`Gameparty: ${state.games.length} Spiele geladen.`);
         } catch (e) {
             console.error('Init error - Server nicht erreichbar?', e);
-            showToast('Server nicht erreichbar!', 'error');
+            showToast(t('server_unreachable'), 'error');
         }
 
         // Setup navigation
         $$('.nav-item').forEach(nav => {
             nav.addEventListener('click', () => navigateTo(nav.dataset.view));
         });
+
+        // Language toggle
+        const langBtn = $('#lang-toggle-btn');
+        if (langBtn) {
+            langBtn.addEventListener('click', () => {
+                setLang(getLang() === 'en' ? 'de' : 'en');
+            });
+            updateLangBtn();
+        }
+        updateNavLabels();
 
         // Header player selection + logout
         $('#header-player-btn').addEventListener('click', showLoginModal);
@@ -2978,6 +2988,9 @@
             setTimeout(() => showLoginModal(), 500);
         }
     }
+
+    // Export for i18n.js
+    window.refreshActiveView = refreshActiveView;
 
     // Start
     if (document.readyState === 'loading') {

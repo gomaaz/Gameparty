@@ -8,6 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Gameparty</title>
     <link rel="stylesheet" href="css/style.css">
+    <script src="js/i18n.js"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F3AE;</text></svg>">
 </head>
 <body>
@@ -28,7 +29,8 @@
                 <span style="font-size:0.75em">🎮</span>
             </div>
             <button class="notif-bell-btn" id="notif-bell-btn" style="display:none">🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span></button>
-            <button class="player-select-btn" id="header-player-btn">Einloggen</button>
+            <button class="lang-toggle-btn" id="lang-toggle-btn" title="Switch language">🇩🇪</button>
+        <button class="player-select-btn" id="header-player-btn">Log In</button>
             <button class="logout-btn" id="header-logout-btn" style="display:none" title="Ausloggen">&#x23FB;</button>
         </div>
     </header>
@@ -51,11 +53,11 @@
         </button>
         <button class="nav-item" data-view="matcher">
             <span class="nav-icon">&#x1F3AE;</span>
-            <span>Spiele</span>
+            <span>Games</span>
         </button>
         <button class="nav-item" data-view="profile">
             <span class="nav-icon">&#x1F464;</span>
-            <span>Profil</span>
+            <span>Profile</span>
         </button>
         <button class="nav-item" data-view="session" data-admin="true" style="display:none">
             <span class="nav-icon">&#x1F3AC;</span>
@@ -67,7 +69,7 @@
         </button>
         <button class="nav-item" data-view="challenges">
             <span class="nav-icon">&#x2694;&#xFE0F;</span>
-            <span>Duelle</span>
+            <span>Duels</span>
         </button>
     </nav>
 
