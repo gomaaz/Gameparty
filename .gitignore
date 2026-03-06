@@ -1,0 +1,6 @@
+node_modules/
+gameparty.db
+*.db-shm
+*.db-wal
+backups/
+.claude/
