@@ -744,7 +744,19 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     }
 
     db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
-    res.json({ success: true });
+
+    // Direkt eine laufende Duell-Session fuer beide Spieler erstellen
+    const sid = 'ls_duel_' + Date.now();
+    const now = Date.now();
+    try {
+        db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt) VALUES (?, ?, ?, 'running', ?)").run(sid, c.game, c.challenger, now);
+        db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.challenger, now);
+        db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.opponent, now);
+    } catch (e) {
+        console.error('Duel session creation failed:', e);
+    }
+
+    res.json({ success: true, sessionId: sid });
 });
 
 // PUT /api/challenges/:id/reject

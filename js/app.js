@@ -2484,7 +2484,7 @@
                         await api('PUT', `/challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
                         showToast(t('duel_accepted'), 'success');
                         playSound('coin');
-                        renderChallenges();
+                        navigateTo('dashboard');
                     } catch (e) {
                         showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
                         playSound('error');
@@ -2620,9 +2620,9 @@
                 try {
                     await api('PUT', `/challenges/${id}/accept`, { player: state.currentPlayer });
                     removeNotification(id);
-                    showToast('Duell angenommen!', 'success');
+                    showToast(t('duel_accepted'), 'success');
                     playSound('coin');
-                    if ($('#view-challenges').classList.contains('active')) renderChallenges();
+                    navigateTo('dashboard');
                 } catch { showToast('Fehler beim Annehmen', 'error'); }
             });
         });
