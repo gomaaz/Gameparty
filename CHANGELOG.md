@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.7 (2026-03-08)
+- fix: filter attendees to existing users only, cleanup orphaned attendees on startup
+
 ## v2.3.6 (2026-03-07)
 - fix: remove deleted player from attendees table
 

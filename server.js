@@ -131,6 +131,14 @@ try {
     }
 } catch (e) { /* Tabelle existiert noch nicht beim ersten Start */ }
 
+// ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
+try {
+    const result = db.prepare('DELETE FROM attendees WHERE player NOT IN (SELECT name FROM users)').run();
+    if (result.changes > 0) {
+        console.log(`Startup-Cleanup: ${result.changes} verwaiste Attendee-Eintraege entfernt`);
+    }
+} catch (e) { /* Tabelle existiert noch nicht beim ersten Start */ }
+
 // ---- Seed Data (from data.js CONFIG + FALLBACK_GAMES) ----
 function seedIfEmpty() {
     const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
@@ -337,7 +345,7 @@ app.get('/api/init', (req, res) => {
     db.prepare('SELECT player, amount FROM coins').all().forEach(r => { coins[r.player] = r.amount; });
     const stars = {};
     db.prepare('SELECT player, amount FROM stars').all().forEach(r => { stars[r.player] = r.amount; });
-    const attendees = db.prepare('SELECT player FROM attendees').all().map(r => r.player);
+    const attendees = db.prepare('SELECT player FROM attendees WHERE player IN (SELECT name FROM users)').all().map(r => r.player);
     const settings = {};
     db.prepare('SELECT key, value FROM settings').all().forEach(r => { settings[r.key] = r.value; });
     const players = users.map(u => u.name);
@@ -567,7 +575,7 @@ app.post('/api/proposals/:id/leave', (req, res) => {
 
 // GET /api/attendees
 app.get('/api/attendees', (req, res) => {
-    const attendees = db.prepare('SELECT player FROM attendees').all().map(r => r.player);
+    const attendees = db.prepare('SELECT player FROM attendees WHERE player IN (SELECT name FROM users)').all().map(r => r.player);
     res.json(attendees);
 });
 
