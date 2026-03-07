@@ -32,13 +32,9 @@ jobs:
           IMAGE=$(grep -m1 '^\s*image:' docker-compose.yml | awk '{print $2}' | sed 's/:.*//')
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
-      - name: Extract version from package.json
-        id: pkg
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
       # Automatically generates tags:
       #   main branch  → latest
-      #   v2.3.4       → 2.3.4  +  2.3  +  latest
+      #   v1.2.3 tag   → 1.2.3  +  1.2
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -46,7 +42,6 @@ jobs:
           images: ${{ steps.compose.outputs.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ steps.pkg.outputs.version }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
