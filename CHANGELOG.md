@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.14 (2026-03-08)
+- fix: tooltip not showing on mobile – replaced mouseover/mouseout with pointerover/pointerout (mouse only), click always toggles
+
 ## v2.3.13 (2026-03-08)
 - fix: tooltip positioning for session leader icons (position: fixed, visibility trick for correct dimensions)
 

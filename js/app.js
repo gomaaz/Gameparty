@@ -3261,16 +3261,24 @@
     function hidePlayerTooltip() {
         if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
     }
-    document.addEventListener('mouseover', e => {
+    // Desktop: hover zeigt Tooltip (nur echte Maus, kein Touch)
+    document.addEventListener('pointerover', e => {
+        if (e.pointerType !== 'mouse') return;
         const chip = e.target.closest('.player-chip-info');
         if (chip) showPlayerTooltip(chip);
     });
-    document.addEventListener('mouseout', e => {
+    document.addEventListener('pointerout', e => {
+        if (e.pointerType !== 'mouse') return;
         if (e.target.closest('.player-chip-info')) hidePlayerTooltip();
     });
+    // Mobile + Desktop: Klick/Tap toggelt Tooltip
     document.addEventListener('click', e => {
         const chip = e.target.closest('.player-chip-info');
-        if (chip) { if (activeTooltip) hidePlayerTooltip(); else showPlayerTooltip(chip); return; }
+        if (chip) {
+            if (activeTooltip) hidePlayerTooltip();
+            else showPlayerTooltip(chip);
+            return;
+        }
         hidePlayerTooltip();
     });
 
