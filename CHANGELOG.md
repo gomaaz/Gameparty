@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.13 (2026-03-08)
+- fix: tooltip positioning for session leader icons (position: fixed, visibility trick for correct dimensions)
+
 ## v2.4.1 (2026-03-08)
 - feat: leader account icons (IP, Steam, Ubisoft, Battle.net) in session cards – tap/click shows popup with value
 

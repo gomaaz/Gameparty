@@ -3243,13 +3243,19 @@
         const el = document.createElement('div');
         el.className = 'player-info-tooltip';
         el.innerHTML = tooltip;
+        el.style.visibility = 'hidden';
         document.body.appendChild(el);
         activeTooltip = el;
         const rect = chip.getBoundingClientRect();
-        const top = rect.top + window.scrollY - el.offsetHeight - 8;
-        const left = rect.left + window.scrollX + rect.width / 2 - el.offsetWidth / 2;
-        el.style.top = Math.max(8, top) + 'px';
-        el.style.left = Math.max(8, Math.min(left, window.innerWidth - el.offsetWidth - 8)) + 'px';
+        const h = el.offsetHeight || 60;
+        const w = el.offsetWidth || 160;
+        let top = rect.top - h - 8;
+        let left = rect.left + rect.width / 2 - w / 2;
+        if (top < 8) top = rect.bottom + 8;
+        left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+        el.style.top = top + 'px';
+        el.style.left = left + 'px';
+        el.style.visibility = '';
         el.style.opacity = '1';
     }
     function hidePlayerTooltip() {

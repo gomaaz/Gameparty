@@ -2622,7 +2622,7 @@ body {
 
 /* ---- Player Info Tooltip ---- */
 .player-info-tooltip {
-    position: absolute;
+    position: fixed;
     z-index: 9999;
     background: var(--bg-card);
     border: 1px solid var(--border);
