@@ -1,5 +1,9 @@
 # 🎮 Gameparty
 
+> **Disclaimer:** This project is 100% vibe-coded. It was built for fun, at a LAN party, for friends — not for production. No guarantees of any kind. The author takes no responsibility for any damage, data loss, bugs, or chaos of any sort that may result from using this software. Use at your own risk. Have fun. 🤙
+
+---
+
 > *Because telling your friends "let's play something" is never quite enough.*
 
 We all know the situation: you've got a group of friends at a LAN party, everyone wants to have fun together — but half the group is glued to their own game, and getting everyone to actually play *together* feels like herding cats. Someone always has a reason not to join. "Just one more round." "I don't really know that game." "Maybe later."
