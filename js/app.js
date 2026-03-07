@@ -1652,52 +1652,6 @@
                         ? `<div class="text-muted text-sm text-center mt-1">${t('min_players_needed')}</div>` : ''}
                 </div>
 
-                <div class="card">
-                    <div class="card-title">${t('player_management')} <span class="admin-badge">Admin</span></div>
-                    <div class="player-mgmt-list" id="player-mgmt-list">
-                        ${usersData.map(u => `
-                            <div class="player-mgmt-item">
-                                <div class="player-mgmt-info">
-                                    <span class="player-mgmt-name">${u.name}</span>
-                                    ${u.role === 'admin' ? '<span class="admin-badge">Admin</span>' : ''}
-                                </div>
-                                <div class="player-mgmt-actions">
-                                    <button class="player-mgmt-btn edit" data-name="${u.name}" title="Bearbeiten">&#x270E;</button>
-                                    <button class="player-mgmt-btn pin" data-name="${u.name}" title="${t('modal_reset_pin_title')}">&#x1F511;</button>
-                                    ${u.name !== state.currentPlayer ? `<button class="player-mgmt-btn delete" data-name="${u.name}" title="Loeschen">&#x2716;</button>` : ''}
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="admin-coins-form mt-2" id="add-player-form">
-                        <div class="card-title" style="margin-bottom:0.25rem">${t('new_player')}</div>
-                        <input type="text" id="new-player-name" placeholder="${t('placeholder_name')}">
-                        <input type="number" id="new-player-pin" placeholder="${t('placeholder_pin')}" inputmode="numeric" maxlength="4">
-                        <select id="new-player-role">
-                            <option value="player">${t('role_player')}</option>
-                            <option value="admin">${t('role_admin')}</option>
-                        </select>
-                        <button class="btn-admin-coins" id="btn-add-player" disabled>${t('btn_add_player')}</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">${t('manual_coins')} <span class="admin-badge">Admin</span></div>
-                    <div class="admin-coins-form">
-                        <select id="admin-coin-player">
-                            <option value="">${t('placeholder_select_player')}</option>
-                            ${state.players.map(p => `<option value="${p}">${p}</option>`).join('')}
-                        </select>
-                        <input type="number" id="admin-coin-amount" placeholder="${t('placeholder_coin_amount')}" inputmode="numeric">
-                        <input type="text" id="admin-coin-reason" placeholder="${t('placeholder_coin_reason')}">
-                        <button class="btn-admin-coins" id="btn-admin-coins" disabled>${t('btn_assign_coins')}</button>
-                    </div>
-                </div>
-
-                <div class="danger-zone">
-                    <div class="card-title">${t('danger_zone')} <span class="admin-badge">Admin</span></div>
-                    <button class="btn-danger" id="btn-reset-all">${t('btn_reset_all')}</button>
-                </div>
             `;
 
             // Event: Freigabe — Proposal-Karten (completed)
@@ -1762,114 +1716,184 @@
             // Event: Confirm session
             $('#btn-confirm-session').addEventListener('click', () => confirmSession());
 
-            // Event: Player management
-            $$('#player-mgmt-list .player-mgmt-btn.edit').forEach(btn => {
-                btn.addEventListener('click', () => showEditPlayerModal(btn.dataset.name));
-            });
-            $$('#player-mgmt-list .player-mgmt-btn.pin').forEach(btn => {
-                btn.addEventListener('click', () => showAdminPinResetModal(btn.dataset.name));
-            });
-            $$('#player-mgmt-list .player-mgmt-btn.delete').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const name = btn.dataset.name;
-                    if (confirm(t('delete_player_confirm', name))) {
-                        try {
-                            await api('DELETE', `/users/${encodeURIComponent(name)}`);
-                            showToast(t('player_deleted', name), 'error');
-                            await refreshPlayers();
-                            renderSession();
-                        } catch (e) { console.error(e); }
-                    }
-                });
-            });
-
-            // Event: Add player
-            const newName = $('#new-player-name');
-            const newPin = $('#new-player-pin');
-            const newRole = $('#new-player-role');
-            const addBtn = $('#btn-add-player');
-
-            function validateAddPlayer() {
-                addBtn.disabled = !(newName.value.trim() && newPin.value.length >= 4);
-            }
-            newName.addEventListener('input', validateAddPlayer);
-            newPin.addEventListener('input', validateAddPlayer);
-
-            addBtn.addEventListener('click', async () => {
-                const name = newName.value.trim();
-                const pin = newPin.value;
-                const role = newRole.value;
-                if (!name || pin.length < 4) return;
-                try {
-                    await api('POST', '/users', { name, pin, role });
-                    showToast(t('player_added', name), 'success');
-                    playSound('coin');
-                    await refreshPlayers();
-                    renderSession();
-                } catch (e) {
-                    showToast(t('player_exists', name), 'error');
-                    playSound('error');
-                }
-            });
-
-            // Event: Admin manual coins
-            const adminCoinPlayer = $('#admin-coin-player');
-            const adminCoinAmount = $('#admin-coin-amount');
-            const adminCoinReason = $('#admin-coin-reason');
-            const adminCoinBtn = $('#btn-admin-coins');
-
-            function updateAdminCoinBtn() {
-                const valid = adminCoinPlayer.value && adminCoinAmount.value && parseInt(adminCoinAmount.value) !== 0;
-                adminCoinBtn.disabled = !valid;
-            }
-
-            adminCoinPlayer.addEventListener('change', updateAdminCoinBtn);
-            adminCoinAmount.addEventListener('input', updateAdminCoinBtn);
-
-            adminCoinBtn.addEventListener('click', async () => {
-                const player = adminCoinPlayer.value;
-                const amount = parseInt(adminCoinAmount.value);
-                const reason = adminCoinReason.value.trim() || 'Manuelle Vergabe (Admin)';
-                if (!player || !amount) return;
-
-                try {
-                    if (amount > 0) {
-                        await api('POST', '/coins/add', { player, amount, reason });
-                        showCoinAnimation(amount);
-                        showToast(t('coins_given', amount, player), 'success');
-                    } else {
-                        await api('POST', '/coins/add', { player, amount, reason });
-                        showToast(t('coins_deducted', amount, player), 'error');
-                        playSound('spend');
-                    }
-                    adminCoinPlayer.value = '';
-                    adminCoinAmount.value = '';
-                    adminCoinReason.value = '';
-                    adminCoinBtn.disabled = true;
-                } catch (e) { console.error(e); }
-            });
-
-            // Event: Reset
-            $('#btn-reset-all').addEventListener('click', async () => {
-                if (confirm(t('reset_confirm_1'))) {
-                    if (confirm(t('reset_confirm_2'))) {
-                        try {
-                            await api('DELETE', '/reset');
-                            state.currentPlayer = null;
-                            state.role = null;
-                            localStorage.removeItem(LOCAL_KEYS.PLAYER);
-                            localStorage.removeItem(LOCAL_KEYS.ROLE);
-                            sessionState = { selectedGame: null, selectedPlayers: [] };
-                            showToast(t('all_data_deleted'), 'error');
-                            updateHeader();
-                            navigateTo('dashboard');
-                        } catch (e) { console.error(e); }
-                    }
-                }
-            });
         } catch (e) {
             console.error('Session error:', e);
         }
+    }
+
+    // ---- Admin Panel ----
+    let adminPanelOpen = false;
+
+    function closeAdminPanel() {
+        adminPanelOpen = false;
+        $('#admin-panel').classList.remove('open');
+        $('#admin-panel-backdrop').classList.remove('open');
+        $('#admin-gear-btn').classList.remove('active');
+    }
+
+    function toggleAdminPanel() {
+        if (adminPanelOpen) { closeAdminPanel(); return; }
+        adminPanelOpen = true;
+        $('#admin-gear-btn').classList.add('active');
+        $('#admin-panel-backdrop').classList.add('open');
+        renderAdminPanel();
+        $('#admin-panel').classList.add('open');
+    }
+
+    async function renderAdminPanel() {
+        const panel = $('#admin-panel');
+        if (!panel) return;
+
+        let usersData;
+        try {
+            usersData = await api('GET', '/users');
+        } catch (e) {
+            panel.innerHTML = `<div class="admin-panel-header"><span class="admin-panel-title">⚙️ Admin</span><button class="admin-panel-close" id="ap-close">✕</button></div><div class="admin-panel-body"><p class="text-muted">${t('error_loading')}</p></div>`;
+            $('#ap-close').addEventListener('click', closeAdminPanel);
+            return;
+        }
+
+        panel.innerHTML = `
+            <div class="admin-panel-header">
+                <span class="admin-panel-title">⚙️ ${t('admin_panel_title')}</span>
+                <button class="admin-panel-close" id="ap-close">✕</button>
+            </div>
+            <div class="admin-panel-body">
+
+                <div class="card">
+                    <div class="card-title">${t('player_management')}</div>
+                    <div class="player-mgmt-list" id="ap-player-mgmt-list">
+                        ${usersData.map(u => `
+                            <div class="player-mgmt-item">
+                                <div class="player-mgmt-info">
+                                    <span class="player-mgmt-name">${u.name}</span>
+                                    ${u.role === 'admin' ? `<span class="admin-badge">Admin</span>` : ''}
+                                </div>
+                                <div class="player-mgmt-actions">
+                                    <button class="player-mgmt-btn edit" data-name="${u.name}" title="Bearbeiten">&#x270E;</button>
+                                    <button class="player-mgmt-btn pin" data-name="${u.name}" title="${t('modal_reset_pin_title')}">&#x1F511;</button>
+                                    ${u.name !== state.currentPlayer ? `<button class="player-mgmt-btn delete" data-name="${u.name}" title="Loeschen">&#x2716;</button>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="admin-coins-form mt-2">
+                        <div class="card-title" style="margin-bottom:0.25rem">${t('new_player')}</div>
+                        <input type="text" id="ap-new-player-name" placeholder="${t('placeholder_name')}">
+                        <input type="number" id="ap-new-player-pin" placeholder="${t('placeholder_pin')}" inputmode="numeric" maxlength="4">
+                        <select id="ap-new-player-role">
+                            <option value="player">${t('role_player')}</option>
+                            <option value="admin">${t('role_admin')}</option>
+                        </select>
+                        <button class="btn-admin-coins" id="ap-btn-add-player" disabled>${t('btn_add_player')}</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">${t('manual_coins')}</div>
+                    <div class="admin-coins-form">
+                        <select id="ap-coin-player">
+                            <option value="">${t('placeholder_select_player')}</option>
+                            ${state.players.map(p => `<option value="${p}">${p}</option>`).join('')}
+                        </select>
+                        <input type="number" id="ap-coin-amount" placeholder="${t('placeholder_coin_amount')}" inputmode="numeric">
+                        <input type="text" id="ap-coin-reason" placeholder="${t('placeholder_coin_reason')}">
+                        <button class="btn-admin-coins" id="ap-btn-coins" disabled>${t('btn_assign_coins')}</button>
+                    </div>
+                </div>
+
+                <div class="danger-zone">
+                    <div class="card-title">${t('danger_zone')}</div>
+                    <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
+                </div>
+
+            </div>`;
+
+        $('#ap-close').addEventListener('click', closeAdminPanel);
+
+        // Player management events
+        panel.querySelectorAll('#ap-player-mgmt-list .player-mgmt-btn.edit').forEach(btn => {
+            btn.addEventListener('click', () => showEditPlayerModal(btn.dataset.name));
+        });
+        panel.querySelectorAll('#ap-player-mgmt-list .player-mgmt-btn.pin').forEach(btn => {
+            btn.addEventListener('click', () => showAdminPinResetModal(btn.dataset.name));
+        });
+        panel.querySelectorAll('#ap-player-mgmt-list .player-mgmt-btn.delete').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const name = btn.dataset.name;
+                if (confirm(t('delete_player_confirm', name))) {
+                    try {
+                        await api('DELETE', `/users/${encodeURIComponent(name)}`);
+                        showToast(t('player_deleted', name), 'error');
+                        await refreshPlayers();
+                        renderAdminPanel();
+                    } catch (e) { console.error(e); }
+                }
+            });
+        });
+
+        // Add player
+        const newName = $('#ap-new-player-name');
+        const newPin = $('#ap-new-player-pin');
+        const newRole = $('#ap-new-player-role');
+        const addBtn = $('#ap-btn-add-player');
+        const validate = () => { addBtn.disabled = !(newName.value.trim() && newPin.value.length >= 4); };
+        newName.addEventListener('input', validate);
+        newPin.addEventListener('input', validate);
+        addBtn.addEventListener('click', async () => {
+            const name = newName.value.trim(), pin = newPin.value, role = newRole.value;
+            if (!name || pin.length < 4) return;
+            try {
+                await api('POST', '/users', { name, pin, role });
+                showToast(t('player_added', name), 'success');
+                playSound('coin');
+                await refreshPlayers();
+                renderAdminPanel();
+            } catch (e) { showToast(t('player_exists', name), 'error'); playSound('error'); }
+        });
+
+        // Assign coins
+        const coinPlayer = $('#ap-coin-player');
+        const coinAmount = $('#ap-coin-amount');
+        const coinReason = $('#ap-coin-reason');
+        const coinBtn = $('#ap-btn-coins');
+        const updateCoinBtn = () => {
+            coinBtn.disabled = !(coinPlayer.value && coinAmount.value && parseInt(coinAmount.value) !== 0);
+        };
+        coinPlayer.addEventListener('change', updateCoinBtn);
+        coinAmount.addEventListener('input', updateCoinBtn);
+        coinBtn.addEventListener('click', async () => {
+            const player = coinPlayer.value, amount = parseInt(coinAmount.value);
+            const reason = coinReason.value.trim() || 'Manuelle Vergabe (Admin)';
+            if (!player || !amount) return;
+            try {
+                await api('POST', '/coins/add', { player, amount, reason });
+                if (amount > 0) { showCoinAnimation(amount); showToast(t('coins_given', amount, player), 'success'); }
+                else { showToast(t('coins_deducted', amount, player), 'error'); playSound('spend'); }
+                coinPlayer.value = ''; coinAmount.value = ''; coinReason.value = '';
+                coinBtn.disabled = true;
+            } catch (e) { console.error(e); }
+        });
+
+        // Danger zone
+        $('#ap-btn-reset-all').addEventListener('click', async () => {
+            if (confirm(t('reset_confirm_1'))) {
+                if (confirm(t('reset_confirm_2'))) {
+                    try {
+                        await api('DELETE', '/reset');
+                        state.currentPlayer = null;
+                        state.role = null;
+                        localStorage.removeItem(LOCAL_KEYS.PLAYER);
+                        localStorage.removeItem(LOCAL_KEYS.ROLE);
+                        sessionState = { selectedGame: null, selectedPlayers: [] };
+                        showToast(t('all_data_deleted'), 'error');
+                        closeAdminPanel();
+                        updateHeader();
+                        navigateTo('dashboard');
+                    } catch (e) { console.error(e); }
+                }
+            }
+        });
     }
 
     async function confirmSession() {
@@ -2281,6 +2305,9 @@
 
         const bellBtn = $('#notif-bell-btn');
         if (bellBtn) bellBtn.style.display = state.currentPlayer ? '' : 'none';
+
+        const gearBtn = $('#admin-gear-btn');
+        if (gearBtn) gearBtn.style.display = isAdmin() ? '' : 'none';
     }
 
     // ---- Render: Challenges (Duelle) ----
@@ -2767,6 +2794,7 @@
 
     function logout() {
         stopChallengePoll();
+        closeAdminPanel();
         notifiedChallengeIds.clear();
         shownPenaltyIds.clear();
         pendingNotifications.length = 0;
@@ -3047,6 +3075,10 @@
             else showLoginModal();
         });
         $('#header-logout-btn').addEventListener('click', logout);
+
+        // Admin gear panel
+        $('#admin-gear-btn').addEventListener('click', toggleAdminPanel);
+        $('#admin-panel-backdrop').addEventListener('click', closeAdminPanel);
 
         // Notification bell toggle
         $('#notif-bell-btn').addEventListener('click', () => {

@@ -1561,6 +1561,79 @@ body {
     border-color: var(--accent-gold);
 }
 
+/* ---- Admin Gear Button ---- */
+.admin-gear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    line-height: 1;
+}
+.admin-gear-btn:hover { border-color: var(--accent-gold); }
+.admin-gear-btn.active { border-color: var(--accent-gold); background: rgba(255,215,0,0.1); }
+
+/* ---- Admin Panel ---- */
+.admin-panel-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 149;
+    background: rgba(0,0,0,0.45);
+}
+.admin-panel-backdrop.open { display: block; }
+
+.admin-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 440px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    z-index: 150;
+    padding: 0 0 80px 0;
+}
+.admin-panel.open { transform: translateX(0); }
+
+.admin-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+}
+.admin-panel-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.admin-panel-close {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+.admin-panel-close:hover { border-color: var(--accent-red); color: var(--accent-red); }
+.admin-panel-body { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+
 .logout-btn {
     background: none;
     border: 1px solid var(--border);

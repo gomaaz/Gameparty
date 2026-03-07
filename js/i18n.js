@@ -12,6 +12,7 @@ const TRANSLATIONS = {
         nav_shop: 'Shop',
         nav_duels: 'Duels',
         nav_activities: 'Activities',
+        admin_panel_title: 'Admin Settings',
 
         // --- Activities ---
         activities_title: 'Activities',
@@ -345,6 +346,7 @@ const TRANSLATIONS = {
         nav_shop: 'Shop',
         nav_duels: 'Duelle',
         nav_activities: 'Aktivitäten',
+        admin_panel_title: 'Admin-Einstellungen',
 
         // --- Activities ---
         activities_title: 'Aktivitäten',
