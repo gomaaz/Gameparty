@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.6 (2026-03-07)
+- fix: remove deleted player from attendees table
+
 ## v2.3.5 (2026-03-07)
 - feat: add GitHub Actions workflow for Docker Hub publishing
 

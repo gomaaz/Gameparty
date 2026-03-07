@@ -626,6 +626,8 @@ app.put('/api/users/:name', (req, res) => {
 // DELETE /api/users/:name
 app.delete('/api/users/:name', (req, res) => {
     db.prepare('DELETE FROM users WHERE name = ?').run(req.params.name);
+    db.prepare('DELETE FROM attendees WHERE player = ?').run(req.params.name);
+    broadcast();
     res.json({ success: true });
 });
 
