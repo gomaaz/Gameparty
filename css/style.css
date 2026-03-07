@@ -2407,3 +2407,34 @@ body {
     0%   { box-shadow: 0 0 20px rgba(255,215,0,0.5); }
     100% { box-shadow: 0 0 0 rgba(255,215,0,0); }
 }
+
+/* ---- Activities ---- */
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-icon { font-size: 1.4rem; flex-shrink: 0; }
+.activity-body { flex: 1; min-width: 0; }
+.activity-msg { font-size: 0.88rem; color: var(--text-primary); word-break: break-word; }
+.activity-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem; }
+.activity-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.45rem;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+.status-active .activity-status {
+    background: rgba(0,230,118,0.15);
+    color: var(--accent-green);
+    border: 1px solid var(--accent-green-dim);
+}
+.status-queued .activity-status {
+    background: rgba(255,152,0,0.15);
+    color: #ff9800;
+    border: 1px solid rgba(255,152,0,0.3);
+}

@@ -100,6 +100,11 @@ db.exec(`
 // ---- Migration: deadline Feld in player_events ----
 try { db.prepare('ALTER TABLE player_events ADD COLUMN deadline INTEGER').run(); } catch {}
 
+// ---- Migration: status Feld in player_events (fuer Penalty-Queue) ----
+try { db.prepare("ALTER TABLE player_events ADD COLUMN status TEXT DEFAULT 'active'").run(); } catch {}
+// Bestehende Eintraege auf active setzen (falls noch nicht gesetzt)
+try { db.prepare("UPDATE player_events SET status = 'active' WHERE status IS NULL").run(); } catch {}
+
 // ---- Migration: Rename steamRating to previewUrl ----
 try {
     db.exec('ALTER TABLE games RENAME COLUMN steamRating TO previewUrl');
@@ -796,23 +801,53 @@ app.delete('/api/challenges/:id', (req, res) => {
 
 // ---- Player Events ----
 
+const PENALTY_TYPES = ['force_play', 'drink_order'];
+
 // POST /api/player-events
 app.post('/api/player-events', (req, res) => {
     const { target, type, from_player, message, deadline } = req.body;
     if (!target || !message) return res.status(400).json({ error: 'target und message erforderlich' });
-    db.prepare('INSERT INTO player_events (target, type, from_player, message, deadline, createdAt) VALUES (?, ?, ?, ?, ?, ?)').run(target, type || '', from_player || '', message, deadline || null, Date.now());
-    res.json({ success: true });
+    let status = 'active';
+    if (PENALTY_TYPES.includes(type)) {
+        const activePenalty = db.prepare(
+            "SELECT id FROM player_events WHERE target = ? AND type IN ('force_play', 'drink_order') AND status = 'active'"
+        ).get(target);
+        if (activePenalty) status = 'queued';
+    }
+    db.prepare('INSERT INTO player_events (target, type, from_player, message, deadline, createdAt, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(target, type || '', from_player || '', message, deadline || null, Date.now(), status);
+    res.json({ success: true, status });
 });
 
-// GET /api/player-events/:player
+// GET /api/player-events/:player  – nur aktive Events (fuer Modal-Anzeige)
 app.get('/api/player-events/:player', (req, res) => {
-    const events = db.prepare('SELECT * FROM player_events WHERE target = ? ORDER BY createdAt ASC').all(req.params.player);
+    const events = db.prepare("SELECT * FROM player_events WHERE target = ? AND (status = 'active' OR status IS NULL) ORDER BY createdAt ASC").all(req.params.player);
     res.json(events);
+});
+
+// GET /api/activities/:player  – Inbox-Queue + gesendete Penalties
+app.get('/api/activities/:player', (req, res) => {
+    const player = req.params.player;
+    const incoming = db.prepare(
+        "SELECT * FROM player_events WHERE target = ? AND type IN ('force_play', 'drink_order') ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, createdAt ASC"
+    ).all(player);
+    const outgoing = db.prepare(
+        "SELECT * FROM player_events WHERE from_player = ? AND type IN ('force_play', 'drink_order') ORDER BY createdAt DESC"
+    ).all(player);
+    res.json({ incoming, outgoing });
 });
 
 // DELETE /api/player-events/:id
 app.delete('/api/player-events/:id', (req, res) => {
+    const ev = db.prepare('SELECT * FROM player_events WHERE id = ?').get(req.params.id);
     db.prepare('DELETE FROM player_events WHERE id = ?').run(req.params.id);
+    // Penalty-Queue: naechste gequeuete Penalty aktivieren
+    if (ev && PENALTY_TYPES.includes(ev.type)) {
+        const next = db.prepare(
+            "SELECT id FROM player_events WHERE target = ? AND type IN ('force_play', 'drink_order') AND status = 'queued' ORDER BY createdAt ASC LIMIT 1"
+        ).get(ev.target);
+        if (next) db.prepare("UPDATE player_events SET status = 'active' WHERE id = ?").run(next.id);
+    }
     res.json({ success: true });
 });
 

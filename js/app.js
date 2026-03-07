@@ -24,6 +24,7 @@
     let viewRefreshInterval = null;
     let sseSource = null;
     const notifiedChallengeIds = new Set();
+    const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
     let notifPanelOpen = false;
     let focusChallengeId = null;
@@ -2108,6 +2109,9 @@
             try {
                 await api('POST', '/player-events', { target: ev.from_player, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
             } catch {}
+            // Penalty aus DB löschen – aktiviert die nächste gequeuete Penalty
+            try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+            shownPenaltyIds.delete(ev.id);
         });
     }
 
@@ -2139,6 +2143,9 @@
                 message: `⏰ ${state.currentPlayer} hat "${item?.name}" NICHT rechtzeitig erledigt! −${penalty} Coins Strafe.`
             });
         } catch {}
+        // Penalty aus DB löschen – aktiviert die nächste gequeuete Penalty
+        try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+        shownPenaltyIds.delete(ev.id);
     }
 
     function showAckModal(msg) {
@@ -2582,15 +2589,21 @@
             const events = await api('GET', `/player-events/${encodeURIComponent(state.currentPlayer)}`);
             for (const ev of events) {
                 if (ev.type === 'task_ack') {
-                    // Bestätigung für den Auftraggeber
+                    // Bestätigung für den Auftraggeber – sofort löschen
                     showAckModal(ev.message);
                     if (Notification.permission === 'granted') new Notification('✅ Bestätigt', { body: ev.message });
+                    if (getNotifPref('sound')) playSound('challenge');
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                 } else {
-                    showTaskModal(ev);
-                    if (Notification.permission === 'granted') new Notification('🎮 Gameparty', { body: ev.message });
+                    // Penalty oder andere Task – nur einmal als Modal anzeigen
+                    // Löschen passiert erst wenn der Spieler bestätigt (im Modal)
+                    if (!shownPenaltyIds.has(ev.id)) {
+                        shownPenaltyIds.add(ev.id);
+                        showTaskModal(ev);
+                        if (Notification.permission === 'granted') new Notification('🎮 Gameparty', { body: ev.message });
+                        if (getNotifPref('sound')) playSound('challenge');
+                    }
                 }
-                if (getNotifPref('sound')) playSound('challenge');
-                try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
             }
         } catch (e) { /* ignorieren */ }
         try {
@@ -2637,7 +2650,59 @@
             case 'session': renderSession(); break;
             case 'shop': renderShop(); break;
             case 'challenges': renderChallenges(); break;
+            case 'activities': renderActivities(); break;
         }
+    }
+
+    async function renderActivities() {
+        if (!state.currentPlayer) return;
+        const container = $('#view-activities');
+        if (!container) return;
+
+        let data;
+        try {
+            data = await api('GET', `/activities/${encodeURIComponent(state.currentPlayer)}`);
+        } catch (e) {
+            container.innerHTML = `<div class="card"><p class="text-muted">${t('error_loading')}</p></div>`;
+            return;
+        }
+
+        const { incoming, outgoing } = data;
+        const PENALTY_ICONS = { force_play: '🎮', drink_order: '🍺' };
+
+        function penaltyCard(ev, isIncoming) {
+            const icon = PENALTY_ICONS[ev.type] || '⚡';
+            const statusLabel = ev.status === 'active' ? t('activities_status_active') : t('activities_status_queued');
+            const statusClass = ev.status === 'active' ? 'status-active' : 'status-queued';
+            const who = isIncoming
+                ? (ev.from_player ? `<span class="text-muted">${t('activities_from', ev.from_player)}</span>` : '')
+                : `<span class="text-muted">${t('activities_to', ev.target)}</span>`;
+            const time = new Date(ev.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `
+                <div class="activity-item ${statusClass}">
+                    <span class="activity-icon">${icon}</span>
+                    <div class="activity-body">
+                        <div class="activity-msg">${ev.message}</div>
+                        <div class="activity-meta">${who} · ${time}</div>
+                    </div>
+                    <span class="activity-status">${statusLabel}</span>
+                </div>`;
+        }
+
+        container.innerHTML = `
+            <div class="view-header"><h2>${t('activities_title')}</h2></div>
+            <div class="card mb-2">
+                <div class="card-title">📥 ${t('activities_incoming')}</div>
+                ${incoming.length === 0
+                    ? `<p class="text-muted">${t('activities_empty_incoming')}</p>`
+                    : incoming.map(ev => penaltyCard(ev, true)).join('')}
+            </div>
+            <div class="card">
+                <div class="card-title">📤 ${t('activities_outgoing')}</div>
+                ${outgoing.length === 0
+                    ? `<p class="text-muted">${t('activities_empty_outgoing')}</p>`
+                    : outgoing.map(ev => penaltyCard(ev, false)).join('')}
+            </div>`;
     }
 
     function startChallengePoll() {
@@ -2676,6 +2741,7 @@
     function logout() {
         stopChallengePoll();
         notifiedChallengeIds.clear();
+        shownPenaltyIds.clear();
         pendingNotifications.length = 0;
         renderNotifPanel();
         state.currentPlayer = null;
@@ -2772,6 +2838,7 @@
             localStorage.setItem(LOCAL_KEYS.PLAYER, JSON.stringify(state.currentPlayer));
             localStorage.setItem(LOCAL_KEYS.ROLE, JSON.stringify(state.role));
             notifiedChallengeIds.clear();
+            shownPenaltyIds.clear();
             startChallengePoll();
 
             const overlay = $('#modal-overlay');

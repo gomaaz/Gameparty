@@ -11,6 +11,18 @@ const TRANSLATIONS = {
         nav_session: 'Session',
         nav_shop: 'Shop',
         nav_duels: 'Duels',
+        nav_activities: 'Activities',
+
+        // --- Activities ---
+        activities_title: 'Activities',
+        activities_incoming: 'Incoming Penalties',
+        activities_outgoing: 'Sent Penalties',
+        activities_empty_incoming: 'No penalties against you.',
+        activities_empty_outgoing: 'You have not sent any penalties.',
+        activities_status_active: 'Active',
+        activities_status_queued: 'Queued',
+        activities_from: 'from {0}',
+        activities_to: 'to {0}',
 
         // --- Header ---
         header_login: 'Log In',
@@ -330,6 +342,18 @@ const TRANSLATIONS = {
         nav_session: 'Session',
         nav_shop: 'Shop',
         nav_duels: 'Duelle',
+        nav_activities: 'Aktivitäten',
+
+        // --- Activities ---
+        activities_title: 'Aktivitäten',
+        activities_incoming: 'Eingehende Penalties',
+        activities_outgoing: 'Gesendete Penalties',
+        activities_empty_incoming: 'Keine Penalties gegen dich.',
+        activities_empty_outgoing: 'Du hast noch keine Penalties gesendet.',
+        activities_status_active: 'Aktiv',
+        activities_status_queued: 'In der Warteschlange',
+        activities_from: 'von {0}',
+        activities_to: 'an {0}',
 
         // --- Header ---
         header_login: 'Einloggen',
@@ -673,6 +697,7 @@ function updateNavLabels() {
         session: t('nav_session'),
         shop: t('nav_shop'),
         challenges: t('nav_duels'),
+        activities: t('nav_activities'),
     };
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
         const span = btn.querySelector('span:last-child');
