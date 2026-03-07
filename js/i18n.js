@@ -23,6 +23,7 @@ const TRANSLATIONS = {
         activities_status_queued: 'Queued',
         activities_from: 'from {0}',
         activities_to: 'to {0}',
+        activities_mark_done: 'Mark as done',
         error_loading: 'Error loading data.',
 
         // --- Header ---
@@ -355,6 +356,7 @@ const TRANSLATIONS = {
         activities_status_queued: 'In der Warteschlange',
         activities_from: 'von {0}',
         activities_to: 'an {0}',
+        activities_mark_done: 'Als erledigt markieren',
         error_loading: 'Fehler beim Laden.',
 
         // --- Header ---

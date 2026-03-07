@@ -2438,3 +2438,17 @@ body {
     color: #ff9800;
     border: 1px solid rgba(255,152,0,0.3);
 }
+.activity-done-btn {
+    margin-top: 0.4rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(0,230,118,0.12);
+    color: var(--accent-green);
+    border: 1px solid var(--accent-green-dim);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.activity-done-btn:hover { background: rgba(0,230,118,0.25); }
+.activity-done-btn:disabled { opacity: 0.4; cursor: not-allowed; }

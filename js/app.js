@@ -2682,12 +2682,16 @@
                 ? (ev.from_player ? `<span class="text-muted">${t('activities_from', ev.from_player)}</span>` : '')
                 : `<span class="text-muted">${t('activities_to', ev.target)}</span>`;
             const time = new Date(ev.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const doneBtn = (isIncoming && ev.status === 'active')
+                ? `<button class="activity-done-btn" data-id="${ev.id}" data-from="${ev.from_player || ''}" data-type="${ev.type}">${t('activities_mark_done')}</button>`
+                : '';
             return `
                 <div class="activity-item ${statusClass}">
                     <span class="activity-icon">${icon}</span>
                     <div class="activity-body">
                         <div class="activity-msg">${ev.message}</div>
                         <div class="activity-meta">${who} · ${time}</div>
+                        ${doneBtn}
                     </div>
                     <span class="activity-status">${statusLabel}</span>
                 </div>`;
@@ -2707,6 +2711,24 @@
                     ? `<p class="text-muted">${t('activities_empty_outgoing')}</p>`
                     : outgoing.map(ev => penaltyCard(ev, false)).join('')}
             </div>`;
+
+        container.querySelectorAll('.activity-done-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                const { id, from: fromPlayer, type } = btn.dataset;
+                const ackMessages = {
+                    drink_order: `🍺 ${state.currentPlayer} hat getrunken!`,
+                    force_play: `🎮 ${state.currentPlayer} spielt mit!`,
+                };
+                const ackMsg = ackMessages[type] || `✅ ${state.currentPlayer} hat die Aufgabe erledigt!`;
+                try {
+                    if (fromPlayer) await api('POST', '/player-events', { target: fromPlayer, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
+                } catch {}
+                try { await api('DELETE', `/player-events/${id}`); } catch {}
+                shownPenaltyIds.delete(Number(id));
+                renderActivities();
+            });
+        });
     }
 
     function startChallengePoll() {
