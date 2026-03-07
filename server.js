@@ -105,6 +105,9 @@ try { db.prepare("ALTER TABLE player_events ADD COLUMN status TEXT DEFAULT 'acti
 // Bestehende Eintraege auf active setzen (falls noch nicht gesetzt)
 try { db.prepare("UPDATE player_events SET status = 'active' WHERE status IS NULL").run(); } catch {}
 
+// ---- Migration: ip Feld in users (fuer LAN-IP-Verwaltung) ----
+try { db.prepare("ALTER TABLE users ADD COLUMN ip TEXT DEFAULT ''").run(); } catch {}
+
 // ---- Migration: Rename steamRating to previewUrl ----
 try {
     db.exec('ALTER TABLE games RENAME COLUMN steamRating TO previewUrl');
@@ -618,6 +621,14 @@ app.put('/api/users/:name', (req, res) => {
 // DELETE /api/users/:name
 app.delete('/api/users/:name', (req, res) => {
     db.prepare('DELETE FROM users WHERE name = ?').run(req.params.name);
+    res.json({ success: true });
+});
+
+// PUT /api/users/:name/ip
+app.put('/api/users/:name/ip', (req, res) => {
+    const { ip } = req.body;
+    if (ip === undefined) return res.status(400).json({ error: 'ip erforderlich' });
+    db.prepare('UPDATE users SET ip = ? WHERE name = ?').run(ip, req.params.name);
     res.json({ success: true });
 });
 

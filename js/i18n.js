@@ -13,6 +13,12 @@ const TRANSLATIONS = {
         nav_duels: 'Duels',
         nav_activities: 'Activities',
         admin_panel_title: 'Admin Settings',
+        profile_ip_title: 'LAN IP Address',
+        profile_ip_desc: 'Your PC\'s IP address is shown to other players when you create a room.',
+        profile_ip_placeholder: 'e.g. 192.168.1.10',
+        btn_save_ip: 'Save',
+        ip_saved: 'IP address saved.',
+        room_ip_label: 'Server IP',
 
         // --- Activities ---
         activities_title: 'Activities',
@@ -347,6 +353,12 @@ const TRANSLATIONS = {
         nav_duels: 'Duelle',
         nav_activities: 'Aktivitäten',
         admin_panel_title: 'Admin-Einstellungen',
+        profile_ip_title: 'LAN-IP-Adresse',
+        profile_ip_desc: 'Deine PC-IP wird anderen Spielern angezeigt, wenn du einen Raum erstellst.',
+        profile_ip_placeholder: 'z.B. 192.168.1.10',
+        btn_save_ip: 'Speichern',
+        ip_saved: 'IP-Adresse gespeichert.',
+        room_ip_label: 'Server-IP',
 
         // --- Activities ---
         activities_title: 'Aktivitäten',

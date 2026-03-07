@@ -2525,3 +2525,28 @@ body {
 }
 .activity-done-btn:hover { background: rgba(0,230,118,0.25); }
 .activity-done-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---- Game Create-Room Button ---- */
+.game-create-room-btn {
+    background: rgba(102,153,255,0.12);
+    color: #6699ff;
+    border: 1px solid rgba(102,153,255,0.3);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    padding: 0.25rem 0.45rem;
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+.game-create-room-btn:hover { background: rgba(102,153,255,0.25); }
+
+/* ---- Session IP in room card ---- */
+.session-ip {
+    font-family: monospace;
+    font-size: 0.82rem;
+    color: var(--accent-gold);
+    background: rgba(255,215,0,0.08);
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+    cursor: default;
+}

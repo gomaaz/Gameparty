@@ -281,13 +281,15 @@
         const container = $('#view-dashboard');
 
         try {
-            const [coinsData, starsData, sessionsData, proposalsData, liveSessionsData] = await Promise.all([
+            const [coinsData, starsData, sessionsData, proposalsData, liveSessionsData, usersData] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
                 api('GET', '/sessions'),
                 api('GET', '/proposals'),
-                api('GET', '/live-sessions')
+                api('GET', '/live-sessions'),
+                api('GET', '/users')
             ]);
+            const userIpMap = Object.fromEntries((usersData || []).map(u => [u.name, u.ip || '']));
             state.coins = coinsData;
             state.stars = starsData;
             const sessions = sessionsData;
@@ -414,7 +416,7 @@
                                 <span class="live-session-game">${s.game}</span>
                                 ${statusBadge}
                             </div>
-                            <div class="live-session-meta">${t('session_group_leader')} ${s.leader}</div>
+                            <div class="live-session-meta">${t('session_group_leader')} ${s.leader}${userIpMap[s.leader] ? ` · <span class="session-ip" title="${t('room_ip_label')}">${userIpMap[s.leader]}</span>` : ''}</div>
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>`;
@@ -808,6 +810,20 @@
                 if (game) showEditGameModal(game);
                 return;
             }
+
+            const createRoomBtn = e.target.closest('.game-create-room-btn');
+            if (createRoomBtn) {
+                e.stopPropagation();
+                const gameName = createRoomBtn.dataset.game;
+                try {
+                    await api('POST', '/live-sessions', { game: gameName, leader: state.currentPlayer });
+                    showToast(t('room_created', gameName), 'success');
+                    navigateTo('dashboard');
+                } catch (err) {
+                    showToast(t('room_error'), 'error');
+                }
+                return;
+            }
         });
 
         list.addEventListener('change', async (e) => {
@@ -1051,6 +1067,8 @@
                     <button class="game-action-btn delete game-delete-btn" data-game="${g.name}" title="Loeschen">&#x2716;</button>
                 </div>` : '';
 
+            const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '';
+
             const coinsTag = g.sessionCoins ? `<span class="game-coins-tag">🪙${g.sessionCoins}</span>` : '';
 
             const checkbox = admin ? `<input type="checkbox" class="game-checkbox" data-game="${g.name}" ${selectedGames.has(g.name) ? 'checked' : ''}>` : '';
@@ -1074,6 +1092,7 @@
                     ${interestBtn}
                     ${adminCoins}
                     ${adminBtns}
+                    ${createRoomBtn}
                 </div>`;
         }).join('');
 
@@ -1339,13 +1358,15 @@
 
         try {
             const player = state.currentPlayer;
-            const [coinsData, starsData, history, tokens, sessions] = await Promise.all([
+            const [coinsData, starsData, history, tokens, sessions, allUsers] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
                 api('GET', `/history/${encodeURIComponent(player)}`),
                 api('GET', `/tokens/${encodeURIComponent(player)}`),
-                api('GET', '/sessions')
+                api('GET', '/sessions'),
+                api('GET', '/users')
             ]);
+            const currentUserIp = (allUsers.find(u => u.name === player) || {}).ip || '';
             state.coins = coinsData;
             state.stars = starsData;
             const coins = coinsData[player] || 0;
@@ -1453,6 +1474,14 @@
                         </div>` : ''}
                     </div>
                 </div>
+                <div class="card">
+                    <div class="card-title">🖥️ ${t('profile_ip_title')}</div>
+                    <p class="text-muted text-sm" style="margin-bottom:0.5rem">${t('profile_ip_desc')}</p>
+                    <div class="admin-coins-form">
+                        <input type="text" id="profile-ip-input" placeholder="${t('profile_ip_placeholder')}" value="${currentUserIp}">
+                        <button class="btn-admin-coins" id="btn-save-ip">${t('btn_save_ip')}</button>
+                    </div>
+                </div>
             `;
 
             // Token einloesen
@@ -1542,6 +1571,19 @@
                     new Notification(t('notif_test_title'), {
                         body: t('notif_test_body', player)
                     });
+                });
+            }
+
+            // Save IP
+            const ipInput = $('#profile-ip-input');
+            const saveIpBtn = $('#btn-save-ip');
+            if (ipInput && saveIpBtn) {
+                saveIpBtn.addEventListener('click', async () => {
+                    const ip = ipInput.value.trim();
+                    try {
+                        await api('PUT', `/users/${encodeURIComponent(player)}/ip`, { ip });
+                        showToast(t('ip_saved'), 'success');
+                    } catch (e2) { console.error(e2); }
                 });
             }
 
