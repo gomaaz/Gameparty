@@ -261,6 +261,7 @@
             case 'session': renderSession(); break;
             case 'shop': renderShop(); break;
             case 'challenges': renderChallenges(); break;
+            case 'activities': renderActivities(); break;
         }
     }
 
@@ -3019,7 +3020,10 @@
         updateNavLabels();
 
         // Header player selection + logout
-        $('#header-player-btn').addEventListener('click', showLoginModal);
+        $('#header-player-btn').addEventListener('click', () => {
+            if (state.currentPlayer) navigateTo('profile');
+            else showLoginModal();
+        });
         $('#header-logout-btn').addEventListener('click', logout);
 
         // Notification bell toggle
@@ -3051,7 +3055,8 @@
         updateHeader();
         updateNavVisibility();
         const savedView = localStorage.getItem(LOCAL_KEYS.VIEW) || 'dashboard';
-        navigateTo(savedView);
+        // Profile hat keinen Nav-Tab mehr – Fallback auf dashboard
+        navigateTo(savedView === 'profile' ? 'dashboard' : savedView);
 
         if (state.currentPlayer) {
             startChallengePoll();

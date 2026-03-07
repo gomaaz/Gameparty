@@ -695,7 +695,6 @@ function updateNavLabels() {
     const map = {
         dashboard: t('nav_home'),
         matcher: t('nav_games'),
-        profile: t('nav_profile'),
         session: t('nav_session'),
         shop: t('nav_shop'),
         challenges: t('nav_duels'),
