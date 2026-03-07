@@ -1,5 +1,8 @@
 # 🎮 Gameparty
 
+[![Docker Hub](https://img.shields.io/docker/pulls/gomaaz/gameparty?logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/gomaaz/gameparty)
+[![GitHub](https://img.shields.io/badge/GitHub-gomaaz%2FGameparty-181717?logo=github)](https://github.com/gomaaz/Gameparty)
+
 > **Disclaimer:** This project is 100% vibe-coded. It was built for fun, at a LAN party, for friends — not for production. No guarantees of any kind. The author takes no responsibility for any damage, data loss, bugs, or chaos of any sort that may result from using this software. Use at your own risk. Have fun. 🤙
 
 ---
