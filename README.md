@@ -16,6 +16,23 @@ It's not about winning. It's about getting everyone off their corner of the couc
 
 ---
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="screenshots/2026-03-07%2018-23-45.png" width="160"/><br/><sub>Home &amp; Leaderboard</sub></td>
+    <td align="center"><img src="screenshots/2026-03-07%2018-23-56.png" width="160"/><br/><sub>Duels</sub></td>
+    <td align="center"><img src="screenshots/2026-03-07%2018-24-05.png" width="160"/><br/><sub>Shop</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/2026-03-07%2018-24-24.png" width="160"/><br/><sub>Game List</sub></td>
+    <td align="center"><img src="screenshots/2026-03-07%2018-24-46.png" width="160"/><br/><sub>Game Library</sub></td>
+    <td></td>
+  </tr>
+</table>
+
+---
+
 ## Features
 
 ### Coin System
