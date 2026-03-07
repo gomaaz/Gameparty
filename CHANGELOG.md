@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.8 (2026-03-08)
+- fix: make btn-admin-coins work outside admin-coins-form
+
 ## v2.3.7 (2026-03-08)
 - fix: filter attendees to existing users only, cleanup orphaned attendees on startup
 

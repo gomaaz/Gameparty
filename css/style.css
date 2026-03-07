@@ -1675,6 +1675,29 @@ body {
     border-color: var(--accent-gold);
 }
 
+.btn-admin-coins {
+    background: linear-gradient(135deg, var(--accent-gold), #ffaa00);
+    color: #000;
+    border: none;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-admin-coins:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glow-gold);
+}
+
+.btn-admin-coins:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .admin-coins-form .btn-admin-coins {
     background: linear-gradient(135deg, var(--accent-gold), #ffaa00);
     color: #000;
