@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.2 (2026-03-07)
+- docs: update README with motivation, Docker section, english-only commits
+
 ## v2.3.1 (2026-03-07)
 - feat: add Docker support (Dockerfile, docker-compose, .dockerignore)
 
