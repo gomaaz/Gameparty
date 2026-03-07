@@ -2595,7 +2595,7 @@
                 if (ev.type === 'task_ack') {
                     // Bestätigung für den Auftraggeber – sofort löschen
                     showAckModal(ev.message);
-                    if (Notification.permission === 'granted') new Notification('✅ Bestätigt', { body: ev.message });
+                    if (getNotifPref('visual') && Notification.permission === 'granted') new Notification('✅ Bestätigt', { body: ev.message });
                     if (getNotifPref('sound')) playSound('challenge');
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                 } else {
@@ -2604,7 +2604,7 @@
                     if (!shownPenaltyIds.has(ev.id)) {
                         shownPenaltyIds.add(ev.id);
                         showTaskModal(ev);
-                        if (Notification.permission === 'granted') new Notification('🎮 Gameparty', { body: ev.message });
+                        if (getNotifPref('visual') && Notification.permission === 'granted') new Notification('🎮 Gameparty', { body: ev.message });
                         if (getNotifPref('sound')) playSound('challenge');
                     }
                 }
