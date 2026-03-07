@@ -23,6 +23,7 @@
     let challengePollInterval = null;
     let viewRefreshInterval = null;
     let sseSource = null;
+    let activeTaskTimer = null; // Globaler Timer fuer showTaskModal – verhindert doppelte Timer
     const notifiedChallengeIds = new Set();
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
@@ -2055,11 +2056,13 @@
     }
 
     function showTaskModal(ev) {
+        // Bestehenden Timer stoppen bevor ein neues Modal geöffnet wird
+        if (activeTaskTimer) { clearInterval(activeTaskTimer); activeTaskTimer = null; }
+
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
         const item = CONFIG.SHOP_ITEMS.find(i => i.id === ev.type);
         const hasTimer = !!(ev.deadline);
-        let timerInterval = null;
 
         function renderTimer(remainingMs) {
             const sec = Math.max(0, Math.ceil(remainingMs / 1000));
@@ -2083,15 +2086,15 @@
         overlay.classList.add('show');
 
         if (hasTimer) {
-            timerInterval = setInterval(() => {
+            activeTaskTimer = setInterval(() => {
                 const rem = ev.deadline - Date.now();
                 if (rem <= 0) {
-                    clearInterval(timerInterval);
+                    clearInterval(activeTaskTimer); activeTaskTimer = null;
                     applyPenalty(ev, item);
                     return;
                 }
                 const el = $('#task-timer');
-                if (!el) { clearInterval(timerInterval); return; }
+                if (!el) { clearInterval(activeTaskTimer); activeTaskTimer = null; return; }
                 const sec = Math.ceil(rem / 1000), m = Math.floor(sec/60), s = sec%60;
                 el.textContent = `⏱️ ${m}:${s.toString().padStart(2,'0')}`;
                 el.style.color = sec < 60 ? 'var(--accent-red)' : sec < 120 ? '#ff9800' : 'var(--text-secondary)';
@@ -2099,7 +2102,7 @@
         }
 
         $('#task-confirm-btn').addEventListener('click', async () => {
-            if (timerInterval) clearInterval(timerInterval);
+            if (activeTaskTimer) { clearInterval(activeTaskTimer); activeTaskTimer = null; }
             overlay.classList.remove('show');
             const ackMessages = {
                 drink_order: `🍺 ${state.currentPlayer} hat getrunken!`,
@@ -2727,6 +2730,7 @@
         if (challengePollInterval) { clearInterval(challengePollInterval); challengePollInterval = null; }
         if (viewRefreshInterval) { clearInterval(viewRefreshInterval); viewRefreshInterval = null; }
         if (sseSource) { sseSource.close(); sseSource = null; }
+        if (activeTaskTimer) { clearInterval(activeTaskTimer); activeTaskTimer = null; }
     }
 
     async function updateHeaderCoins() {
