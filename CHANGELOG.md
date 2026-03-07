@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.4.0 (2026-03-08)
+- fix: Save-Button "Connection & Accounts" globales Styling (btn-admin-coins außerhalb admin-coins-form)
+
+## v2.3.9 (2026-03-08)
+- feat: Profilseite umgebaut – neue "Verbindung & Accounts"-Card (LAN-IP, Steam, Ubisoft Connect, Battle.net)
+- feat: Session-Player-Chips zeigen Icons bei vorhandenen Account-Daten + Hover/Tap-Tooltip
+- feat: App-Version im Admin-Panel angezeigt (subtil, aus package.json)
+- fix: package.json in Docker Runtime-Stage kopiert (server.js require fix)
+- ci: Docker-Tags und GitHub-Tags synchronisiert (nur semver, kein raw-Tag mehr)
+- ci: Release-Script (`npm run release`) für automatisches Version-Bump + Tag + Push
+- docs: Docker Hub Badge + GitHub-Link im README
+- ci: README wird automatisch zu Docker Hub gepusht (continue-on-error)
+
 ## v2.3.8 (2026-03-08)
 - fix: make btn-admin-coins work outside admin-coins-form
 
