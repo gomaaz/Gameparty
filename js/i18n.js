@@ -709,5 +709,5 @@ function updateNavLabels() {
 
 function updateLangBtn() {
     const btn = document.getElementById('lang-toggle-btn');
-    if (btn) btn.textContent = _lang === 'en' ? '🇩🇪' : '🇬🇧';
+    if (btn) btn.textContent = _lang === 'en' ? '🇬🇧' : '🇩🇪';
 }
