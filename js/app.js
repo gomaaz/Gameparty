@@ -15,7 +15,8 @@
         coins: {},
         stars: {},
         soundEnabled: false,
-        version: ''
+        version: '',
+        allUsers: []
     };
 
     // ---- Bulk Select State ----
@@ -198,6 +199,35 @@
 
     function getMatchingPlayers(game) {
         return state.attendees.filter(p => game.players && game.players[p]);
+    }
+
+    function getUserInfo(playerName) {
+        return state.allUsers.find(u => u.name === playerName) || {};
+    }
+
+    function renderPlayerChip(playerName) {
+        const info = getUserInfo(playerName);
+        const hasData = info.ip || info.steam || info.ubisoft || info.battlenet;
+        const icons = [
+            info.ip ? '🖥️' : '',
+            info.steam ? '<svg style="width:12px;height:12px;vertical-align:middle;fill:currentColor" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm0 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2zm-1.4 5.3L7.2 12l3.4 4.7L8.2 18l-4.8-6 4.8-6 2.4 1.3zm2.8 0l2.4-1.3 4.8 6-4.8 6-2.4-1.3 3.4-4.7-3.4-4.7z"/></svg>' : '',
+            info.ubisoft ? '🎮' : '',
+            info.battlenet ? '⚔️' : '',
+        ].filter(Boolean).join('');
+
+        const tooltipLines = [
+            info.ip ? `🖥️ ${info.ip}` : '',
+            info.steam ? `Steam: ${info.steam}` : '',
+            info.ubisoft ? `Ubisoft: ${info.ubisoft}` : '',
+            info.battlenet ? `Battle.net: ${info.battlenet}` : '',
+        ].filter(Boolean).join('<br>');
+
+        if (!hasData) return `<span class="player-chip">${playerName}</span>`;
+
+        return `<span class="player-chip player-chip-info" data-player="${playerName}" data-tooltip="${tooltipLines.replace(/"/g, '&quot;')}">
+            ${playerName}
+            <span class="player-chip-icons">${icons}</span>
+        </span>`;
     }
 
     function getAllGenres() {
@@ -1368,6 +1398,7 @@
                 api('GET', '/users')
             ]);
             const currentUserIp = (allUsers.find(u => u.name === player) || {}).ip || '';
+            const currentUser = allUsers.find(u => u.name === player) || {};
             state.coins = coinsData;
             state.stars = starsData;
             const coins = coinsData[player] || 0;
@@ -1441,6 +1472,20 @@
                         </div>
                     </div>
                 </div>
+                <div class="card">
+                    <div class="card-title">🔗 ${t('profile_connection_title')}</div>
+                    <div class="accounts-grid">
+                        <label class="accounts-label">🖥️ LAN-IP</label>
+                        <input type="text" id="profile-ip-input" class="accounts-input" placeholder="${t('profile_ip_placeholder')}" value="${currentUserIp}">
+                        <label class="accounts-label"><svg style="width:14px;height:14px;vertical-align:middle;fill:#c6d4df" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm0 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2zm-1.4 5.3L7.2 12l3.4 4.7L8.2 18l-4.8-6 4.8-6 2.4 1.3zm2.8 0l2.4-1.3 4.8 6-4.8 6-2.4-1.3 3.4-4.7-3.4-4.7z"/></svg> ${t('profile_steam')}</label>
+                        <input type="text" id="profile-steam-input" class="accounts-input" placeholder="${t('profile_accounts_placeholder_steam')}" value="${(currentUser && currentUser.steam) || ''}">
+                        <label class="accounts-label">🎮 ${t('profile_ubisoft')}</label>
+                        <input type="text" id="profile-ubisoft-input" class="accounts-input" placeholder="${t('profile_accounts_placeholder_ubisoft')}" value="${(currentUser && currentUser.ubisoft) || ''}">
+                        <label class="accounts-label">⚔️ ${t('profile_battlenet')}</label>
+                        <input type="text" id="profile-battlenet-input" class="accounts-input" placeholder="${t('profile_accounts_placeholder_battlenet')}" value="${(currentUser && currentUser.battlenet) || ''}">
+                    </div>
+                    <button class="btn-admin-coins" id="btn-save-accounts" style="width:100%;margin-top:0.75rem">${t('btn_save_accounts')}</button>
+                </div>
                 ${tokensHTML}
                 <div class="card">
                     <div class="card-title">${t('change_pin')}</div>
@@ -1473,14 +1518,6 @@
                             <span>${t('notif_test')}</span>
                             <button class="btn-secondary" id="notif-test-btn">🔔 Testen</button>
                         </div>` : ''}
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-title">🖥️ ${t('profile_ip_title')}</div>
-                    <p class="text-muted text-sm" style="margin-bottom:0.5rem">${t('profile_ip_desc')}</p>
-                    <div class="admin-coins-form">
-                        <input type="text" id="profile-ip-input" placeholder="${t('profile_ip_placeholder')}" value="${currentUserIp}">
-                        <button class="btn-admin-coins" id="btn-save-ip">${t('btn_save_ip')}</button>
                     </div>
                 </div>
             `;
@@ -1575,14 +1612,22 @@
                 });
             }
 
-            // Save IP
-            const ipInput = $('#profile-ip-input');
-            const saveIpBtn = $('#btn-save-ip');
-            if (ipInput && saveIpBtn) {
-                saveIpBtn.addEventListener('click', async () => {
-                    const ip = ipInput.value.trim();
+            // Save Accounts (IP + Steam + Ubisoft + Battle.net)
+            const saveAccountsBtn = $('#btn-save-accounts');
+            if (saveAccountsBtn) {
+                saveAccountsBtn.addEventListener('click', async () => {
+                    const ip = ($('#profile-ip-input') || {}).value?.trim() || '';
+                    const steam = ($('#profile-steam-input') || {}).value?.trim() || '';
+                    const ubisoft = ($('#profile-ubisoft-input') || {}).value?.trim() || '';
+                    const battlenet = ($('#profile-battlenet-input') || {}).value?.trim() || '';
                     try {
-                        await api('PUT', `/users/${encodeURIComponent(player)}/ip`, { ip });
+                        await Promise.all([
+                            api('PUT', `/users/${encodeURIComponent(player)}/ip`, { ip }),
+                            api('PUT', `/users/${encodeURIComponent(player)}/accounts`, { steam, ubisoft, battlenet }),
+                        ]);
+                        // Update state.allUsers lokal
+                        const idx = state.allUsers.findIndex(u => u.name === player);
+                        if (idx >= 0) Object.assign(state.allUsers[idx], { ip, steam, ubisoft, battlenet });
                         showToast(t('ip_saved'), 'success');
                     } catch (e2) { console.error(e2); }
                 });
@@ -3081,6 +3126,7 @@
             state.games = data.games;
             state.players = data.players;
             state.attendees = data.attendees;
+            state.allUsers = data.users || [];
             state.version = data.version || '';
             state.coins = data.coins;
             state.stars = data.stars || {};
@@ -3174,5 +3220,39 @@
     } else {
         init();
     }
+
+    // ---- Player Info Tooltip ----
+    let activeTooltip = null;
+    function showPlayerTooltip(chip) {
+        hidePlayerTooltip();
+        const tooltip = chip.getAttribute('data-tooltip');
+        if (!tooltip) return;
+        const el = document.createElement('div');
+        el.className = 'player-info-tooltip';
+        el.innerHTML = tooltip;
+        document.body.appendChild(el);
+        activeTooltip = el;
+        const rect = chip.getBoundingClientRect();
+        const top = rect.top + window.scrollY - el.offsetHeight - 8;
+        const left = rect.left + window.scrollX + rect.width / 2 - el.offsetWidth / 2;
+        el.style.top = Math.max(8, top) + 'px';
+        el.style.left = Math.max(8, Math.min(left, window.innerWidth - el.offsetWidth - 8)) + 'px';
+        el.style.opacity = '1';
+    }
+    function hidePlayerTooltip() {
+        if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
+    }
+    document.addEventListener('mouseover', e => {
+        const chip = e.target.closest('.player-chip-info');
+        if (chip) showPlayerTooltip(chip);
+    });
+    document.addEventListener('mouseout', e => {
+        if (e.target.closest('.player-chip-info')) hidePlayerTooltip();
+    });
+    document.addEventListener('click', e => {
+        const chip = e.target.closest('.player-chip-info');
+        if (chip) { if (activeTooltip) hidePlayerTooltip(); else showPlayerTooltip(chip); return; }
+        hidePlayerTooltip();
+    });
 
 })();

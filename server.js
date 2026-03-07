@@ -109,6 +109,11 @@ try { db.prepare("UPDATE player_events SET status = 'active' WHERE status IS NUL
 // ---- Migration: ip Feld in users (fuer LAN-IP-Verwaltung) ----
 try { db.prepare("ALTER TABLE users ADD COLUMN ip TEXT DEFAULT ''").run(); } catch {}
 
+// Migration: Gaming account fields
+['steam', 'ubisoft', 'battlenet'].forEach(col => {
+    try { db.prepare(`ALTER TABLE users ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch {}
+});
+
 // ---- Migration: Rename steamRating to previewUrl ----
 try {
     db.exec('ALTER TABLE games RENAME COLUMN steamRating TO previewUrl');
@@ -339,7 +344,7 @@ function getAllGamesWithPlayers() {
 
 // GET /api/init - Load everything for initial state
 app.get('/api/init', (req, res) => {
-    const users = db.prepare('SELECT name, role FROM users').all();
+    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet FROM users').all();
     const games = getAllGamesWithPlayers();
     const coins = {};
     db.prepare('SELECT player, amount FROM coins').all().forEach(r => { coins[r.player] = r.amount; });
@@ -593,7 +598,7 @@ app.put('/api/attendees', (req, res) => {
 
 // GET /api/users
 app.get('/api/users', (req, res) => {
-    const users = db.prepare('SELECT name, role, ip FROM users').all();
+    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet FROM users').all();
     res.json(users);
 });
 
@@ -645,6 +650,17 @@ app.put('/api/users/:name/ip', (req, res) => {
     const { ip } = req.body;
     if (ip === undefined) return res.status(400).json({ error: 'ip erforderlich' });
     db.prepare('UPDATE users SET ip = ? WHERE name = ?').run(ip, req.params.name);
+    broadcast();
+    res.json({ success: true });
+});
+
+// PUT /api/users/:name/accounts
+app.put('/api/users/:name/accounts', (req, res) => {
+    const { steam, ubisoft, battlenet } = req.body;
+    const user = db.prepare('SELECT * FROM users WHERE name = ?').get(req.params.name);
+    if (!user) return res.status(404).json({ error: 'User nicht gefunden' });
+    db.prepare('UPDATE users SET steam = ?, ubisoft = ?, battlenet = ? WHERE name = ?')
+        .run(steam || '', ubisoft || '', battlenet || '', req.params.name);
     broadcast();
     res.json({ success: true });
 });

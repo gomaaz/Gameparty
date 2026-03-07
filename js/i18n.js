@@ -341,6 +341,17 @@ const TRANSLATIONS = {
         confirm_withdraw: 'Withdraw proposal?',
         confirm_delete_proposal: 'Delete proposal?',
         confirm_reject_proposal: 'Reject proposal?',
+
+        // --- Profile: Connection & Accounts ---
+        profile_connection_title: 'Connection & Accounts',
+        profile_steam: 'Steam',
+        profile_ubisoft: 'Ubisoft Connect',
+        profile_battlenet: 'Battle.net',
+        profile_accounts_placeholder_steam: 'Steam username',
+        profile_accounts_placeholder_ubisoft: 'Ubisoft username',
+        profile_accounts_placeholder_battlenet: 'Battle.net tag',
+        btn_save_accounts: 'Save',
+        player_info_popup_no_data: 'No data available',
     },
 
     de: {
@@ -681,6 +692,17 @@ const TRANSLATIONS = {
         confirm_withdraw: 'Vorschlag zurueckziehen?',
         confirm_delete_proposal: 'Vorschlag loeschen?',
         confirm_reject_proposal: 'Vorschlag ablehnen?',
+
+        // --- Profile: Verbindung & Accounts ---
+        profile_connection_title: 'Verbindung & Accounts',
+        profile_steam: 'Steam',
+        profile_ubisoft: 'Ubisoft Connect',
+        profile_battlenet: 'Battle.net',
+        profile_accounts_placeholder_steam: 'Steam-Nutzername',
+        profile_accounts_placeholder_ubisoft: 'Ubisoft-Nutzername',
+        profile_accounts_placeholder_battlenet: 'Battle.net-Tag',
+        btn_save_accounts: 'Speichern',
+        player_info_popup_no_data: 'Keine Daten vorhanden',
     }
 };
 

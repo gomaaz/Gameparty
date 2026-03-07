@@ -2550,3 +2550,68 @@ body {
     border-radius: 4px;
     cursor: default;
 }
+
+/* ---- Profile: Connection & Accounts ---- */
+.accounts-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+}
+.accounts-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.accounts-input {
+    background: var(--bg-input, #0f0f1a);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    width: 100%;
+}
+.accounts-input:focus {
+    outline: none;
+    border-color: var(--accent-purple);
+}
+
+/* ---- Player Chip with Info Icons ---- */
+.player-chip-info {
+    cursor: pointer;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.player-chip-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    font-size: 0.65rem;
+    opacity: 0.7;
+    line-height: 1;
+}
+
+/* ---- Player Info Tooltip ---- */
+.player-info-tooltip {
+    position: absolute;
+    z-index: 9999;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+    max-width: 220px;
+}
