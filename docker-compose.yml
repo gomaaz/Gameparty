@@ -12,6 +12,9 @@ services:
       - PORT=3000
       - DB_PATH=/data/gameparty.db
       - NODE_ENV=production
+      # Initial admin account (only used when the database is empty)
+      - SEED_ADMIN_NAME=admin
+      - SEED_ADMIN_PIN=1234
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]

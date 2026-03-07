@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.3 (2026-03-07)
+- feat: seed admin-only user via env vars for Docker deployments
+
 ## v2.3.2 (2026-03-07)
 - docs: update README with motivation, Docker section, english-only commits
 

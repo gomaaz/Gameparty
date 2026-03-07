@@ -134,21 +134,26 @@ try {
 function seedIfEmpty() {
     const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
     if (userCount === 0) {
-        console.log('Seeding users...');
+        console.log('Seeding initial users...');
         const insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role) VALUES (?, ?, ?)');
         const insertAttendee = db.prepare('INSERT OR IGNORE INTO attendees (player) VALUES (?)');
         const insertCoin = db.prepare('INSERT OR IGNORE INTO coins (player, amount) VALUES (?, 0)');
         const insertStar = db.prepare('INSERT OR IGNORE INTO stars (player, amount) VALUES (?, 0)');
 
-        const users = [
-            { name: 'Daniel', pin: '1234', role: 'admin' },
-            { name: 'Martin', pin: '1111', role: 'player' },
-            { name: 'Kevin', pin: '2222', role: 'player' },
-            { name: 'Peter', pin: '3333', role: 'player' },
-            { name: 'Julian', pin: '4444', role: 'player' },
-            { name: 'Lars', pin: '5555', role: 'player' },
-            { name: 'Wolf', pin: '6666', role: 'player' }
-        ];
+        const adminName = process.env.SEED_ADMIN_NAME;
+        const adminPin  = process.env.SEED_ADMIN_PIN;
+
+        const users = (adminName && adminPin)
+            ? [{ name: adminName, pin: adminPin, role: 'admin' }]
+            : [
+                { name: 'Daniel', pin: '1234', role: 'admin' },
+                { name: 'Martin', pin: '1111', role: 'player' },
+                { name: 'Kevin',  pin: '2222', role: 'player' },
+                { name: 'Peter',  pin: '3333', role: 'player' },
+                { name: 'Julian', pin: '4444', role: 'player' },
+                { name: 'Lars',   pin: '5555', role: 'player' },
+                { name: 'Wolf',   pin: '6666', role: 'player' }
+            ];
 
         const seedMany = db.transaction(() => {
             for (const u of users) {
