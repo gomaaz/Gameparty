@@ -5,6 +5,7 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const cors = require('cors');
 const path = require('path');
+const { version } = require('./package.json');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -341,7 +342,7 @@ app.get('/api/init', (req, res) => {
     db.prepare('SELECT key, value FROM settings').all().forEach(r => { settings[r.key] = r.value; });
     const players = users.map(u => u.name);
 
-    res.json({ users, games, coins, stars, attendees, settings, players });
+    res.json({ users, games, coins, stars, attendees, settings, players, version });
 });
 
 // POST /api/login

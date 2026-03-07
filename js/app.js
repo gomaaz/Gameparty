@@ -14,7 +14,8 @@
         players: [],
         coins: {},
         stars: {},
-        soundEnabled: false
+        soundEnabled: false,
+        version: ''
     };
 
     // ---- Bulk Select State ----
@@ -1849,6 +1850,8 @@
                     <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
                 </div>
 
+                <div style="text-align:center;margin-top:1rem;font-size:0.75rem;color:var(--text-secondary);opacity:0.5">v${state.version}</div>
+
             </div>`;
 
         $('#ap-close').addEventListener('click', closeAdminPanel);
@@ -3078,6 +3081,7 @@
             state.games = data.games;
             state.players = data.players;
             state.attendees = data.attendees;
+            state.version = data.version || '';
             state.coins = data.coins;
             state.stars = data.stars || {};
             state._usersCache = data.users;
