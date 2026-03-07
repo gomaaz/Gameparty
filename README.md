@@ -61,42 +61,36 @@ All clients update in real time via Server-Sent Events (SSE). No refresh needed 
 
 ## Quick Start
 
-### Option A — Docker (recommended)
+### Option A — Docker Hub (easiest)
 
-No setup required. Works on any machine with Docker installed.
+No git clone, no build. Just two commands.
 
 ```bash
-git clone https://github.com/gomaaz/Gameparty.git
-cd Gameparty
+curl -O https://raw.githubusercontent.com/gomaaz/Gameparty/main/docker-compose.yml
 docker compose up -d
 ```
 
-Open **http://localhost:3000** in your browser.
+The image is pulled from Docker Hub automatically. Open **http://localhost:3000** in your browser.
 All devices on the same network can connect via **http://\<HOST-IP\>:3000**.
 
-**Default login (first start with an empty database):**
+**Default login (first start with a fresh database):**
 | Field | Value |
 |---|---|
 | Username | `admin` |
 | PIN | `1234` |
 
 > The admin account is created automatically on first start. Log in, then add your players via the Admin panel.
-> Change the PIN after first login — or set `SEED_ADMIN_NAME` / `SEED_ADMIN_PIN` in `docker-compose.yml` before the first start.
+> You can change the default credentials before the first start by editing `SEED_ADMIN_NAME` / `SEED_ADMIN_PIN` in `docker-compose.yml`.
 
 > Data is persisted in a Docker named volume (`gameparty-data`) and survives container restarts and updates.
 
-**Update to a new version:**
+**Update to the latest version:**
 ```bash
-git pull
-docker compose up -d --build
+docker compose pull && docker compose up -d
 ```
 
 **Custom port (e.g. 8080):**
-```yaml
-# in docker-compose.yml, change:
-ports:
-  - "8080:3000"
-```
+Edit `docker-compose.yml` and change `"3000:3000"` to `"8080:3000"`.
 
 ---
 

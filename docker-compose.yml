@@ -1,12 +1,12 @@
 services:
   gameparty:
-    build: .
-    image: gameparty:latest
+    image: gomaaz/gameparty:latest   # pulled from Docker Hub automatically
+    # image: gameparty:local         # uncomment + run "docker build -t gameparty:local ." for local dev
     container_name: gameparty
     ports:
       - "3000:3000"
     volumes:
-      # SQLite-Datenbank persistent speichern
+      # SQLite database — persists across restarts and updates
       - gameparty-data:/data
     environment:
       - PORT=3000

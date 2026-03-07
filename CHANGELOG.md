@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.5 (2026-03-07)
+- feat: add GitHub Actions workflow for Docker Hub publishing
+
 ## v2.3.4 (2026-03-07)
 - docs: add vibe-coded disclaimer to README
 
