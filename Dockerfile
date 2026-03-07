@@ -24,6 +24,7 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # App-Quellcode (keine DB, keine dev-Dateien)
 COPY server.js ./
+COPY package.json ./
 COPY index.html ./
 COPY js/ ./js/
 COPY css/ ./css/
