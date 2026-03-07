@@ -43,7 +43,7 @@ app.get('/api/events', (req, res) => {
 });
 
 // ---- Database Setup ----
-const db = new Database(path.join(__dirname, 'gameparty.db'));
+const db = new Database(process.env.DB_PATH || path.join(__dirname, 'gameparty.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
@@ -579,7 +579,7 @@ app.put('/api/attendees', (req, res) => {
 
 // GET /api/users
 app.get('/api/users', (req, res) => {
-    const users = db.prepare('SELECT name, role FROM users').all();
+    const users = db.prepare('SELECT name, role, ip FROM users').all();
     res.json(users);
 });
 
@@ -629,6 +629,7 @@ app.put('/api/users/:name/ip', (req, res) => {
     const { ip } = req.body;
     if (ip === undefined) return res.status(400).json({ error: 'ip erforderlich' });
     db.prepare('UPDATE users SET ip = ? WHERE name = ?').run(ip, req.params.name);
+    broadcast();
     res.json({ success: true });
 });
 

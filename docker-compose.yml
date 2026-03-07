@@ -1,0 +1,25 @@
+services:
+  gameparty:
+    build: .
+    image: gameparty:latest
+    container_name: gameparty
+    ports:
+      - "3000:3000"
+    volumes:
+      # SQLite-Datenbank persistent speichern
+      - gameparty-data:/data
+    environment:
+      - PORT=3000
+      - DB_PATH=/data/gameparty.db
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  gameparty-data:
+    driver: local

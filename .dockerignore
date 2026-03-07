@@ -1,0 +1,20 @@
+# Dependencies (werden im Build neu installiert)
+node_modules/
+
+# Datenbank (wird zur Laufzeit via Volume gemounted)
+gameparty.db
+*.db-shm
+*.db-wal
+
+# Development & tooling
+.claude/
+scripts/
+backups/
+
+# Git
+.git/
+.gitignore
+
+# Docs & Meta
+CHANGELOG.md
+VERSION
