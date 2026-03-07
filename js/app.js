@@ -230,6 +230,17 @@
         </span>`;
     }
 
+    function renderLeaderIcons(leaderName) {
+        const info = getUserInfo(leaderName);
+        const icons = [];
+        if (info.ip)       icons.push(`<span class="leader-info-icon player-chip-info" data-tooltip="🖥️ LAN-IP<br>${info.ip}">🖥️</span>`);
+        if (info.steam)    icons.push(`<span class="leader-info-icon player-chip-info" data-tooltip="Steam<br>${info.steam}">🎮</span>`);
+        if (info.ubisoft)  icons.push(`<span class="leader-info-icon player-chip-info" data-tooltip="Ubisoft Connect<br>${info.ubisoft}">🕹️</span>`);
+        if (info.battlenet)icons.push(`<span class="leader-info-icon player-chip-info" data-tooltip="Battle.net<br>${info.battlenet}">⚔️</span>`);
+        if (!icons.length) return '';
+        return `<div class="leader-info-icons">${icons.join('')}</div>`;
+    }
+
     function getAllGenres() {
         const genres = new Set();
         state.games.forEach(g => {
@@ -447,7 +458,8 @@
                                 <span class="live-session-game">${s.game}</span>
                                 ${statusBadge}
                             </div>
-                            <div class="live-session-meta">${t('session_group_leader')} ${s.leader}${userIpMap[s.leader] ? ` · <span class="session-ip" title="${t('room_ip_label')}">${userIpMap[s.leader]}</span>` : ''}</div>
+                            <div class="live-session-meta">${t('session_group_leader')} ${s.leader}</div>
+                            ${renderLeaderIcons(s.leader)}
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>`;
@@ -1217,6 +1229,7 @@
                     <span class="status-badge ${p.status}">${statusLabels[p.status]}</span>
                 </div>
                 <div class="leader-badge">👑 ${p.leader}</div>
+                ${renderLeaderIcons(p.leader)}
                 ${messageHTML}
                 ${scheduleHTML}
                 ${coinStatusHTML}

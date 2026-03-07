@@ -2638,3 +2638,31 @@ body {
     white-space: nowrap;
     max-width: 220px;
 }
+
+/* ---- Session Card: Leader Info Icons ---- */
+.leader-info-icons {
+    display: flex;
+    gap: 0.35rem;
+    margin: 0.3rem 0 0.2rem 0;
+}
+
+.leader-info-icon {
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.15rem 0.35rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    transition: background 0.15s ease;
+    line-height: 1.4;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.leader-info-icon:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.leader-info-icon:active {
+    background: rgba(255, 255, 255, 0.18);
+}

@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.4.1 (2026-03-08)
+- feat: Leader-Info-Icons (IP, Steam, Ubisoft, Battle.net) in Session-Karten – Klick/Tap zeigt Popup mit Wert
+
 ## v2.4.0 (2026-03-08)
 - fix: Save-Button "Connection & Accounts" globales Styling (btn-admin-coins außerhalb admin-coins-form)
 
