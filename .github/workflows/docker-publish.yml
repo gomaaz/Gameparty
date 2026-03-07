@@ -26,6 +26,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Extract image name from docker-compose.yml
+        id: compose
+        run: |
+          IMAGE=$(grep -m1 '^\s*image:' docker-compose.yml | awk '{print $2}' | sed 's/:.*//')
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
       # Automatically generates tags:
       #   main branch  → latest
       #   v2.3.4       → 2.3.4  +  2.3  +  latest
@@ -33,7 +39,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: gomaaz/gameparty
+          images: ${{ steps.compose.outputs.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
