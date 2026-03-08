@@ -319,8 +319,10 @@ body {
     font-size: 1.1rem;
     color: var(--accent-gold);
 }
-.leaderboard-coin-symbol {
+.leaderboard-coin-symbol,
+.coin-symbol {
     font-size: 0.95rem;
+    filter: grayscale(1) brightness(1.6);
 }
 
 /* ---- Game Suggestion ---- */
@@ -2236,7 +2238,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     align-items: center;
     font-size: 0.85rem;
     letter-spacing: -0.05em;
-    color: var(--accent-purple);
+    filter: sepia(1) saturate(5) hue-rotate(5deg) brightness(1.1);
 }
 
 /* Profil Sterne */
