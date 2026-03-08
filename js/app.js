@@ -1390,16 +1390,32 @@
 
         container.querySelectorAll('.leader-day').forEach(sel => {
             sel.addEventListener('change', async () => {
+                const timeInp = container.querySelector(`.leader-time[data-id="${sel.dataset.id}"]`);
+                const day = sel.value;
+                const time = timeInp?.value || '00:00';
+                if (day && new Date(`${day}T${time}`) < new Date(Date.now() + 9 * 60 * 1000)) {
+                    showToast('Startzeit muss mind. 10 Minuten in der Zukunft liegen', 'error');
+                    sel.value = getNowPlus10().date;
+                    return;
+                }
                 try {
-                    await api('PUT', `/proposals/${sel.dataset.id}`, { scheduledDay: sel.value });
+                    await api('PUT', `/proposals/${sel.dataset.id}`, { scheduledDay: day });
                 } catch (e) { console.error(e); }
             });
         });
         container.querySelectorAll('.leader-time').forEach(inp => {
             inp.addEventListener('click', () => { try { inp.showPicker(); } catch(e) {} });
             inp.addEventListener('change', async () => {
+                const dayInp = container.querySelector(`.leader-day[data-id="${inp.dataset.id}"]`);
+                const day = dayInp?.value || getNowPlus10().date;
+                const time = inp.value;
+                if (time && new Date(`${day}T${time}`) < new Date(Date.now() + 9 * 60 * 1000)) {
+                    showToast('Startzeit muss mind. 10 Minuten in der Zukunft liegen', 'error');
+                    inp.value = getNowPlus10().time;
+                    return;
+                }
                 try {
-                    await api('PUT', `/proposals/${inp.dataset.id}`, { scheduledTime: inp.value });
+                    await api('PUT', `/proposals/${inp.dataset.id}`, { scheduledTime: time });
                 } catch (e) { console.error(e); }
             });
         });
