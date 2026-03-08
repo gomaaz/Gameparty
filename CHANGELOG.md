@@ -1,13 +1,11 @@
 # Changelog
 
-## v2.3.11 (2026-03-08)
+## v2.3.29 (2026-03-08)
 - chore: add missing change_language i18n key
-
-## v2.3.10 (2026-03-08)
 - style: fix admin badge CSS selector conflict
-
-## v2.3.9 (2026-03-08)
 - fix: three frontend issues - language toggle, logout button, player switch
+- fix: correct session approval endpoint from PUT /approve-coins to POST /approve
+- fix: re-render admin panel after attendees toggle for style update
 
 ## v2.3.27 (2026-03-08)
 - refactor: use createIconSvg() in session cards (renderPlayerChip, renderLeaderIcons) – unified icon pool
