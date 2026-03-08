@@ -1941,17 +1941,17 @@
                             </div>`;
                     }).join('')}
                     ${completedProposals.map(p => {
-                        const coins = p.coins || 0;
+                        const coins = p.pendingCoins || 0;
                         const playersList = p.players && Array.isArray(p.players) ? p.players : [];
                         return `
                             <div style="padding:0.5rem 0;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
-                                <div style="font-weight:600">${escapeHtml(p.title || 'Geplante Session')}</div>
-                                <div style="font-size:0.85rem;color:var(--text-secondary)">Planner: ${escapeHtml(p.planner)} · ${playersList.length} Spieler</div>
+                                <div style="font-weight:600">${p.game}</div>
+                                <div style="font-size:0.85rem;color:var(--text-secondary)">Leader: ${p.leader} · ${playersList.length} Spieler</div>
                                 <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin:0.3rem 0">
-                                    ${playersList.map(pl => `<span class="player-chip">${escapeHtml(pl)}</span>`).join('')}
+                                    ${playersList.map(pl => `<span class="player-chip">${pl}</span>`).join('')}
                                 </div>
-                                <input type="number" class="freigabe-coins-input proposal" data-pid="${p.id}" value="${coins}" min="0" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);width:60px;margin-right:0.5rem">
-                                <button class="btn-approve freigabe-approve-btn proposal" data-pid="${p.id}" style="padding:4px 8px;font-size:0.75rem">✓ Freigeben</button>
+                                <input type="number" class="freigabe-coins-input" data-pid="${p.id}" value="${coins}" min="0" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);width:60px;margin-right:0.5rem">
+                                <button class="btn-approve freigabe-approve-btn" data-pid="${p.id}" style="padding:4px 8px;font-size:0.75rem">✓ Freigeben</button>
                             </div>`;
                     }).join('')}
                 </div>`;
