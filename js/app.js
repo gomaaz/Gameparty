@@ -3623,7 +3623,7 @@
         modal.innerHTML = `
             <div class="modal-title">${playerName}</div>
             <div class="player-info-modal-rows">${rows}${empty}</div>
-            <button class="btn-secondary" id="player-info-close" style="width:100%;margin-top:0.5rem">Schließen</button>
+            <button class="modal-close-btn" id="player-info-close">Schließen</button>
         `;
 
         overlay.classList.add('show');
