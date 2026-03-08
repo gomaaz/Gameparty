@@ -1040,6 +1040,16 @@ body {
     transform: scale(1);
 }
 
+.medium-select-btn:hover {
+    border-color: var(--accent-purple);
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.medium-select-btn.selected {
+    border-color: var(--accent-purple) !important;
+    background: rgba(139, 92, 246, 0.2) !important;
+}
+
 .modal-title {
     font-size: 1.2rem;
     font-weight: 700;

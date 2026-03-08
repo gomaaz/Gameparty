@@ -2466,7 +2466,7 @@
                 ? `<img src="${opt.svg}" alt="${opt.label}" style="width:2rem;height:2rem;object-fit:contain;filter:brightness(0) invert(1) opacity(0.85)">`
                 : `<span style="font-size:2rem">${opt.icon}</span>`;
             return `
-            <button class="medium-select-btn ${opt.id === preferredMedium ? 'selected' : ''}" data-medium="${opt.id}" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:1rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-secondary);cursor:pointer;transition:all 0.2s;text-align:center">
+            <button class="medium-select-btn ${opt.id === preferredMedium ? 'selected' : ''}" data-medium="${opt.id}" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:1rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-secondary);cursor:pointer;transition:all 0.2s;text-align:center;color:var(--text-primary)">
                 ${iconHtml}
                 <span style="font-size:0.9rem;font-weight:600">${opt.label}</span>
             </button>
