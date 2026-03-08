@@ -1,6 +1,14 @@
 # Changelog
 
 ## v2.3.35 (2026-03-08)
+- fix: type conflict coinsApproved in proposal approval filter
+
+## [2.3.36] - 2026-03-08
+
+### Fixed
+- Geplante Sessions (Proposals) erschienen nicht im Freigabebereich nach Beendigung durch den Gruppenleader (Typkonflikt: `coinsApproved === 0` vs. Boolean `false`)
+
+## v2.3.35 (2026-03-08)
 - fix: geplante sessions now correctly display in admin freigabe section (wrong field names)
 
 ## v2.3.34 (2026-03-08)

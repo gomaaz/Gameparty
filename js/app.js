@@ -1919,7 +1919,7 @@
 
         // Prepare freigabe section
         const endedSessions = liveSessionsData.filter(s => s.status === 'ended');
-        const completedProposals = allProposals.filter(p => p.status === 'completed' && p.coinsApproved === 0);
+        const completedProposals = allProposals.filter(p => p.status === 'completed' && !p.coinsApproved);
         const hasFreigabe = endedSessions.length > 0 || completedProposals.length > 0;
 
         let freigabeHTML = '';
