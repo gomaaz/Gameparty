@@ -1008,6 +1008,21 @@ app.put('/api/live-sessions/:id/start', (req, res) => {
     if (session.status !== 'lobby') return res.status(400).json({ error: 'Session nicht im Lobby-Status' });
     const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM live_session_players WHERE session_id = ?').get(req.params.id).cnt;
     if (playerCount < 2) return res.status(400).json({ error: 'Eine Session benötigt mindestens 2 Spieler' });
+    const players = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id);
+    for (const { player } of players) {
+        const conflict = db.prepare(`
+            SELECT ls.game FROM live_sessions ls
+            INNER JOIN live_session_players lsp ON ls.id = lsp.session_id
+            WHERE lsp.player = ? AND ls.id != ? AND ls.status IN ('running')
+        `).get(player, req.params.id);
+        if (conflict) return res.status(400).json({ error: `${player} ist bereits in einer laufenden Session: ${conflict.game}` });
+        const proposalConflict = db.prepare(`
+            SELECT p.game FROM proposals p
+            INNER JOIN proposal_players pp ON p.id = pp.proposal_id
+            WHERE pp.player = ? AND p.status = 'active'
+        `).get(player);
+        if (proposalConflict) return res.status(400).json({ error: `${player} ist bereits in einer laufenden Session: ${proposalConflict.game}` });
+    }
     db.prepare("UPDATE live_sessions SET status = 'running', startedAt = ? WHERE id = ?").run(Date.now(), req.params.id);
     res.json({ success: true });
 });
