@@ -1,5 +1,23 @@
 # Changelog
 
+## v2.3.23 (2026-03-08)
+- refactor: use SVG files from /svg/ folder instead of inline paths
+- refactor: centralized icon management (ICON_FILES mapping, createIconSvg() helper)
+- improvement: reduces code duplication, single source of truth for icons
+
+## v2.3.22 (2026-03-08)
+- refactor: centralize SVG icon management in js/icons.js
+- feat: createIconSvg() helper function for consistent icon rendering
+- improvement: prevents icon path inconsistencies between profile and session panel
+
+## v2.3.21 (2026-03-08)
+- fix: update SVG icon paths in profile card accounts section
+- fix: Battle.net, EA, Riot Games icons now use official Simple Icons paths
+
+## v2.3.20 (2026-03-08)
+- fix: update SVG icon paths for Battle.net, EA, and Riot Games to official Simple Icons
+- fix: renderPlayerChip and renderLeaderIcons now use correct paths
+
 ## v2.3.15 (2026-03-08)
 - fix: hide "Gameparty" text on small screens (≤480px) – show only emoji logo for mobile
 
