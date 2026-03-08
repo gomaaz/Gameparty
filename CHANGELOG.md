@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.15 (2026-03-08)
+- fix: hide "Gameparty" text on small screens (≤480px) – show only emoji logo for mobile
+
 ## v2.3.14 (2026-03-08)
 - fix: tooltip not showing on mobile – replaced mouseover/mouseout with pointerover/pointerout (mouse only), click always toggles
 

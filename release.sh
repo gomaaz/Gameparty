@@ -32,9 +32,38 @@ npm version patch --no-git-tag-version
 NEW_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
 echo -e "${GREEN}✓ New version: $NEW_VERSION${NC}"
 
+# 3.5. Update CHANGELOG
+echo ""
+echo "📝 Enter changelog entries for v$NEW_VERSION (one per line, empty line to finish):"
+CHANGELOG_ENTRIES=""
+while true; do
+    read -p "  - " entry
+    if [ -z "$entry" ]; then
+        break
+    fi
+    CHANGELOG_ENTRIES="${CHANGELOG_ENTRIES}- ${entry}"$'\n'
+done
+
+if [ -z "$CHANGELOG_ENTRIES" ]; then
+    echo -e "${YELLOW}⚠️  No changelog entries provided, skipping changelog update${NC}"
+else
+    # Get current date
+    RELEASE_DATE=$(date +%Y-%m-%d)
+
+    # Create new changelog entry
+    TEMP_CHANGELOG=$(mktemp)
+    echo "## v$NEW_VERSION ($RELEASE_DATE)" > "$TEMP_CHANGELOG"
+    echo "$CHANGELOG_ENTRIES" >> "$TEMP_CHANGELOG"
+    echo "" >> "$TEMP_CHANGELOG"
+    cat CHANGELOG.md >> "$TEMP_CHANGELOG"
+    mv "$TEMP_CHANGELOG" CHANGELOG.md
+
+    echo -e "${GREEN}✓ CHANGELOG.md updated${NC}"
+fi
+
 # 4. Create commit
 echo "📦 Creating git commit..."
-git add package.json package-lock.json
+git add package.json package-lock.json CHANGELOG.md
 git commit -m "chore: release v$NEW_VERSION
 
 Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
