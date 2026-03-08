@@ -2680,3 +2680,81 @@ body {
 .leader-info-icon:active {
     background: rgba(255, 255, 255, 0.18);
 }
+
+/* ---- Medium Selection Grid ---- */
+.medium-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+}
+
+.medium-btn {
+    padding: 0.75rem 0.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    font-weight: 600;
+}
+
+.medium-btn:hover {
+    border-color: var(--primary);
+    background: rgba(108, 99, 255, 0.08);
+}
+
+.medium-btn.selected {
+    border-color: var(--primary);
+    background: rgba(108, 99, 255, 0.2);
+    color: var(--primary);
+}
+
+.medium-btn .medium-icon {
+    font-size: 1.75rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.medium-btn .medium-label {
+    font-size: 0.75rem;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.medium-custom-input {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.medium-custom-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+}
+
+/* Mobile: 2 Spalten bei sehr kleinen Screens */
+@media (max-width: 360px) {
+    .medium-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.4rem;
+    }
+    .medium-btn {
+        padding: 0.5rem 0.25rem;
+    }
+    .medium-btn .medium-icon {
+        font-size: 1.25rem;
+    }
+    .medium-btn .medium-label {
+        font-size: 0.65rem;
+    }
+}
