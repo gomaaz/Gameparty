@@ -1375,6 +1375,7 @@
 
     function renderProposals() {
         renderDashboard();
+        if (adminPanelOpen) renderAdminPanel();
     }
 
     // ---- Render: Profile ----
@@ -3075,6 +3076,7 @@
             case 'challenges': renderChallenges(); break;
             case 'activities': renderActivities(); break;
         }
+        if (adminPanelOpen) renderAdminPanel();
     }
 
     async function renderActivities() {

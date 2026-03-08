@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.3.36 (2026-03-08)
+- docs: add changelog entry for v2.3.38
+
+## [2.3.38] - 2026-03-08
+
+### Fixed
+- Admin-Panel wird jetzt bei jedem SSE-Update und nach `renderProposals()` automatisch neu geladen, wenn es geöffnet ist
+- Geplante Sessions erscheinen nach Beendigung durch den Gruppenleiter sofort in der Admin-Freigabe (Root Cause: Admin-Panel war nicht im SSE-Refresh-Zyklus registriert)
+
 ## [2.3.37] - 2026-03-08
 
 ### Added
