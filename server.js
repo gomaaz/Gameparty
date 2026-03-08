@@ -584,6 +584,36 @@ app.post('/api/proposals/:id/leave', (req, res) => {
     res.json({ success: true });
 });
 
+// POST /api/proposals/:id/approve — Coins auszahlen und Proposal abschliessen
+app.post('/api/proposals/:id/approve', (req, res) => {
+    const { coins } = req.body;
+    const coinsPerPlayer = parseInt(coins) || 0;
+    const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id);
+    if (!proposal) return res.status(404).json({ error: 'Proposal nicht gefunden' });
+    if (proposal.coinsApproved) return res.status(400).json({ error: 'Bereits freigegeben' });
+
+    const players = db.prepare('SELECT player FROM proposal_players WHERE proposal_id = ?').all(req.params.id).map(r => r.player);
+    const game = db.prepare('SELECT * FROM games WHERE name = ?').get(proposal.game);
+    const genres = game && game.genre ? game.genre.split(',').map(g => g.trim()).filter(g => g) : [];
+
+    for (const player of players) {
+        db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, coinsPerPlayer, coinsPerPlayer);
+        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsPerPlayer, `Session: ${proposal.game} (${players.length} Spieler)`, Date.now());
+        for (const genre of genres) {
+            const existing = db.prepare('SELECT 1 FROM genres_played WHERE player = ? AND genre = ?').get(player, genre);
+            if (!existing) {
+                db.prepare('INSERT INTO genres_played (player, genre) VALUES (?, ?)').run(player, genre);
+                db.prepare('INSERT INTO coins (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, 1, ?, ?)').run(player, `Neues Genre: ${genre}`, Date.now());
+            }
+        }
+    }
+
+    db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp) VALUES (?, ?, ?, ?)').run(proposal.game, JSON.stringify(players), coinsPerPlayer, Date.now());
+    db.prepare('UPDATE proposals SET coinsApproved = 1 WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+});
+
 // GET /api/attendees
 app.get('/api/attendees', (req, res) => {
     const attendees = db.prepare('SELECT player FROM attendees WHERE player IN (SELECT name FROM users)').all().map(r => r.player);

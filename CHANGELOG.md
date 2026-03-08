@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.37] - 2026-03-08
+
+### Added
+- Backend-Endpoint `POST /api/proposals/:id/approve` implementiert (Coins auszahlen, Genre-Tracking, Session-Record erstellen)
+
+### Fixed
+- Freigabe-Button im Admin-Panel für geplante Sessions funktioniert jetzt korrekt
+
 ## [2.3.36] - 2026-03-08
 
 ### Fixed
