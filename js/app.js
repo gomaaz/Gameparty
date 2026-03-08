@@ -2492,14 +2492,12 @@
     // ---- Header ----
     function updateHeader() {
         const playerBtn = $('#header-player-btn');
-        const logoutBtn = $('#header-logout-btn');
         const coinsDisplay = $('#header-coins');
         const starsDisplay = $('#header-stars');
 
         if (state.currentPlayer) {
             playerBtn.textContent = state.currentPlayer + (isAdmin() ? ' (Admin)' : '');
             playerBtn.style.display = 'inline-block';
-            logoutBtn.style.display = 'inline-block';
             coinsDisplay.textContent = getPlayerCoins(state.currentPlayer);
             coinsDisplay.parentElement.style.display = 'flex';
             const playerStars = getPlayerStars(state.currentPlayer);
@@ -2510,7 +2508,6 @@
         } else {
             playerBtn.textContent = t('header_login');
             playerBtn.style.display = 'inline-block';
-            logoutBtn.style.display = 'none';
             coinsDisplay.parentElement.style.display = 'none';
             if (starsDisplay) starsDisplay.parentElement.style.display = 'none';
         }
