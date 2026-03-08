@@ -2670,6 +2670,67 @@ body {
     max-width: 220px;
 }
 
+/* Player name clickable */
+.player-name-clickable {
+    cursor: pointer;
+}
+.player-name-clickable:hover {
+    color: var(--accent-gold);
+    text-decoration: underline;
+}
+
+/* Player Info Modal */
+.player-info-modal-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+.player-info-modal-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.player-info-modal-row:hover {
+    border-color: var(--accent-gold);
+    background: rgba(255,215,0,0.05);
+}
+.player-info-modal-icon {
+    flex-shrink: 0;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.player-info-modal-label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    min-width: 90px;
+}
+.player-info-modal-value {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.player-info-modal-copy {
+    font-size: 0.75rem;
+    opacity: 0.4;
+    flex-shrink: 0;
+}
+.player-info-modal-row:hover .player-info-modal-copy {
+    opacity: 0.8;
+}
+
 /* ---- Session Card: Leader Info Icons ---- */
 .leader-info-icons {
     display: flex;

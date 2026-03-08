@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.38 (2026-03-08)
+- style: add player info modal CSS classes
+
 ## v2.3.37 (2026-03-08)
 - feat: add player info modal on name click
 
