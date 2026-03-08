@@ -475,9 +475,11 @@
                     } else if (s.status === 'ended') {
                         statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
                         if (isAdmin()) {
-                            const coins = calculateSessionCoins(s.players.length, state.attendees.length);
+                            const gameObj = state.games.find(g => g.name === s.game);
+                            const gameCoins = gameObj?.sessionCoins || 0;
+                            const coins = gameCoins || calculateSessionCoins(s.players.length, state.attendees.length);
                             actionsHTML += `<input type="number" class="freigabe-coins-input" data-sid="${s.id}" value="${coins}" min="0" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);width:70px">`;
-                            actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="approve">${t('btn_freigabe_approve')}</button>`;
+                            actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="approve">${t('btn_approve_coins', coins)}</button>`;
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">🗑️</button>`;
                         }
                     }
