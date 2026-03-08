@@ -2000,7 +2000,7 @@
                 const coinsInput = panel.querySelector(`.freigabe-coins-input[data-sid="${sid}"]`);
                 const coins = parseInt(coinsInput.value) || 0;
                 try {
-                    await api('PUT', `/live-sessions/${sid}/approve-coins`, { coinsPerPlayer: coins });
+                    await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer: coins });
                     showToast('Session freigegeben', 'success');
                     renderAdminPanel();
                 } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
