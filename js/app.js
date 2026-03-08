@@ -2016,9 +2016,9 @@
                 } else {
                     state.attendees.push(player);
                 }
-                btn.classList.toggle('active');
                 try {
                     await api('PUT', '/attendees', { attendees: state.attendees });
+                    renderAdminPanel(); // Re-render to update button styles
                 } catch (e) { console.error(e); }
             });
         });
