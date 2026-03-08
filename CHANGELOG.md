@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.27 (2026-03-08)
+- refactor: use createIconSvg() in session cards (renderPlayerChip, renderLeaderIcons) – unified icon pool
+
 ## v2.3.26 (2026-03-08)
 - fix: include svg/ folder in Docker image
 
