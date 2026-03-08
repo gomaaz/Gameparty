@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.25 (2026-03-08)
+- fix: add fill color to all SVG icons for proper visibility in dark theme
+
 ## v2.3.24 (2026-03-08)
 - refactor: use createIconSvg() for steam and ubisoft in profile card – full consistency
 
