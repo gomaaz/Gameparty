@@ -1226,7 +1226,9 @@
                     <span class="status-badge ${p.status}">${statusLabels[p.status]}</span>
                 </div>
                 <div class="leader-badge">👑 ${p.leader}</div>
-                ${renderLeaderIcons(p.leader)}
+                ${p.status === 'active' && p.medium
+                    ? renderLeaderIcons(p.leader, p.medium, p.medium_account)
+                    : renderLeaderIcons(p.leader)}
                 ${messageHTML}
                 ${scheduleHTML}
                 ${coinStatusHTML}
@@ -1260,13 +1262,23 @@
         });
 
         container.querySelectorAll('.btn-start-session').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                try {
-                    await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'active', startedAt: Date.now() });
-                    showToast(t('session_started'), 'success');
-                    playSound('coin');
-                    renderProposals();
-                } catch (e) { console.error(e); }
+            btn.addEventListener('click', () => {
+                const proposalId = btn.dataset.id;
+                const cardEl = btn.closest('[data-proposal-id]');
+                const gameName = cardEl ? (cardEl.querySelector('.proposal-game-name')?.textContent?.trim() || '') : '';
+                showMediumSelectModal(gameName, async (medium, account) => {
+                    try {
+                        await api('PUT', `/proposals/${proposalId}`, {
+                            status: 'active',
+                            startedAt: Date.now(),
+                            medium,
+                            medium_account: account
+                        });
+                        showToast(t('session_started'), 'success');
+                        playSound('coin');
+                        renderProposals();
+                    } catch (e) { console.error(e); }
+                });
             });
         });
 

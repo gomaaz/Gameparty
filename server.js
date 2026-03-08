@@ -123,6 +123,12 @@ try { db.prepare("ALTER TABLE live_sessions ADD COLUMN medium_account TEXT").run
 // ---- Migration: medium Feld in sessions (fuer LAN/Steam/etc) ----
 try { db.prepare("ALTER TABLE sessions ADD COLUMN medium TEXT DEFAULT 'lan'").run(); } catch {}
 
+// ---- Migration: medium Feld in proposals (fuer LAN/Steam/etc) ----
+try { db.prepare("ALTER TABLE proposals ADD COLUMN medium TEXT DEFAULT 'lan'").run(); } catch {}
+
+// ---- Migration: medium_account Feld in proposals ----
+try { db.prepare("ALTER TABLE proposals ADD COLUMN medium_account TEXT").run(); } catch {}
+
 // ---- Migration: Rename steamRating to previewUrl ----
 try {
     db.exec('ALTER TABLE games RENAME COLUMN steamRating TO previewUrl');
@@ -549,7 +555,7 @@ app.put('/api/proposals/:id', (req, res) => {
     const updates = [];
     const params = [];
     for (const [key, value] of Object.entries(req.body)) {
-        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'approvedAt', 'startedAt', 'completedAt', 'pendingCoins', 'coinsApproved'].includes(key)) {
+        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'approvedAt', 'startedAt', 'completedAt', 'pendingCoins', 'coinsApproved', 'medium', 'medium_account'].includes(key)) {
             updates.push(`${key} = ?`);
             params.push(value);
         }
