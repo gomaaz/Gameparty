@@ -110,7 +110,7 @@ try { db.prepare("UPDATE player_events SET status = 'active' WHERE status IS NUL
 try { db.prepare("ALTER TABLE users ADD COLUMN ip TEXT DEFAULT ''").run(); } catch {}
 
 // Migration: Gaming account fields
-['steam', 'ubisoft', 'battlenet', 'epic', 'ea', 'riot', 'discord'].forEach(col => {
+['steam', 'ubisoft', 'battlenet', 'epic', 'ea', 'riot', 'discord', 'teamspeak'].forEach(col => {
     try { db.prepare(`ALTER TABLE users ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch {}
 });
 
@@ -344,7 +344,7 @@ function getAllGamesWithPlayers() {
 
 // GET /api/init - Load everything for initial state
 app.get('/api/init', (req, res) => {
-    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet, epic, ea, riot, discord FROM users').all();
+    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak FROM users').all();
     const games = getAllGamesWithPlayers();
     const coins = {};
     db.prepare('SELECT player, amount FROM coins').all().forEach(r => { coins[r.player] = r.amount; });
@@ -598,7 +598,7 @@ app.put('/api/attendees', (req, res) => {
 
 // GET /api/users
 app.get('/api/users', (req, res) => {
-    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet, epic, ea, riot, discord FROM users').all();
+    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak FROM users').all();
     res.json(users);
 });
 
@@ -656,11 +656,11 @@ app.put('/api/users/:name/ip', (req, res) => {
 
 // PUT /api/users/:name/accounts
 app.put('/api/users/:name/accounts', (req, res) => {
-    const { steam, ubisoft, battlenet, epic, ea, riot, discord } = req.body;
+    const { steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak } = req.body;
     const user = db.prepare('SELECT * FROM users WHERE name = ?').get(req.params.name);
     if (!user) return res.status(404).json({ error: 'User nicht gefunden' });
-    db.prepare('UPDATE users SET steam = ?, ubisoft = ?, battlenet = ?, epic = ?, ea = ?, riot = ?, discord = ? WHERE name = ?')
-        .run(steam || '', ubisoft || '', battlenet || '', epic || '', ea || '', riot || '', discord || '', req.params.name);
+    db.prepare('UPDATE users SET steam = ?, ubisoft = ?, battlenet = ?, epic = ?, ea = ?, riot = ?, discord = ?, teamspeak = ? WHERE name = ?')
+        .run(steam || '', ubisoft || '', battlenet || '', epic || '', ea || '', riot || '', discord || '', teamspeak || '', req.params.name);
     broadcast();
     res.json({ success: true });
 });

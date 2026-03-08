@@ -358,6 +358,8 @@ const TRANSLATIONS = {
         profile_accounts_placeholder_ea: 'EA username',
         profile_accounts_placeholder_riot: 'Riot ID (Name#TAG)',
         profile_accounts_placeholder_discord: 'Discord username',
+        profile_teamspeak: 'TeamSpeak',
+        profile_accounts_placeholder_teamspeak: 'TeamSpeak username',
         btn_save_accounts: 'Save',
         player_info_popup_no_data: 'No data available',
     },
@@ -717,6 +719,8 @@ const TRANSLATIONS = {
         profile_accounts_placeholder_ea: 'EA-Nutzername',
         profile_accounts_placeholder_riot: 'Riot ID (Name#TAG)',
         profile_accounts_placeholder_discord: 'Discord-Nutzername',
+        profile_teamspeak: 'TeamSpeak',
+        profile_accounts_placeholder_teamspeak: 'TeamSpeak-Nutzername',
         btn_save_accounts: 'Speichern',
         player_info_popup_no_data: 'Keine Daten vorhanden',
     }
