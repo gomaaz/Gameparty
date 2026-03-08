@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.14 (2026-03-08)
+- fix: validate session join and end permissions
+
 ## v2.3.30 (2026-03-08)
 - feat: implement medium selection modal for room creation (LAN, Steam, Ubisoft, etc.)
 - feat: add medium field for live sessions – stored in DB, previewed with preferred platform

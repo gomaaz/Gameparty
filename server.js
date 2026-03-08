@@ -965,9 +965,10 @@ app.put('/api/live-sessions/:id/start', (req, res) => {
 // POST /api/live-sessions/:id/join — nur im lobby-Status möglich
 app.post('/api/live-sessions/:id/join', (req, res) => {
     const { player } = req.body;
-    const session = db.prepare('SELECT status, game FROM live_sessions WHERE id = ?').get(req.params.id);
+    const session = db.prepare('SELECT status, game, leader FROM live_sessions WHERE id = ?').get(req.params.id);
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
     if (session.status !== 'lobby') return res.status(400).json({ error: 'Session läuft bereits, kein Beitritt möglich' });
+    if (session.leader === player) return res.status(400).json({ error: 'Leader kann nicht dem eigenen Raum beitreten' });
     const activeGame = getActiveSessionForPlayer(player);
     if (activeGame) return res.status(400).json({ error: `Du bist bereits in einer laufenden Session: ${activeGame}` });
     try {
@@ -989,6 +990,16 @@ app.post('/api/live-sessions/:id/leave', (req, res) => {
 
 // PUT /api/live-sessions/:id/end
 app.put('/api/live-sessions/:id/end', (req, res) => {
+    const { player } = req.body;
+    const session = db.prepare('SELECT leader FROM live_sessions WHERE id = ?').get(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
+    if (session.leader !== player) {
+        // Check ob Admin
+        const user = db.prepare('SELECT role FROM users WHERE name = ?').get(player);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Nur der Leader oder ein Admin kann die Session beenden' });
+        }
+    }
     db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ? WHERE id = ?").run(Date.now(), req.params.id);
     res.json({ success: true });
 });
