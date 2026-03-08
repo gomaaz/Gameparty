@@ -1168,7 +1168,8 @@
         } else if (p.status === 'approved') {
             statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_approved')}</span>`;
         } else if (p.status === 'active') {
-            statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${t('status_active')}</span>`;
+            const duration = p.startedAt ? formatDuration(Date.now() - p.startedAt) : '';
+            statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_active')}${duration ? ` · ${duration}` : ''}</span>`;
         } else if (p.status === 'completed' && !p.coinsApproved) {
             statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
         } else if (p.status === 'completed' && p.coinsApproved) {
