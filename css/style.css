@@ -2142,7 +2142,16 @@ body {
 .leader-edit-row {
     display: flex;
     gap: 0.4rem;
+    align-items: center;
     margin-bottom: 0.5rem;
+}
+.datetime-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+input.datetime-input::-webkit-calendar-picker-indicator {
+    display: none;
 }
 
 .leader-edit-row input,

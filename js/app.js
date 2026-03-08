@@ -191,6 +191,13 @@
         return `${Math.floor(m / 60)}h ${m % 60}m`;
     }
 
+    function getNowPlus10() {
+        const d = new Date(Date.now() + 10 * 60 * 1000);
+        const date = d.toISOString().slice(0, 10);
+        const time = d.toTimeString().slice(0, 5);
+        return { date, time };
+    }
+
     function formatScheduleDate(dateStr) {
         if (!dateStr) return '';
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
@@ -1196,10 +1203,12 @@
 
         let leaderEditHTML = '';
         if (isLeader && ['pending', 'approved'].includes(p.status)) {
+            const minDate = getNowPlus10().date;
             leaderEditHTML = `
                 <div class="leader-edit-row">
-                    <input type="date" class="leader-day" data-id="${p.id}" value="${/^\d{4}-\d{2}-\d{2}$/.test(p.scheduledDay || '') ? p.scheduledDay : ''}" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem">
-                    <input type="time" class="leader-time" data-id="${p.id}" value="${p.scheduledTime || ''}" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem">
+                    <span class="datetime-label">Startzeit:</span>
+                    <input type="date" class="leader-day datetime-input" data-id="${p.id}" value="${/^\d{4}-\d{2}-\d{2}$/.test(p.scheduledDay || '') ? p.scheduledDay : ''}" min="${minDate}" required style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem">
+                    <input type="time" class="leader-time datetime-input" data-id="${p.id}" value="${p.scheduledTime || ''}" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem">
                 </div>`;
         }
 
@@ -1387,6 +1396,7 @@
             });
         });
         container.querySelectorAll('.leader-time').forEach(inp => {
+            inp.addEventListener('click', () => { try { inp.showPicker(); } catch(e) {} });
             inp.addEventListener('change', async () => {
                 try {
                     await api('PUT', `/proposals/${inp.dataset.id}`, { scheduledTime: inp.value });
@@ -2601,6 +2611,7 @@
         const modal = overlay.querySelector('.modal');
         const gamesData = await api('GET', '/games');
         const sortedGames = [...gamesData].sort((a, b) => getMatchCount(b) - getMatchCount(a));
+        const { date: defaultDate, time: defaultTime } = getNowPlus10();
         let selectedGame = null;
         modal.innerHTML = `
             <div class="modal-title">${t('modal_plan_session_title')}</div>
@@ -2608,9 +2619,10 @@
             <div class="game-select-grid" id="ps-game-grid" style="max-height:35vh;overflow-y:auto">
                 ${sortedGames.map(g => `<div class="game-select-item" data-game="${g.name}">${g.name}</div>`).join('')}
             </div>
-            <div style="display:flex;gap:0.5rem;margin-top:0.75rem;align-items:center">
-                <input type="date" id="ps-day" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
-                <input type="time" id="ps-time" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
+            <div class="leader-edit-row" style="margin-top:0.75rem">
+                <span class="datetime-label">Startzeit:</span>
+                <input type="date" id="ps-day" class="datetime-input" value="${defaultDate}" min="${defaultDate}" required style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
+                <input type="time" id="ps-time" class="datetime-input" value="${defaultTime}" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
             </div>
             <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
                 <button class="btn-propose" id="ps-confirm" disabled>${t('btn_plan')}</button>
@@ -2618,6 +2630,7 @@
             </div>
         `;
         overlay.classList.add('show');
+        $('#ps-time').addEventListener('click', () => { try { $('#ps-time').showPicker(); } catch(e) {} });
         $('#ps-search').addEventListener('input', e => {
             const s = e.target.value.toLowerCase();
             modal.querySelectorAll('.game-select-item').forEach(el => {
@@ -2636,6 +2649,12 @@
             if (!selectedGame) return;
             const day = $('#ps-day').value;
             const time = $('#ps-time').value;
+            if (!day) { showToast('Datum ist ein Pflichtfeld', 'error'); return; }
+            const selectedDT = new Date(`${day}T${time || '00:00'}`);
+            if (selectedDT < new Date(Date.now() + 9 * 60 * 1000)) {
+                showToast('Startzeit muss mind. 10 Minuten in der Zukunft liegen', 'error');
+                return;
+            }
             overlay.classList.remove('show');
             showMediumSelectModal(selectedGame, async (medium, account) => {
                 try {
