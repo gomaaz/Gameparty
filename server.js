@@ -541,9 +541,9 @@ app.get('/api/proposals', (req, res) => {
 
 // POST /api/proposals
 app.post('/api/proposals', (req, res) => {
-    const { id, game, isNewGame, leader, message, scheduledDay, scheduledTime } = req.body;
+    const { id, game, isNewGame, leader, message, scheduledDay, scheduledTime, medium, medium_account } = req.body;
     const proposalId = id || 'p_' + Date.now();
-    db.prepare('INSERT INTO proposals (id, game, isNewGame, leader, status, scheduledTime, scheduledDay, message, createdAt, coinsApproved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(proposalId, game, isNewGame ? 1 : 0, leader, 'pending', scheduledTime || '', scheduledDay || '', message || '', Date.now(), 0);
+    db.prepare('INSERT INTO proposals (id, game, isNewGame, leader, status, scheduledTime, scheduledDay, message, createdAt, coinsApproved, medium, medium_account) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(proposalId, game, isNewGame ? 1 : 0, leader, 'pending', scheduledTime || '', scheduledDay || '', message || '', Date.now(), 0, medium || 'lan', medium_account || '');
     db.prepare('INSERT INTO proposal_players (proposal_id, player) VALUES (?, ?)').run(proposalId, leader);
     res.json({ success: true, id: proposalId });
 });

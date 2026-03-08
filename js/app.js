@@ -436,7 +436,7 @@
 
             // Geplante Sessions (pending + approved) und aktive Proposals (active)
             const activeProposals = allProposals.filter(p => p.status === 'active');
-            const plannedProposals = allProposals.filter(p => ['pending', 'approved'].includes(p.status));
+            const plannedProposals = allProposals.filter(p => ['pending', 'approved'].includes(p.status) || (p.status === 'completed' && !p.coinsApproved));
             const plannedSessionsHTML = plannedProposals.map(renderProposalCard).join('') ||
                 `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_planned_sessions')}</div>`;
 
@@ -1262,23 +1262,13 @@
         });
 
         container.querySelectorAll('.btn-start-session').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const proposalId = btn.dataset.id;
-                const cardEl = btn.closest('[data-proposal-id]');
-                const gameName = cardEl ? (cardEl.querySelector('.proposal-game-name')?.textContent?.trim() || '') : '';
-                showMediumSelectModal(gameName, async (medium, account) => {
-                    try {
-                        await api('PUT', `/proposals/${proposalId}`, {
-                            status: 'active',
-                            startedAt: Date.now(),
-                            medium,
-                            medium_account: account
-                        });
-                        showToast(t('session_started'), 'success');
-                        playSound('coin');
-                        renderProposals();
-                    } catch (e) { console.error(e); }
-                });
+            btn.addEventListener('click', async () => {
+                try {
+                    await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'active', startedAt: Date.now() });
+                    showToast(t('session_started'), 'success');
+                    playSound('coin');
+                    renderProposals();
+                } catch (e) { console.error(e); }
             });
         });
 
@@ -2631,22 +2621,26 @@
                 $('#ps-confirm').disabled = false;
             });
         });
-        $('#ps-confirm').addEventListener('click', async () => {
+        $('#ps-confirm').addEventListener('click', () => {
             if (!selectedGame) return;
             const day = $('#ps-day').value;
             const time = $('#ps-time').value;
             overlay.classList.remove('show');
-            try {
-                await api('POST', '/proposals', {
-                    game: selectedGame,
-                    leader: state.currentPlayer,
-                    scheduledDay: day,
-                    scheduledTime: time,
-                    isNewGame: 0
-                });
-                showToast(t('session_planned', selectedGame), 'success');
-                renderDashboard();
-            } catch (e) { showToast(t('plan_error'), 'error'); }
+            showMediumSelectModal(selectedGame, async (medium, account) => {
+                try {
+                    await api('POST', '/proposals', {
+                        game: selectedGame,
+                        leader: state.currentPlayer,
+                        scheduledDay: day,
+                        scheduledTime: time,
+                        isNewGame: 0,
+                        medium,
+                        medium_account: account
+                    });
+                    showToast(t('session_planned', selectedGame), 'success');
+                    renderDashboard();
+                } catch (e) { showToast(t('plan_error'), 'error'); }
+            });
         });
         $('#ps-cancel').addEventListener('click', () => overlay.classList.remove('show'));
     }
