@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.9 (2026-03-08)
+- fix: three frontend issues - language toggle, logout button, player switch
+
 ## v2.3.27 (2026-03-08)
 - refactor: use createIconSvg() in session cards (renderPlayerChip, renderLeaderIcons) – unified icon pool
 

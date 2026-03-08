@@ -1542,7 +1542,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <button class="btn-danger" id="btn-logout" style="width:100%">⏻ ${t('btn_logout', 'Ausloggen')}</button>
+                    <button class="btn-danger" id="btn-logout" style="width:100%">🚪 ${t('btn_logout', 'Logout')}</button>
                 </div>
             `;
 
@@ -1672,11 +1672,10 @@
             const langToggleBtn = container.querySelector('#profile-lang-toggle');
             if (langToggleBtn) {
                 langToggleBtn.addEventListener('click', () => {
-                    const currentLang = document.documentElement.lang;
+                    const currentLang = getLang();
                     const newLang = currentLang === 'de' ? 'en' : 'de';
-                    localStorage.setItem('lang', newLang);
-                    document.documentElement.lang = newLang;
-                    location.reload();
+                    setLang(newLang);
+                    // setLang handles refresh via refreshActiveView() and updateNavLabels()
                 });
             }
 
@@ -3334,9 +3333,9 @@
         }
         updateNavLabels();
 
-        // Header player selection
+        // Header player selection - always allow switching players
         $('#header-player-btn').addEventListener('click', () => {
-            if (!state.currentPlayer) showLoginModal();
+            showLoginModal();
         });
 
         // Admin gear panel

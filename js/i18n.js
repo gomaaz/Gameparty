@@ -137,6 +137,7 @@ const TRANSLATIONS = {
         invalid_link_text: 'No valid YouTube video found.',
 
         // --- Profile ---
+        btn_logout: 'Logout',
         profile_not_logged_in: 'Select your name above\nto view your profile.',
         stat_earned: 'Earned',
         stat_spent: 'Spent',
@@ -498,6 +499,7 @@ const TRANSLATIONS = {
         invalid_link_text: 'Kein gültiges YouTube-Video gefunden.',
 
         // --- Profile ---
+        btn_logout: 'Ausloggen',
         profile_not_logged_in: 'Waehle oben deinen Namen aus,\num dein Profil zu sehen.',
         stat_earned: 'Verdient',
         stat_spent: 'Ausgegeben',
