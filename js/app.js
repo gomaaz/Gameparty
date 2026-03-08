@@ -252,18 +252,38 @@
         </span>`;
     }
 
-    function renderLeaderIcons(leaderName) {
+    function renderLeaderIcons(leaderName, medium, account) {
         const info = getUserInfo(leaderName);
         const icons = [];
-        if (info.ip)       icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="🖥️ LAN-IP<br>${info.ip}" data-copy-value="${info.ip}">🖥️</span>`);
-        if (info.steam)    icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Steam<br>${info.steam}" data-copy-value="${info.steam}">${createIconSvg('steam', '16px')}</span>`);
-        if (info.ubisoft)  icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Ubisoft Connect<br>${info.ubisoft}" data-copy-value="${info.ubisoft}">${createIconSvg('ubisoft', '16px')}</span>`);
-        if (info.battlenet)icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Battle.net<br>${info.battlenet}" data-copy-value="${info.battlenet}">${createIconSvg('battlenet', '16px')}</span>`);
-        if (info.epic)     icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Epic Games<br>${info.epic}" data-copy-value="${info.epic}">${createIconSvg('epic', '16px')}</span>`);
-        if (info.ea)       icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="EA App<br>${info.ea}" data-copy-value="${info.ea}">${createIconSvg('ea', '16px')}</span>`);
-        if (info.riot)     icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Riot Games<br>${info.riot}" data-copy-value="${info.riot}">${createIconSvg('riot', '16px')}</span>`);
-        if (info.discord)  icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Discord<br>${info.discord}" data-copy-value="${info.discord}">${createIconSvg('discord', '16px')}</span>`);
-        if (info.teamspeak) icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="TeamSpeak<br>${info.teamspeak}" data-copy-value="${info.teamspeak}">${createIconSvg('teamspeak', '16px')}</span>`);
+        if (medium) {
+            // Show only the selected platform icon
+            const MEDIUM_META = {
+                lan:       { label: 'LAN-IP',          icon: () => '🖥️',                         fallback: () => info.ip },
+                steam:     { label: 'Steam',            icon: () => createIconSvg('steam',     '16px'), fallback: () => info.steam },
+                ubisoft:   { label: 'Ubisoft Connect',  icon: () => createIconSvg('ubisoft',   '16px'), fallback: () => info.ubisoft },
+                battlenet: { label: 'Battle.net',       icon: () => createIconSvg('battlenet', '16px'), fallback: () => info.battlenet },
+                epic:      { label: 'Epic Games',       icon: () => createIconSvg('epic',      '16px'), fallback: () => info.epic },
+                ea:        { label: 'EA App',           icon: () => createIconSvg('ea',        '16px'), fallback: () => info.ea },
+                riot:      { label: 'Riot Games',       icon: () => createIconSvg('riot',      '16px'), fallback: () => info.riot },
+            };
+            const meta = MEDIUM_META[medium];
+            const value = account || (meta && meta.fallback()) || '';
+            if (meta && value) {
+                icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="${meta.label}<br>${value}" data-copy-value="${value}">${meta.icon()}</span>`);
+            } else if (value) {
+                icons.push(`<span class="leader-info-icon player-chip-info" style="cursor:pointer" data-tooltip="${medium}<br>${value}">${value}</span>`);
+            }
+        } else {
+            if (info.ip)        icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="🖥️ LAN-IP<br>${info.ip}" data-copy-value="${info.ip}">🖥️</span>`);
+            if (info.steam)     icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Steam<br>${info.steam}" data-copy-value="${info.steam}">${createIconSvg('steam', '16px')}</span>`);
+            if (info.ubisoft)   icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Ubisoft Connect<br>${info.ubisoft}" data-copy-value="${info.ubisoft}">${createIconSvg('ubisoft', '16px')}</span>`);
+            if (info.battlenet) icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Battle.net<br>${info.battlenet}" data-copy-value="${info.battlenet}">${createIconSvg('battlenet', '16px')}</span>`);
+            if (info.epic)      icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Epic Games<br>${info.epic}" data-copy-value="${info.epic}">${createIconSvg('epic', '16px')}</span>`);
+            if (info.ea)        icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="EA App<br>${info.ea}" data-copy-value="${info.ea}">${createIconSvg('ea', '16px')}</span>`);
+            if (info.riot)      icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Riot Games<br>${info.riot}" data-copy-value="${info.riot}">${createIconSvg('riot', '16px')}</span>`);
+            if (info.discord)   icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="Discord<br>${info.discord}" data-copy-value="${info.discord}">${createIconSvg('discord', '16px')}</span>`);
+            if (info.teamspeak) icons.push(`<span class="leader-info-icon player-chip-info icon-copy" style="cursor:pointer" data-tooltip="TeamSpeak<br>${info.teamspeak}" data-copy-value="${info.teamspeak}">${createIconSvg('teamspeak', '16px')}</span>`);
+        }
         if (!icons.length) return '';
         return `<div class="leader-info-icons">${icons.join('')}</div>`;
     }
@@ -463,7 +483,7 @@
                                 ${statusBadge}
                             </div>
                             <div class="live-session-meta">${t('session_group_leader')} ${s.leader}</div>
-                            ${renderLeaderIcons(s.leader)}
+                            ${renderLeaderIcons(s.leader, s.medium, s.medium_account)}
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>`;
