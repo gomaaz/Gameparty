@@ -416,7 +416,7 @@ body {
 
 .game-item {
     display: grid;
-    grid-template-columns: 2.2rem 1fr 2.2rem;
+    grid-template-columns: 1fr 2.2rem 2.2rem;
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 0.75rem;
@@ -443,15 +443,15 @@ body {
     border-left-color: var(--accent-green-dim);
 }
 
-/* Admin: Checkbox + Nr + Info + Like + Coins + Edit/Delete */
+/* Admin: Checkbox + Info + Room + Like + Coins + Edit/Delete */
 .game-item.admin-row {
-    grid-template-columns: 1.2rem 1.8rem 1fr 2.2rem 3rem auto;
+    grid-template-columns: 1.2rem 1fr 2.2rem 2.2rem 3rem auto;
 }
 
 /* ---- Game Table Header ---- */
 .game-table-header {
     display: grid;
-    grid-template-columns: 2.2rem 1fr 2.2rem;
+    grid-template-columns: 1fr 2.2rem 2.2rem;
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
@@ -468,7 +468,7 @@ body {
 }
 
 .game-table-header.admin-header {
-    grid-template-columns: 1.2rem 1.8rem 1fr 2.2rem 3rem auto;
+    grid-template-columns: 1.2rem 1fr 2.2rem 2.2rem 3rem auto;
 }
 
 .gth-nr { text-align: center; }

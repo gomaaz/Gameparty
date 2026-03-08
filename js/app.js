@@ -655,6 +655,7 @@
                 <div class="game-table-header ${admin ? 'admin-header' : ''}" id="game-table-header">
                     ${admin ? `<input type="checkbox" id="select-all-games" title="${t('btn_deselect')}">` : ''}
                     <span class="gth-name">${t('col_game_genre_max')}</span>
+                    <span></span>
                     <span class="gth-like">👍</span>
                     ${admin ? `<span class="gth-coins">${t('col_coins')}</span>` : ''}
                     ${admin ? `<span class="gth-actions">${t('col_edit')}</span>` : ''}
@@ -1121,7 +1122,7 @@
                     <button class="game-action-btn delete game-delete-btn" data-game="${g.name}" title="Loeschen">&#x2716;</button>
                 </div>` : '';
 
-            const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '';
+            const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '<span></span>';
 
             const coinsTag = g.sessionCoins ? `<span class="game-coins-tag">🪙${g.sessionCoins}</span>` : '';
 
