@@ -1151,26 +1151,38 @@
         const isJoined = p.players.includes(player);
         const admin = isAdmin();
 
-        const statusLabels = {
-            pending: t('status_pending'), approved: t('status_approved'),
-            active: t('status_active'), completed: t('status_completed'), rejected: t('status_rejected')
-        };
+        // Status badge like live-session-card
+        let statusBadge = '';
+        if (p.status === 'pending') {
+            statusBadge = `<span style="color:var(--text-secondary);font-size:0.8rem">${t('status_pending')}</span>`;
+        } else if (p.status === 'approved') {
+            statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_approved')}</span>`;
+        } else if (p.status === 'active') {
+            statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${t('status_active')}</span>`;
+        } else if (p.status === 'completed' && !p.coinsApproved) {
+            statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
+        } else if (p.status === 'completed' && p.coinsApproved) {
+            statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_completed')}</span>`;
+        } else if (p.status === 'rejected') {
+            statusBadge = `<span style="color:var(--accent-red);font-size:0.8rem">${t('status_rejected')}</span>`;
+        }
+        if (p.isNewGame) statusBadge += ` <span class="genre-tag">${t('status_new')}</span>`;
 
         let coinStatusHTML = '';
-        if (p.status === 'completed' && p.coinsApproved === false) {
-            coinStatusHTML = `<div class="proposal-schedule" style="color:var(--accent-gold)">🪙 ${p.pendingCoins || 0} C ${t('session_awaiting_approval')}</div>`;
-        } else if (p.status === 'completed' && p.coinsApproved === true) {
-            coinStatusHTML = `<div class="proposal-schedule" style="color:var(--accent-green)">✓ ${p.pendingCoins || 0} C paid out</div>`;
+        if (p.status === 'completed' && !p.coinsApproved) {
+            coinStatusHTML = `<div class="live-session-meta" style="color:var(--accent-gold)">🪙 ${p.pendingCoins || 0} C ${t('session_awaiting_approval')}</div>`;
+        } else if (p.status === 'completed' && p.coinsApproved) {
+            coinStatusHTML = `<div class="live-session-meta" style="color:var(--accent-green)">✓ ${p.pendingCoins || 0} C ${t('coins_paid_out') || 'paid out'}</div>`;
         }
 
         let scheduleHTML = '';
         if (p.scheduledDay || p.scheduledTime) {
-            scheduleHTML = `<div class="proposal-schedule">📅 ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
+            scheduleHTML = `<div class="live-session-meta">📅 ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
         }
 
         let messageHTML = '';
         if (p.message) {
-            messageHTML = `<div class="proposal-message">${p.message}</div>`;
+            messageHTML = `<div class="live-session-meta">${p.message}</div>`;
         }
 
         let leaderEditHTML = '';
@@ -1182,60 +1194,52 @@
                 </div>`;
         }
 
-        let actionsHTML = '';
         const actions = [];
 
         if (!isJoined && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-join" data-id="${p.id}">${t('btn_join_session')}</button>`);
+            actions.push(`<button class="btn-session-join btn-join" data-id="${p.id}">${t('btn_join_session')}</button>`);
         }
         if (isJoined && !isLeader && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-leave" data-id="${p.id}">${t('btn_leave_session')}</button>`);
+            actions.push(`<button class="btn-session-leave btn-leave" data-id="${p.id}">${t('btn_leave_session')}</button>`);
         }
-
         if (isLeader && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-start-session" data-id="${p.id}">${t('btn_start_now')}</button>`);
+            actions.push(`<button class="btn-session-start btn-start-session" data-id="${p.id}">${t('btn_start_now')}</button>`);
         }
         if (isLeader && p.status === 'active') {
-            actions.push(`<button class="btn-end-session" data-id="${p.id}">${t('btn_end_session')}</button>`);
+            actions.push(`<button class="btn-session-end btn-end-session" data-id="${p.id}">${t('btn_end_session')}</button>`);
         }
         if (isLeader && ['pending', 'approved'].includes(p.status)) {
-            actions.push(`<button class="btn-withdraw" data-id="${p.id}" style="font-size:0.75rem;opacity:0.6">${t('btn_withdraw')}</button>`);
+            actions.push(`<button class="btn-session-end btn-withdraw" data-id="${p.id}" style="font-size:0.75rem;opacity:0.6">${t('btn_withdraw')}</button>`);
         }
-
         if (admin && p.status === 'pending') {
-            actions.push(`<button class="btn-approve" data-id="${p.id}">${t('btn_approve')}</button>`);
-            actions.push(`<button class="btn-reject" data-id="${p.id}">${t('btn_reject')}</button>`);
+            actions.push(`<button class="btn-session-start btn-approve" data-id="${p.id}">${t('btn_approve')}</button>`);
+            actions.push(`<button class="btn-session-end btn-reject" data-id="${p.id}">${t('btn_reject')}</button>`);
         }
-
         if (admin && p.status === 'completed' && p.coinsApproved === false) {
-            actions.push(`<button class="btn-approve-coins" data-id="${p.id}">${t('btn_approve_coins', p.pendingCoins || '?')}</button>`);
+            actions.push(`<button class="btn-session-start btn-approve-coins" data-id="${p.id}">${t('btn_approve_coins', p.pendingCoins || '?')}</button>`);
         }
-
         if (admin) {
-            actions.push(`<button class="btn-withdraw" data-id="${p.id}" data-admin-delete="true" title="Loeschen">&#x2716;</button>`);
+            actions.push(`<button class="btn-session-end btn-withdraw" data-id="${p.id}" data-admin-delete="true" title="Loeschen" style="font-size:0.75rem;opacity:0.6">&#x2716;</button>`);
         }
 
-        if (actions.length) {
-            actionsHTML = `<div class="proposal-actions">${actions.join('')}</div>`;
-        }
+        const actionsHTML = actions.length ? `<div class="live-session-actions">${actions.join('')}</div>` : '';
+
+        // Status-based CSS class like live-session-card
+        const statusClass = { pending: 'proposal-pending', approved: 'proposal-approved', active: 'lobby', completed: 'ended', rejected: '' }[p.status] || '';
 
         return `
-            <div class="proposal-card ${p.status === 'active' ? 'status-active' : ''}" data-proposal-id="${p.id}">
-                <div class="proposal-card-header">
-                    <span class="proposal-game-name">${p.game}${p.isNewGame ? ` <span class="genre-tag">${t('status_new')}</span>` : ''}</span>
-                    <span class="status-badge ${p.status}">${statusLabels[p.status]}</span>
+            <div class="card live-session-card ${statusClass}" data-proposal-id="${p.id}">
+                <div class="live-session-header">
+                    <span class="live-session-game">${p.game}</span>
+                    ${statusBadge}
                 </div>
-                <div class="leader-badge">👑 ${p.leader}</div>
-                ${p.status === 'active' && p.medium
-                    ? renderLeaderIcons(p.leader, p.medium, p.medium_account)
-                    : renderLeaderIcons(p.leader)}
+                <div class="live-session-meta">${t('session_group_leader')} ${p.leader}</div>
+                ${p.medium ? renderLeaderIcons(p.leader, p.medium, p.medium_account) : renderLeaderIcons(p.leader)}
                 ${messageHTML}
                 ${scheduleHTML}
                 ${coinStatusHTML}
                 ${leaderEditHTML}
-                <div class="proposal-players">
-                    ${p.players.map(n => `<span class="player-chip">${n}</span>`).join('')}
-                </div>
+                <div>${p.players.map(n => `<span class="player-chip">${n}${n === p.leader ? '<span class="session-leader-badge">GL</span>' : ''}</span>`).join('')}</div>
                 ${actionsHTML}
             </div>`;
     }

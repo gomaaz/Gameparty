@@ -2290,6 +2290,13 @@ body {
     border-color: #aa6600;
     background: linear-gradient(135deg, rgba(255,152,0,0.06), var(--bg-card));
 }
+.live-session-card.proposal-approved {
+    border-color: var(--accent-green-dim);
+    background: linear-gradient(135deg, rgba(0,230,118,0.04), var(--bg-card));
+}
+.live-session-card.proposal-pending {
+    border-color: var(--border);
+}
 .live-session-header {
     display: flex;
     justify-content: space-between;
