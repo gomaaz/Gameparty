@@ -1,7 +1,7 @@
 # Changelog
 
-## v2.3.17 (2026-03-08)
-- fix: make player field optional in session end endpoint
+## v2.3.33 (2026-03-08)
+- fix: leader can now end their sessions (player field optional in PUT /live-sessions/:id/end)
 
 ## v2.3.32 (2026-03-08)
 - fix: initialize coinsApproved=0 on proposal creation (prevents null values)
