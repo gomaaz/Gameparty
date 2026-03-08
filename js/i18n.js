@@ -169,6 +169,7 @@ const TRANSLATIONS = {
         notif_permission_rejected: 'Permission denied',
         on: 'On',
         off: 'Off',
+        change_language: 'Change language',
 
         // --- Session (Admin) ---
         session_admin_only: 'Only admins can start sessions.',
@@ -531,6 +532,7 @@ const TRANSLATIONS = {
         notif_permission_rejected: 'Berechtigung verweigert',
         on: 'An',
         off: 'Aus',
+        change_language: 'Sprache ändern',
 
         // --- Session (Admin) ---
         session_admin_only: 'Nur die Turnierleitung kann Sessions starten.',

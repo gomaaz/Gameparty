@@ -1536,8 +1536,8 @@
                     <div class="card-title">${t('settings_title', '⚙️ Einstellungen')}</div>
                     <div class="notif-settings">
                         <div class="notif-row">
-                            <span>🌐 ${t('change_language', 'Sprache')}</span>
-                            <button class="lang-toggle-btn" id="profile-lang-toggle" title="Switch language">${document.documentElement.lang === 'de' ? '🇩🇪 DE' : '🇬🇧 EN'}</button>
+                            <span>🌐 ${_lang === 'de' ? 'Sprache' : 'Language'}</span>
+                            <button class="lang-toggle-btn" id="lang-toggle-btn" title="Switch language">${_lang === 'de' ? '🇩🇪 DE' : '🇬🇧 EN'}</button>
                         </div>
                     </div>
                 </div>
@@ -1669,7 +1669,7 @@
             }
 
             // Lang Toggle im Profil
-            const langToggleBtn = container.querySelector('#profile-lang-toggle');
+            const langToggleBtn = container.querySelector('#lang-toggle-btn');
             if (langToggleBtn) {
                 langToggleBtn.addEventListener('click', () => {
                     const currentLang = getLang();

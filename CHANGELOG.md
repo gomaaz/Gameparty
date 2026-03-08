@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.11 (2026-03-08)
+- chore: add missing change_language i18n key
+
 ## v2.3.10 (2026-03-08)
 - style: fix admin badge CSS selector conflict
 
