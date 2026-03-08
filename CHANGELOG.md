@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.3.42 (2026-03-08)
+
+### Fixed
+- Platform-Buttons im "Wie wird gespielt?"-Modal verkleinert (Icons 1.4rem, Padding 0.5rem) – Container ragte nicht mehr über das Panel hinaus
+
+### Added
+- Zwischenschritt nach Plattform-Auswahl: zeigt vorausgefüllten Account-Wert (Steam-ID, Ubisoft-Name, LAN-IP etc.) aus dem Profil, editierbar vor Raumstart
+- Backend: `medium_account`-Feld in `live_sessions`-Tabelle gespeichert
+- i18n: Keys `medium_account_hint` und `back` (EN/DE)
+
 ## v2.3.36 (2026-03-08)
 - docs: add changelog entry for v2.3.38
 
