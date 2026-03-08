@@ -365,6 +365,10 @@ const TRANSLATIONS = {
         profile_accounts_placeholder_teamspeak: 'TeamSpeak username',
         btn_save_accounts: 'Save',
         player_info_popup_no_data: 'No data available',
+
+        // --- Medium Account Step ---
+        medium_account_hint: 'What account link / nickname should others use to find you?',
+        back: 'Back',
     },
 
     de: {
@@ -729,6 +733,10 @@ const TRANSLATIONS = {
         profile_accounts_placeholder_teamspeak: 'TeamSpeak-Nutzername',
         btn_save_accounts: 'Speichern',
         player_info_popup_no_data: 'Keine Daten vorhanden',
+
+        // --- Medium Account Step ---
+        medium_account_hint: 'Welchen Account-Link / Nickname sollen andere verwenden?',
+        back: 'Zurück',
     }
 };
 

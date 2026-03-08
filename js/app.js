@@ -217,17 +217,6 @@
         return state.allUsers.find(u => u.name === playerName) || {};
     }
 
-    function getPreferredMedium(playerName) {
-        const u = getUserInfo(playerName);
-        if (u.steam) return 'steam';
-        if (u.ubisoft) return 'ubisoft';
-        if (u.battlenet) return 'battlenet';
-        if (u.epic) return 'epic';
-        if (u.ea) return 'ea';
-        if (u.riot) return 'riot';
-        return 'lan';
-    }
-
     function renderPlayerChip(playerName) {
         const info = getUserInfo(playerName);
         const hasData = info.ip || info.steam || info.ubisoft || info.battlenet || info.epic || info.ea || info.riot || info.discord || info.teamspeak;
@@ -844,9 +833,9 @@
             if (createRoomBtn) {
                 e.stopPropagation();
                 const gameName = createRoomBtn.dataset.game;
-                showMediumSelectModal(gameName, async (medium) => {
+                showMediumSelectModal(gameName, async (medium, account) => {
                     try {
-                        await api('POST', '/live-sessions', { game: gameName, leader: state.currentPlayer, medium });
+                        await api('POST', '/live-sessions', { game: gameName, leader: state.currentPlayer, medium, account });
                         showToast(t('room_created', gameName), 'success');
                         navigateTo('dashboard');
                     } catch (err) {
@@ -2457,80 +2446,86 @@
     function showMediumSelectModal(gameName, callback) {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
-        const preferredMedium = getPreferredMedium(state.currentPlayer);
-        let selectedMedium = preferredMedium;
-        let customText = '';
 
-        const mediumGrid = MEDIUM_OPTIONS.map(opt => {
-            const iconHtml = opt.svg
-                ? `<img src="${opt.svg}" alt="${opt.label}" style="width:2rem;height:2rem;object-fit:contain;filter:brightness(0) invert(1) opacity(0.85)">`
+        function showGrid() {
+            const mediumGrid = MEDIUM_OPTIONS.map(opt => {
+                const iconHtml = opt.svg
+                    ? `<img src="${opt.svg}" alt="${opt.label}" style="width:1.4rem;height:1.4rem;object-fit:contain;filter:brightness(0) invert(1) opacity(0.85)">`
+                    : `<span style="font-size:1.4rem">${opt.icon}</span>`;
+                return `
+                <button class="medium-select-btn" data-medium="${opt.id}" style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.5rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-secondary);cursor:pointer;transition:all 0.2s;text-align:center;color:var(--text-primary)">
+                    ${iconHtml}
+                    <span style="font-size:0.7rem;font-weight:600">${opt.label}</span>
+                </button>
+            `;
+            }).join('');
+
+            modal.innerHTML = `
+                <div class="modal-title">Wie wird gespielt?</div>
+                <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:1rem">${gameName}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.5rem;margin-bottom:1rem;overflow:hidden" id="medium-grid">
+                    ${mediumGrid}
+                </div>
+                <div style="display:flex;gap:0.5rem">
+                    <button class="modal-close-btn" id="medium-cancel-btn" style="flex:1">${t('btn_cancel')}</button>
+                </div>
+            `;
+
+            modal.querySelectorAll('.medium-select-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const optId = btn.dataset.medium;
+                    const opt = MEDIUM_OPTIONS.find(o => o.id === optId);
+                    if (opt) showAccountStep(opt);
+                });
+            });
+
+            document.getElementById('medium-cancel-btn').addEventListener('click', () => {
+                overlay.classList.remove('show');
+            });
+        }
+
+        function showAccountStep(opt) {
+            const u = getUserInfo(state.currentPlayer) || {};
+            const savedValue = opt.id === 'lan' ? (u.ip || '') : (opt.id === 'other' ? '' : (u[opt.id] || ''));
+
+            const icon = opt.svg
+                ? `<img src="${opt.svg}" style="width:2rem;height:2rem;filter:invert(1);">`
                 : `<span style="font-size:2rem">${opt.icon}</span>`;
-            return `
-            <button class="medium-select-btn ${opt.id === preferredMedium ? 'selected' : ''}" data-medium="${opt.id}" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:1rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-secondary);cursor:pointer;transition:all 0.2s;text-align:center;color:var(--text-primary)">
-                ${iconHtml}
-                <span style="font-size:0.9rem;font-weight:600">${opt.label}</span>
-            </button>
-        `;
-        }).join('');
 
-        modal.innerHTML = `
-            <div class="modal-title">Wie wird gespielt?</div>
-            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:1rem">${gameName}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.75rem;margin-bottom:1rem" id="medium-grid">
-                ${mediumGrid}
-            </div>
-            <div id="custom-input-container" style="display:${preferredMedium === 'other' ? 'block' : 'none'};margin-bottom:1rem">
-                <input type="text" id="medium-custom-text" placeholder="Platform eingeben..." style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
-            </div>
-            <div style="display:flex;gap:0.5rem">
-                <button class="btn-propose" id="medium-start-btn" style="flex:1">${t('btn_start')}</button>
-                <button class="modal-close-btn" id="medium-cancel-btn" style="flex:1">${t('btn_cancel')}</button>
-            </div>
-        `;
+            modal.innerHTML = `
+                <div style="padding:0.5rem 0 1rem;display:flex;flex-direction:column;gap:1rem;">
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        ${icon}
+                        <h3 style="margin:0;color:var(--text-primary)">${opt.label}</h3>
+                    </div>
+                    <p style="margin:0;color:var(--text-secondary);font-size:0.85rem">
+                        ${t('medium_account_hint')}
+                    </p>
+                    <input id="medium-account-input" type="text"
+                        placeholder="${opt.label} ID / Link"
+                        value="${savedValue}"
+                        style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:0.9rem;width:100%;box-sizing:border-box;">
+                    <div style="display:flex;gap:0.5rem;">
+                        <button id="medium-back-btn" style="flex:1;padding:0.75rem;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-primary);cursor:pointer;">
+                            ${t('back')}
+                        </button>
+                        <button id="medium-start-btn" style="flex:2;padding:0.75rem;border:none;border-radius:8px;background:var(--gradient-primary);color:white;cursor:pointer;font-weight:600;">
+                            ${t('btn_start')}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('medium-back-btn').addEventListener('click', showGrid);
+            document.getElementById('medium-start-btn').addEventListener('click', () => {
+                const accountValue = document.getElementById('medium-account-input').value.trim();
+                overlay.classList.remove('show');
+                if (callback) callback(opt.id, accountValue);
+            });
+        }
 
         overlay.classList.add('show');
-
-        // Medium Selection Handler
-        modal.querySelectorAll('.medium-select-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                modal.querySelectorAll('.medium-select-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                selectedMedium = btn.dataset.medium;
-
-                // Custom input zeigen/verstecken
-                const customContainer = $('#custom-input-container');
-                if (selectedMedium === 'other') {
-                    customContainer.style.display = 'block';
-                    $('#medium-custom-text').focus();
-                } else {
-                    customContainer.style.display = 'none';
-                    customText = '';
-                }
-            });
-        });
-
-        // Custom Text Input Handler
-        $('#medium-custom-text')?.addEventListener('input', (e) => {
-            customText = e.target.value.trim();
-        });
-
-        // Start Button Handler
-        $('#medium-start-btn').addEventListener('click', async () => {
-            const mediumValue = selectedMedium === 'other' ? customText : selectedMedium;
-            if (!mediumValue) {
-                showToast('Bitte wählen Sie eine Plattform', 'error');
-                return;
-            }
-            overlay.classList.remove('show');
-            if (callback) {
-                callback(mediumValue);
-            }
-        });
-
-        // Cancel Button Handler
-        $('#medium-cancel-btn').addEventListener('click', () => {
-            overlay.classList.remove('show');
-        });
+        showGrid();
     }
 
     async function showStartSessionModal() {
@@ -2556,9 +2551,9 @@
         modal.querySelectorAll('.game-select-item').forEach(el => {
             el.addEventListener('click', async () => {
                 overlay.classList.remove('show');
-                showMediumSelectModal(el.dataset.game, async (medium) => {
+                showMediumSelectModal(el.dataset.game, async (medium, account) => {
                     try {
-                        await api('POST', '/live-sessions', { game: el.dataset.game, leader: state.currentPlayer, medium });
+                        await api('POST', '/live-sessions', { game: el.dataset.game, leader: state.currentPlayer, medium, account });
                         showToast(t('room_created', el.dataset.game), 'success');
                         renderDashboard();
                     } catch (e) { showToast(e.message || t('room_error'), 'error'); }

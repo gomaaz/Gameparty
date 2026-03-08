@@ -117,6 +117,9 @@ try { db.prepare("ALTER TABLE users ADD COLUMN ip TEXT DEFAULT ''").run(); } cat
 // ---- Migration: medium Feld in live_sessions (fuer LAN/Steam/etc) ----
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN medium TEXT DEFAULT 'lan'").run(); } catch {}
 
+// ---- Migration: medium_account Feld in live_sessions ----
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN medium_account TEXT").run(); } catch {}
+
 // ---- Migration: medium Feld in sessions (fuer LAN/Steam/etc) ----
 try { db.prepare("ALTER TABLE sessions ADD COLUMN medium TEXT DEFAULT 'lan'").run(); } catch {}
 
@@ -973,12 +976,12 @@ app.get('/api/live-sessions', (req, res) => {
 
 // POST /api/live-sessions — Raum erstellen (status: lobby)
 app.post('/api/live-sessions', (req, res) => {
-    const { game, leader, medium = 'lan' } = req.body;
+    const { game, leader, medium = 'lan', account = null } = req.body;
     if (!game || !leader) return res.status(400).json({ error: 'game und leader erforderlich' });
     const activeGame = getActiveSessionForPlayer(leader);
     if (activeGame) return res.status(400).json({ error: `Du bist bereits in einer laufenden Session: ${activeGame}` });
     const id = 'ls_' + Date.now();
-    db.prepare("INSERT INTO live_sessions (id, game, leader, status, medium) VALUES (?, ?, ?, 'lobby', ?)").run(id, game, leader, medium);
+    db.prepare("INSERT INTO live_sessions (id, game, leader, status, medium, medium_account) VALUES (?, ?, ?, 'lobby', ?, ?)").run(id, game, leader, medium, account);
     db.prepare('INSERT INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(id, leader, Date.now());
     res.json({ id });
 });
