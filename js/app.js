@@ -1278,6 +1278,7 @@
                     });
                     showToast(t('session_ended', coinsAmount), 'gold');
                     renderProposals();
+                    if (typeof renderDashboard === 'function') await renderDashboard();
                 } catch (e) { console.error(e); }
             });
         });
