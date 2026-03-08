@@ -1879,14 +1879,56 @@
         const panel = $('#admin-panel');
         if (!panel) return;
 
-        let usersData;
+        let usersData, liveSessionsData, allProposals;
         try {
-            usersData = await api('GET', '/users');
+            [usersData, liveSessionsData, allProposals] = await Promise.all([
+                api('GET', '/users'),
+                api('GET', '/live-sessions'),
+                api('GET', '/proposals')
+            ]);
         } catch (e) {
             panel.innerHTML = `<div class="admin-panel-header"><span class="admin-panel-title">⚙️ Admin</span><button class="admin-panel-close" id="ap-close">✕</button></div><div class="admin-panel-body"><p class="text-muted">${t('error_loading')}</p></div>`;
             $('#ap-close').addEventListener('click', closeAdminPanel);
             return;
         }
+
+        // Prepare freigabe section
+        const endedSessions = liveSessionsData.filter(s => s.status === 'ended');
+        const completedProposals = allProposals.filter(p => p.status === 'completed' && !p.coinsApproved);
+        const hasFreigabe = endedSessions.length > 0 || completedProposals.length > 0;
+
+        let freigabeHTML = '';
+        if (hasFreigabe) {
+            freigabeHTML = `
+                <div class="card" style="border-left: 3px solid var(--accent-gold)">
+                    <div class="card-title" style="color:var(--accent-gold)">📋 ${t('freigabe_pending', 'Ausstehende Freigaben')} (${endedSessions.length + completedProposals.length})</div>
+                    ${endedSessions.map(s => {
+                        const coins = calculateSessionCoins(s.players.length, state.attendees.length);
+                        return `
+                            <div style="padding:0.5rem 0;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
+                                <div style="font-weight:600">${s.game}</div>
+                                <div style="font-size:0.85rem;color:var(--text-secondary)">Leader: ${s.leader} · ${s.players.length} Spieler</div>
+                                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin:0.3rem 0">
+                                    ${s.players.map(p => `<span class="player-chip">${p}</span>`).join('')}
+                                </div>
+                                <input type="number" class="freigabe-coins-input" data-sid="${s.id}" value="${coins}" min="0" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);width:60px;margin-right:0.5rem">
+                                <button class="btn-approve freigabe-approve-btn" data-sid="${s.id}" style="padding:4px 8px;font-size:0.75rem">✓ Freigeben</button>
+                            </div>`;
+                    }).join('')}
+                </div>`;
+        }
+
+        const attendeesGridHTML = `
+            <div class="card">
+                <div class="card-title">👥 ${t('who_is_present', 'Anwesenheit')}</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:0.5rem" id="attendees-grid-admin">
+                    ${state.players.map(p => `
+                        <button class="attendee-toggle ${state.attendees.includes(p) ? 'active' : ''}" data-player="${p}" style="padding:0.6rem;border-radius:6px;border:1px solid var(--border);background:${state.attendees.includes(p) ? 'rgba(0,230,118,0.1)' : 'var(--bg-card)'};color:var(--text-primary);cursor:pointer;font-size:0.85rem">
+                            ${p}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>`;
 
         panel.innerHTML = `
             <div class="admin-panel-header">
@@ -1894,6 +1936,9 @@
                 <button class="admin-panel-close" id="ap-close">✕</button>
             </div>
             <div class="admin-panel-body">
+
+                ${freigabeHTML}
+                ${attendeesGridHTML}
 
                 <div class="card">
                     <div class="card-title">${t('player_management')}</div>
@@ -1947,6 +1992,36 @@
             </div>`;
 
         $('#ap-close').addEventListener('click', closeAdminPanel);
+
+        // Freigabe Events
+        panel.querySelectorAll('.freigabe-approve-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const sid = btn.dataset.sid;
+                const coinsInput = panel.querySelector(`.freigabe-coins-input[data-sid="${sid}"]`);
+                const coins = parseInt(coinsInput.value) || 0;
+                try {
+                    await api('PUT', `/live-sessions/${sid}/approve-coins`, { coinsPerPlayer: coins });
+                    showToast('Session freigegeben', 'success');
+                    renderAdminPanel();
+                } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
+            });
+        });
+
+        // Attendees Toggle Events
+        panel.querySelectorAll('#attendees-grid-admin .attendee-toggle').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const player = btn.dataset.player;
+                if (state.attendees.includes(player)) {
+                    state.attendees = state.attendees.filter(p => p !== player);
+                } else {
+                    state.attendees.push(player);
+                }
+                btn.classList.toggle('active');
+                try {
+                    await api('PUT', '/attendees', { attendees: state.attendees });
+                } catch (e) { console.error(e); }
+            });
+        });
 
         // Player management events
         panel.querySelectorAll('#ap-player-mgmt-list .player-mgmt-btn.edit').forEach(btn => {
@@ -2666,26 +2741,42 @@
         }
     }
 
-    function renderNotifPanel() {
+    async function renderNotifPanel() {
         const panel = $('#notif-panel');
         const badge = $('#notif-badge');
         if (!panel) return;
 
-        const count = pendingNotifications.length;
-        if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
+        let activitiesData = { incoming: [], outgoing: [] };
+        if (state.currentPlayer) {
+            try {
+                activitiesData = await api('GET', `/activities/${encodeURIComponent(state.currentPlayer)}`);
+            } catch (e) {
+                // Fehler bei Activities ignorieren - nicht kritisch
+            }
+        }
 
-        if (count === 0) {
+        const duelCount = pendingNotifications.length;
+        const activitiesCount = activitiesData.incoming.filter(a => a.status === 'active').length;
+        const totalCount = duelCount + activitiesCount;
+
+        if (badge) { badge.textContent = totalCount; badge.style.display = totalCount > 0 ? '' : 'none'; }
+
+        if (totalCount === 0) {
             panel.classList.remove('open');
             notifPanelOpen = false;
             panel.innerHTML = '';
             return;
         }
 
+        const PENALTY_ICONS = { force_play: '🎮', drink_order: '🍺' };
+        const incomingActivities = activitiesData.incoming.filter(a => a.status === 'active');
+
         panel.innerHTML = `
             <div class="notif-panel-header">
                 <span>${t('notif_panel_title')}</span>
                 <button class="notif-panel-close" id="notif-panel-close">✕</button>
             </div>
+            ${duelCount > 0 ? `<div style="border-bottom:1px solid var(--border);padding:0.5rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);font-weight:600">⚔️ DUELS</div>` : ''}
             ${pendingNotifications.map(n => `
                 <div class="notif-panel-item" data-id="${n.id}">
                     <div class="notif-panel-body">
@@ -2696,6 +2787,19 @@
                         <button class="notif-accept" data-id="${n.id}" title="${t('notif_accept')}">✓</button>
                         <button class="notif-reject" data-id="${n.id}" title="${t('notif_reject')}">✕</button>
                     </div>
+                </div>
+            `).join('')}
+            ${incomingActivities.length > 0 ? `<div style="border-bottom:1px solid var(--border);padding:0.5rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);font-weight:600">📋 TASKS</div>` : ''}
+            ${incomingActivities.map(a => `
+                <div class="notif-panel-item" data-id="activity-${a.id}" style="padding:0.6rem 0.75rem;border-bottom:1px solid var(--border)">
+                    <div class="notif-panel-body" style="font-size:0.85rem">
+                        <div style="display:flex;gap:0.3rem;align-items:center">
+                            <span>${PENALTY_ICONS[a.type] || '⚡'}</span>
+                            <span>${a.message}</span>
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem">${a.from_player || ''}</div>
+                    </div>
+                    <button class="activity-done-btn notif-activity-done" data-id="${a.id}" data-from="${a.from_player || ''}" data-type="${a.type}" style="padding:4px 8px;font-size:0.75rem;background:var(--accent-green);color:white;border:none;border-radius:4px;cursor:pointer">✓</button>
                 </div>
             `).join('')}
         `;
@@ -2735,13 +2839,38 @@
             });
         });
 
-        panel.querySelectorAll('.notif-panel-item').forEach(item => {
-            item.addEventListener('click', () => {
-                focusChallengeId = item.dataset.id;
-                notifPanelOpen = false;
-                panel.classList.remove('open');
-                navigateTo('challenges');
+        // Activity Done Button Events
+        panel.querySelectorAll('.notif-activity-done').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                const fromPlayer = btn.dataset.from;
+                const type = btn.dataset.type;
+                const ackMessages = {
+                    drink_order: `🍺 ${state.currentPlayer} hat getrunken!`,
+                    force_play: `🎮 ${state.currentPlayer} spielt mit!`,
+                };
+                const ackMsg = ackMessages[type] || `✅ ${state.currentPlayer} hat die Aufgabe erledigt!`;
+                try {
+                    if (fromPlayer) await api('POST', '/player-events', { target: fromPlayer, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
+                    await api('DELETE', `/player-events/${id}`);
+                    showToast('Aufgabe erledigt!', 'success');
+                    playSound('coin');
+                    renderNotifPanel();
+                } catch (e) { console.error(e); }
             });
+        });
+
+        // Duel notification items click to navigate
+        panel.querySelectorAll('.notif-panel-item').forEach(item => {
+            if (!item.classList.contains('notif-activity-done')) {
+                item.addEventListener('click', () => {
+                    focusChallengeId = item.dataset.id;
+                    notifPanelOpen = false;
+                    panel.classList.remove('open');
+                    navigateTo('challenges');
+                });
+            }
         });
     }
 
