@@ -400,15 +400,16 @@
             leaderboard.forEach((p, i) => {
                 const isCurrent = p.name === state.currentPlayer;
                 const starsHTML = p.stars > 0
-                    ? `<span class="leaderboard-stars">${'🎮'.repeat(Math.min(p.stars, 5))}${p.stars > 5 ? ` x${p.stars}` : ''}</span>`
+                    ? `<span class="leaderboard-stars">${p.stars > 5 ? `${p.stars} x ` : ''}${'🎮'.repeat(Math.min(p.stars, 5))}</span>`
                     : '';
                 leaderboardHTML += `
                     <div class="leaderboard-item ${isCurrent ? 'current-player' : ''}">
                         <div class="leaderboard-rank">#${i + 1}</div>
-                        <div class="leaderboard-name player-name-clickable" data-player-info="${p.name}">${p.name}${starsHTML ? '<br>' + starsHTML : ''}</div>
+                        <div class="leaderboard-name player-name-clickable" data-player-info="${p.name}">${p.name}</div>
                         <div class="leaderboard-coins">
                             <span>${p.coins}</span>
-                            <span style="font-size:0.9em">C</span>
+                            <span class="leaderboard-coin-symbol">🪙</span>
+                            ${starsHTML}
                         </div>
                     </div>`;
             });

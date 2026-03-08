@@ -319,6 +319,9 @@ body {
     font-size: 1.1rem;
     color: var(--accent-gold);
 }
+.leaderboard-coin-symbol {
+    font-size: 0.95rem;
+}
 
 /* ---- Game Suggestion ---- */
 .next-game-card {
@@ -2229,11 +2232,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* Leaderboard Sterne unter Name */
 .leaderboard-stars {
-    display: block;
-    font-size: 0.75rem;
-    margin-top: 0.15rem;
-    letter-spacing: -0.1em;
-    color: var(--accent-gold);
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85rem;
+    letter-spacing: -0.05em;
+    color: var(--accent-purple);
 }
 
 /* Profil Sterne */
