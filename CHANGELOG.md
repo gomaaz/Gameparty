@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.24 (2026-03-08)
+- refactor: use createIconSvg() for steam and ubisoft in profile card – full consistency
+
 ## v2.3.23 (2026-03-08)
 - refactor: use SVG files from /svg/ folder instead of inline paths
 - refactor: centralized icon management (ICON_FILES mapping, createIconSvg() helper)
