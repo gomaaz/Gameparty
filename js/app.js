@@ -2696,6 +2696,7 @@
         const playerBtn = $('#header-player-btn');
         const coinsDisplay = $('#header-coins');
         const starsDisplay = $('#header-stars');
+        const starsContainer = $('#header-stars-display');
 
         if (state.currentPlayer) {
             playerBtn.textContent = state.currentPlayer + (isAdmin() ? ' (Admin)' : '');
@@ -2703,15 +2704,13 @@
             coinsDisplay.textContent = getPlayerCoins(state.currentPlayer);
             coinsDisplay.parentElement.style.display = 'flex';
             const playerStars = getPlayerStars(state.currentPlayer);
-            if (starsDisplay) {
-                starsDisplay.textContent = playerStars;
-                starsDisplay.parentElement.style.display = playerStars > 0 ? 'flex' : 'none';
-            }
+            if (starsDisplay) starsDisplay.textContent = playerStars;
+            if (starsContainer) starsContainer.style.display = playerStars > 0 ? 'flex' : 'none';
         } else {
             playerBtn.textContent = t('header_login');
             playerBtn.style.display = 'inline-block';
             coinsDisplay.parentElement.style.display = 'none';
-            if (starsDisplay) starsDisplay.parentElement.style.display = 'none';
+            if (starsContainer) starsContainer.style.display = 'none';
         }
 
         const bellBtn = $('#notif-bell-btn');
@@ -3254,7 +3253,10 @@
             const coinsDisplay = $('#header-coins');
             coinsDisplay.textContent = getPlayerCoins(state.currentPlayer);
             const starsDisplay = $('#header-stars');
-            if (starsDisplay) starsDisplay.textContent = getPlayerStars(state.currentPlayer);
+            const starsContainer = $('#header-stars-display');
+            const playerStars = getPlayerStars(state.currentPlayer);
+            if (starsDisplay) starsDisplay.textContent = playerStars;
+            if (starsContainer) starsContainer.style.display = playerStars > 0 ? 'flex' : 'none';
         }
     }
 

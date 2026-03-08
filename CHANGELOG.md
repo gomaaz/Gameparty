@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.40 (2026-03-09)
+- fix: hide header-stars-display when player has no stars
+
 ## v2.3.39 (2026-03-08)
 - feat: validate min 2 players and no duplicate sessions
 
