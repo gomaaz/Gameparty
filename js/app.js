@@ -1193,7 +1193,7 @@
 
         let scheduleHTML = '';
         if (p.scheduledDay || p.scheduledTime) {
-            scheduleHTML = `<div class="live-session-meta">📅 ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
+            scheduleHTML = `<div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
         }
 
         let messageHTML = '';
