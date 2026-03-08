@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.35 (2026-03-08)
+- fix: geplante sessions now correctly display in admin freigabe section (wrong field names)
+
 ## v2.3.34 (2026-03-08)
 - fix: geplante sessions now appear in admin approval section after being ended (dashboard refresh)
 
