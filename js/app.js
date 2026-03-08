@@ -1939,6 +1939,20 @@
                                 <button class="btn-approve freigabe-approve-btn" data-sid="${s.id}" style="padding:4px 8px;font-size:0.75rem">✓ Freigeben</button>
                             </div>`;
                     }).join('')}
+                    ${completedProposals.map(p => {
+                        const coins = p.coins || 0;
+                        const playersList = p.players && Array.isArray(p.players) ? p.players : [];
+                        return `
+                            <div style="padding:0.5rem 0;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
+                                <div style="font-weight:600">${escapeHtml(p.title || 'Geplante Session')}</div>
+                                <div style="font-size:0.85rem;color:var(--text-secondary)">Planner: ${escapeHtml(p.planner)} · ${playersList.length} Spieler</div>
+                                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin:0.3rem 0">
+                                    ${playersList.map(pl => `<span class="player-chip">${escapeHtml(pl)}</span>`).join('')}
+                                </div>
+                                <input type="number" class="freigabe-coins-input proposal" data-pid="${p.id}" value="${coins}" min="0" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);width:60px;margin-right:0.5rem">
+                                <button class="btn-approve freigabe-approve-btn proposal" data-pid="${p.id}" style="padding:4px 8px;font-size:0.75rem">✓ Freigeben</button>
+                            </div>`;
+                    }).join('')}
                 </div>`;
         }
 
@@ -2021,13 +2035,27 @@
         panel.querySelectorAll('.freigabe-approve-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const sid = btn.dataset.sid;
-                const coinsInput = panel.querySelector(`.freigabe-coins-input[data-sid="${sid}"]`);
-                const coins = parseInt(coinsInput.value) || 0;
-                try {
-                    await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer: coins });
-                    showToast('Session freigegeben', 'success');
-                    renderAdminPanel();
-                } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
+                const pid = btn.dataset.pid;
+
+                if (sid) {
+                    // Live Session approval
+                    const coinsInput = panel.querySelector(`.freigabe-coins-input[data-sid="${sid}"]`);
+                    const coins = parseInt(coinsInput.value) || 0;
+                    try {
+                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer: coins });
+                        showToast('Session freigegeben', 'success');
+                        renderAdminPanel();
+                    } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
+                } else if (pid) {
+                    // Proposal approval
+                    const coinsInput = panel.querySelector(`.freigabe-coins-input[data-pid="${pid}"]`);
+                    const coins = parseInt(coinsInput.value) || 0;
+                    try {
+                        await api('POST', `/proposals/${pid}/approve`, { coins });
+                        showToast('Geplante Session freigegeben', 'success');
+                        renderAdminPanel();
+                    } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
+                }
             });
         });
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.16 (2026-03-08)
+- fix: handle null coinsApproved in proposal freigabe filter
+
 ## v2.3.15 (2026-03-08)
 - fix: initialize coinsApproved=0 on proposal creation
 
