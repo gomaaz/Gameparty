@@ -1,7 +1,7 @@
 # Changelog
 
-## v2.3.18 (2026-03-08)
-- fix: refresh dashboard after ending planned session
+## v2.3.34 (2026-03-08)
+- fix: geplante sessions now appear in admin approval section after being ended (dashboard refresh)
 
 ## v2.3.33 (2026-03-08)
 - fix: leader can now end their sessions (player field optional in PUT /live-sessions/:id/end)
