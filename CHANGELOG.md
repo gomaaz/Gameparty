@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.13 (2026-03-08)
+- feat: implement medium selection modal for room creation
+
 ## v2.3.12 (2026-03-08)
 - feat: add medium field for live sessions
 
