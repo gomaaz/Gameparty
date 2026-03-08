@@ -654,9 +654,8 @@
                 </div>
                 <div class="game-table-header ${admin ? 'admin-header' : ''}" id="game-table-header">
                     ${admin ? `<input type="checkbox" id="select-all-games" title="${t('btn_deselect')}">` : ''}
-                    <span class="gth-nr">${t('col_number')}</span>
                     <span class="gth-name">${t('col_game_genre_max')}</span>
-                    <span class="gth-like">${t('col_like')}</span>
+                    <span class="gth-like">👍</span>
                     ${admin ? `<span class="gth-coins">${t('col_coins')}</span>` : ''}
                     ${admin ? `<span class="gth-actions">${t('col_edit')}</span>` : ''}
                 </div>
@@ -1099,7 +1098,7 @@
                 <button id="bulk-deselect-btn" class="btn-bulk-clear">${t('btn_deselect')}</button>
             </div>` : '';
 
-        container.innerHTML = bulkBar + games.map((g, idx) => {
+        container.innerHTML = bulkBar + games.map(g => {
             const noMatch = g.matchCount < CONFIG.MIN_MATCH ? 'no-match' : '';
             const hasMatch = g.matchCount >= CONFIG.MIN_MATCH ? 'has-match' : '';
             const isInterested = player && g.players && g.players[player];
@@ -1110,7 +1109,7 @@
 
             const interestBtn = player ? `
                 <button class="game-interest-btn ${isInterested ? 'active' : ''}" data-game="${g.name}" title="${isInterested ? 'Austragen' : 'Interesse zeigen'}">
-                    ${isInterested ? '\u2713' : '+'}
+                    👍
                 </button>` : '<span></span>';
 
             const adminCoins = admin ? `
@@ -1131,7 +1130,6 @@
             return `
                 <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}">
                     ${checkbox}
-                    <div class="game-nr">#${idx + 1}</div>
                     <div class="game-info">
                         <div class="game-name">
                             ${g.name}${coinsTag}
@@ -1144,10 +1142,10 @@
                         </div>
                         <div class="game-players-row">${playerDots}</div>
                     </div>
+                    ${createRoomBtn}
                     ${interestBtn}
                     ${adminCoins}
                     ${adminBtns}
-                    ${createRoomBtn}
                 </div>`;
         }).join('');
 
