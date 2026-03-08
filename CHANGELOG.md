@@ -1,10 +1,9 @@
 # Changelog
 
-## v2.3.13 (2026-03-08)
-- feat: implement medium selection modal for room creation
-
-## v2.3.12 (2026-03-08)
-- feat: add medium field for live sessions
+## v2.3.30 (2026-03-08)
+- feat: implement medium selection modal for room creation (LAN, Steam, Ubisoft, etc.)
+- feat: add medium field for live sessions – stored in DB, previewed with preferred platform
+- style: add medium selection grid styling (4 columns, responsive, icons + labels)
 
 ## v2.3.29 (2026-03-08)
 - chore: add missing change_language i18n key
