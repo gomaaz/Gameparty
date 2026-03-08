@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.10 (2026-03-08)
+- style: fix admin badge CSS selector conflict
+
 ## v2.3.9 (2026-03-08)
 - fix: three frontend issues - language toggle, logout button, player switch
 

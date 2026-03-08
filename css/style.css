@@ -1581,7 +1581,7 @@ body {
 .admin-gear-btn:hover { border-color: var(--accent-gold); }
 .admin-gear-btn.active { border-color: var(--accent-gold); background: rgba(255,215,0,0.1); }
 
-.admin-badge {
+.admin-gear-btn .admin-badge {
     position: absolute; top: -2px; right: -4px;
     background: var(--accent-red); color: #fff; border-radius: 50%;
     font-size: 0.65rem; font-weight: 700;
