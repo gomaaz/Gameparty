@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.12 (2026-03-08)
+- feat: add medium field for live sessions
+
 ## v2.3.29 (2026-03-08)
 - chore: add missing change_language i18n key
 - style: fix admin badge CSS selector conflict

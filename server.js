@@ -114,6 +114,12 @@ try { db.prepare("ALTER TABLE users ADD COLUMN ip TEXT DEFAULT ''").run(); } cat
     try { db.prepare(`ALTER TABLE users ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch {}
 });
 
+// ---- Migration: medium Feld in live_sessions (fuer LAN/Steam/etc) ----
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN medium TEXT DEFAULT 'lan'").run(); } catch {}
+
+// ---- Migration: medium Feld in sessions (fuer LAN/Steam/etc) ----
+try { db.prepare("ALTER TABLE sessions ADD COLUMN medium TEXT DEFAULT 'lan'").run(); } catch {}
+
 // ---- Migration: Rename steamRating to previewUrl ----
 try {
     db.exec('ALTER TABLE games RENAME COLUMN steamRating TO previewUrl');
@@ -937,12 +943,12 @@ app.get('/api/live-sessions', (req, res) => {
 
 // POST /api/live-sessions — Raum erstellen (status: lobby)
 app.post('/api/live-sessions', (req, res) => {
-    const { game, leader } = req.body;
+    const { game, leader, medium = 'lan' } = req.body;
     if (!game || !leader) return res.status(400).json({ error: 'game und leader erforderlich' });
     const activeGame = getActiveSessionForPlayer(leader);
     if (activeGame) return res.status(400).json({ error: `Du bist bereits in einer laufenden Session: ${activeGame}` });
     const id = 'ls_' + Date.now();
-    db.prepare("INSERT INTO live_sessions (id, game, leader, status) VALUES (?, ?, ?, 'lobby')").run(id, game, leader);
+    db.prepare("INSERT INTO live_sessions (id, game, leader, status, medium) VALUES (?, ?, ?, 'lobby', ?)").run(id, game, leader, medium);
     db.prepare('INSERT INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(id, leader, Date.now());
     res.json({ id });
 });
@@ -999,7 +1005,7 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
             db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, coinsPerPlayer, coinsPerPlayer);
             db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsPerPlayer, `Session: ${session.game} (${players.length} Spieler)`, now);
         }
-        db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp) VALUES (?, ?, ?, ?)').run(session.game, JSON.stringify(players), coinsPerPlayer, now);
+        db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp, medium) VALUES (?, ?, ?, ?, ?)').run(session.game, JSON.stringify(players), coinsPerPlayer, now, session.medium);
         db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(req.params.id);
         db.prepare('DELETE FROM live_sessions WHERE id = ?').run(req.params.id);
     });
