@@ -1277,6 +1277,10 @@ body {
         font-size: 1.1rem;
     }
 
+    .app-logo span:last-child {
+        display: none;
+    }
+
     .nav-item {
         padding: 0.3rem 0.4rem;
         font-size: 0.6rem;
