@@ -244,9 +244,9 @@
             info.teamspeak ? `TeamSpeak: ${info.teamspeak}` : '',
         ].filter(Boolean).join('<br>');
 
-        if (!hasData) return `<span class="player-chip">${playerName}</span>`;
+        if (!hasData) return `<span class="player-chip player-name-clickable" data-player-info="${playerName}">${playerName}</span>`;
 
-        return `<span class="player-chip player-chip-info" data-player="${playerName}" data-tooltip="${tooltipLines.replace(/"/g, '&quot;')}">
+        return `<span class="player-chip player-chip-info player-name-clickable" data-player="${playerName}" data-player-info="${playerName}" data-tooltip="${tooltipLines.replace(/"/g, '&quot;')}">
             ${playerName}
             <span class="player-chip-icons">${icons}</span>
         </span>`;
@@ -398,7 +398,7 @@
                 leaderboardHTML += `
                     <div class="leaderboard-item ${isCurrent ? 'current-player' : ''}">
                         <div class="leaderboard-rank">#${i + 1}</div>
-                        <div class="leaderboard-name">${p.name}${starsHTML ? '<br>' + starsHTML : ''}</div>
+                        <div class="leaderboard-name player-name-clickable" data-player-info="${p.name}">${p.name}${starsHTML ? '<br>' + starsHTML : ''}</div>
                         <div class="leaderboard-coins">
                             <span>${p.coins}</span>
                             <span style="font-size:0.9em">C</span>
@@ -489,7 +489,7 @@
                                 <span class="live-session-game">${s.game}</span>
                                 ${statusBadge}
                             </div>
-                            <div class="live-session-meta">${t('session_group_leader')} ${s.leader}</div>
+                            <div class="live-session-meta">${t('session_group_leader')} <span class="player-name-clickable" data-player-info="${s.leader}">${s.leader}</span></div>
                             ${renderLeaderIcons(s.leader, s.medium, s.medium_account)}
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
@@ -3590,6 +3590,45 @@
     function hidePlayerTooltip() {
         if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
     }
+    function showPlayerInfoModal(playerName) {
+        const info = getUserInfo(playerName);
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+
+        const PLATFORMS = [
+            { key: 'ip',        label: 'LAN-IP',          icon: () => '🖥️' },
+            { key: 'steam',     label: 'Steam',            icon: () => createIconSvg('steam',     '16px') },
+            { key: 'ubisoft',   label: 'Ubisoft Connect',  icon: () => createIconSvg('ubisoft',   '16px') },
+            { key: 'battlenet', label: 'Battle.net',       icon: () => createIconSvg('battlenet', '16px') },
+            { key: 'epic',      label: 'Epic Games',       icon: () => createIconSvg('epic',      '16px') },
+            { key: 'ea',        label: 'EA App',           icon: () => createIconSvg('ea',        '16px') },
+            { key: 'riot',      label: 'Riot Games',       icon: () => createIconSvg('riot',      '16px') },
+            { key: 'discord',   label: 'Discord',          icon: () => createIconSvg('discord',   '16px') },
+            { key: 'teamspeak', label: 'TeamSpeak',        icon: () => createIconSvg('teamspeak', '16px') },
+        ];
+
+        const rows = PLATFORMS
+            .filter(p => info[p.key])
+            .map(p => `
+                <div class="player-info-modal-row icon-copy" data-copy-value="${info[p.key]}">
+                    <span class="player-info-modal-icon">${p.icon()}</span>
+                    <span class="player-info-modal-label">${p.label}</span>
+                    <span class="player-info-modal-value">${info[p.key]}</span>
+                    <span class="player-info-modal-copy">📋</span>
+                </div>`)
+            .join('');
+
+        const empty = rows ? '' : `<p style="color:var(--text-secondary);text-align:center;font-size:0.85rem;padding:1rem 0">Keine Account-Daten hinterlegt.</p>`;
+
+        modal.innerHTML = `
+            <div class="modal-title">${playerName}</div>
+            <div class="player-info-modal-rows">${rows}${empty}</div>
+            <button class="btn-secondary" id="player-info-close" style="width:100%;margin-top:0.5rem">Schließen</button>
+        `;
+
+        overlay.classList.add('show');
+        $('#player-info-close').addEventListener('click', () => overlay.classList.remove('show'));
+    }
     // Desktop: hover zeigt Tooltip (nur echte Maus, kein Touch)
     document.addEventListener('pointerover', e => {
         if (e.pointerType !== 'mouse') return;
@@ -3609,6 +3648,15 @@
             navigator.clipboard.writeText(value).then(() => {
                 showToast('✓ In Zwischenablage kopiert!');
             });
+            return;
+        }
+
+        // Player info modal on name click
+        const playerInfoTarget = e.target.closest('[data-player-info]');
+        if (playerInfoTarget) {
+            hidePlayerTooltip();
+            showPlayerInfoModal(playerInfoTarget.getAttribute('data-player-info'));
+            e.stopPropagation();
             return;
         }
 

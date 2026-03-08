@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.37 (2026-03-08)
+- feat: add player info modal on name click
+
 ## v2.3.42 (2026-03-08)
 
 ### Fixed
