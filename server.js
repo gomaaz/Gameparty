@@ -552,6 +552,10 @@ app.post('/api/proposals', (req, res) => {
 app.put('/api/proposals/:id', (req, res) => {
     const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id);
     if (!proposal) return res.status(404).json({ error: 'Proposal nicht gefunden' });
+    if (req.body.status === 'active') {
+        const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM proposal_players WHERE proposal_id = ?').get(req.params.id).cnt;
+        if (playerCount < 2) return res.status(400).json({ error: 'Eine Session benötigt mindestens 2 Spieler' });
+    }
     const updates = [];
     const params = [];
     for (const [key, value] of Object.entries(req.body)) {
@@ -821,6 +825,11 @@ app.put('/api/challenges/:id/accept', (req, res) => {
         if (!row || row.amount < c.stakeStars) return res.status(400).json({ error: 'Nicht genug Sterne' });
     }
 
+    const challengerBusy = getActiveSessionForPlayer(c.challenger);
+    if (challengerBusy) return res.status(400).json({ error: `${c.challenger} ist bereits in einer laufenden Session: ${challengerBusy}` });
+    const opponentBusy = getActiveSessionForPlayer(c.opponent);
+    if (opponentBusy) return res.status(400).json({ error: `${c.opponent} ist bereits in einer laufenden Session: ${opponentBusy}` });
+
     db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
 
     // Direkt eine laufende Duell-Session fuer beide Spieler erstellen
@@ -997,6 +1006,8 @@ app.put('/api/live-sessions/:id/start', (req, res) => {
     const session = db.prepare('SELECT status FROM live_sessions WHERE id = ?').get(req.params.id);
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
     if (session.status !== 'lobby') return res.status(400).json({ error: 'Session nicht im Lobby-Status' });
+    const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM live_session_players WHERE session_id = ?').get(req.params.id).cnt;
+    if (playerCount < 2) return res.status(400).json({ error: 'Eine Session benötigt mindestens 2 Spieler' });
     db.prepare("UPDATE live_sessions SET status = 'running', startedAt = ? WHERE id = ?").run(Date.now(), req.params.id);
     res.json({ success: true });
 });

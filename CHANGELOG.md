@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.39 (2026-03-08)
+- feat: validate min 2 players and no duplicate sessions
+
 ## v2.3.38 (2026-03-08)
 - style: add player info modal CSS classes
 
