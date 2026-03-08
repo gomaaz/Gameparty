@@ -338,10 +338,9 @@
         const container = $('#view-dashboard');
 
         try {
-            const [coinsData, starsData, sessionsData, proposalsData, liveSessionsData, usersData] = await Promise.all([
+            const [coinsData, starsData, proposalsData, liveSessionsData, usersData] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
-                api('GET', '/sessions'),
                 api('GET', '/proposals'),
                 api('GET', '/live-sessions'),
                 api('GET', '/users')
@@ -349,7 +348,6 @@
             const userIpMap = Object.fromEntries((usersData || []).map(u => [u.name, u.ip || '']));
             state.coins = coinsData;
             state.stars = starsData;
-            const sessions = sessionsData;
             const allProposals = proposalsData;
 
             const topGame = getTopMatchGame();
@@ -410,29 +408,8 @@
             const plannedSessionsHTML = plannedProposals.map(renderProposalCard).join('') ||
                 `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_planned_sessions')}</div>`;
 
-            // Recent sessions
-            const recentSessions = sessions.slice(0, 5);
+            // Recent sessions moved to profile
             let sessionsHTML = '';
-            if (recentSessions.length > 0) {
-                sessionsHTML = `
-                    <div class="card">
-                        <div class="card-title">${t('recent_sessions')}</div>
-                        <div style="display:flex;flex-direction:column;gap:0.4rem">
-                            ${recentSessions.map(s => `
-                                <div class="session-history-item">
-                                    <div class="session-history-header">
-                                        <span class="session-history-game">${s.game}</span>
-                                        <span class="session-history-time">${formatTime(s.timestamp)}</span>
-                                    </div>
-                                    <div class="session-history-players">
-                                        ${s.players.map(p => `<span class="player-chip">${p}</span>`).join('')}
-                                    </div>
-                                    <div class="session-history-coins">${s.coinsPerPlayer} ${t('coins_per_player')}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>`;
-            }
 
             let liveSessionsHTML = '';
             if (liveSessionsData.length > 0) {
@@ -3206,8 +3183,7 @@
 
         // Header player selection + logout
         $('#header-player-btn').addEventListener('click', () => {
-            if (state.currentPlayer) navigateTo('profile');
-            else showLoginModal();
+            if (!state.currentPlayer) showLoginModal();
         });
         $('#header-logout-btn').addEventListener('click', logout);
 
@@ -3244,8 +3220,7 @@
         updateHeader();
         updateNavVisibility();
         const savedView = localStorage.getItem(LOCAL_KEYS.VIEW) || 'dashboard';
-        // Profile hat keinen Nav-Tab mehr – Fallback auf dashboard
-        navigateTo(savedView === 'profile' ? 'dashboard' : savedView);
+        navigateTo(savedView);
 
         if (state.currentPlayer) {
             startChallengePoll();
