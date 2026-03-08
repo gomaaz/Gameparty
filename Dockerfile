@@ -28,6 +28,7 @@ COPY package.json ./
 COPY index.html ./
 COPY js/ ./js/
 COPY css/ ./css/
+COPY svg/ ./svg/
 
 # Daten-Verzeichnis fuer SQLite-Datenbank
 RUN mkdir -p /data
