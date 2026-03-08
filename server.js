@@ -135,21 +135,6 @@ try {
     console.log('Migration: steamRating → previewUrl');
 } catch (e) { /* bereits migriert oder Spalte existiert nicht */ }
 
-// ---- Migration: live_sessions vor Lobby-System hatten status='running' ab Erstellung ----
-// Solche Einträge (running, kein endedAt) sind alte Testdaten → löschen
-try {
-    const stale = db.prepare("SELECT id FROM live_sessions WHERE status = 'running' AND endedAt IS NULL").all();
-    if (stale.length > 0) {
-        const del = db.transaction(() => {
-            for (const s of stale) {
-                db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(s.id);
-                db.prepare('DELETE FROM live_sessions WHERE id = ?').run(s.id);
-            }
-        });
-        del();
-        console.log(`Migration: ${stale.length} alte live_sessions (running ohne endedAt) bereinigt`);
-    }
-} catch (e) { /* Tabelle existiert noch nicht beim ersten Start */ }
 
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
@@ -542,6 +527,8 @@ app.get('/api/proposals', (req, res) => {
 // POST /api/proposals
 app.post('/api/proposals', (req, res) => {
     const { id, game, isNewGame, leader, message, scheduledDay, scheduledTime, medium, medium_account } = req.body;
+    const activeGame = getActiveSessionForPlayer(leader);
+    if (activeGame) return res.status(400).json({ error: `Du bist bereits in einer laufenden Session: ${activeGame}` });
     const proposalId = id || 'p_' + Date.now();
     db.prepare('INSERT INTO proposals (id, game, isNewGame, leader, status, scheduledTime, scheduledDay, message, createdAt, coinsApproved, medium, medium_account) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(proposalId, game, isNewGame ? 1 : 0, leader, 'pending', scheduledTime || '', scheduledDay || '', message || '', Date.now(), 0, medium || 'lan', medium_account || '');
     db.prepare('INSERT INTO proposal_players (proposal_id, player) VALUES (?, ?)').run(proposalId, leader);
@@ -555,6 +542,21 @@ app.put('/api/proposals/:id', (req, res) => {
     if (req.body.status === 'active') {
         const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM proposal_players WHERE proposal_id = ?').get(req.params.id).cnt;
         if (playerCount < 2) return res.status(400).json({ error: 'Eine Session benötigt mindestens 2 Spieler' });
+        const players = db.prepare('SELECT player FROM proposal_players WHERE proposal_id = ?').all(req.params.id);
+        for (const { player } of players) {
+            const conflict = db.prepare(`
+                SELECT ls.game FROM live_sessions ls
+                INNER JOIN live_session_players lsp ON ls.id = lsp.session_id
+                WHERE lsp.player = ? AND ls.status = 'running'
+            `).get(player);
+            if (conflict) return res.status(400).json({ error: `${player} ist bereits in einer laufenden Session: ${conflict.game}` });
+            const proposalConflict = db.prepare(`
+                SELECT p.game FROM proposals p
+                INNER JOIN proposal_players pp ON p.id = pp.proposal_id
+                WHERE pp.player = ? AND p.status = 'active' AND p.id != ?
+            `).get(player, req.params.id);
+            if (proposalConflict) return res.status(400).json({ error: `${player} ist bereits in einer laufenden Session: ${proposalConflict.game}` });
+        }
     }
     const updates = [];
     const params = [];
