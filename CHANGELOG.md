@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.41 (2026-03-09)
+- style: silver coin symbol filter
+
 ## v2.3.40 (2026-03-09)
 - fix: hide header-stars-display when player has no stars
 

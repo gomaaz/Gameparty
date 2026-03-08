@@ -322,7 +322,7 @@ body {
 .leaderboard-coin-symbol,
 .coin-symbol {
     font-size: 0.95rem;
-    filter: grayscale(1) brightness(1.6);
+    filter: grayscale(1) brightness(1.2) contrast(1.1);
 }
 
 /* ---- Game Suggestion ---- */
