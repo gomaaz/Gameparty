@@ -17,7 +17,7 @@ const TRANSLATIONS = {
         profile_ip_desc: 'Your PC\'s IP address is shown to other players when you create a room.',
         profile_ip_placeholder: 'e.g. 192.168.1.10',
         btn_save_ip: 'Save',
-        ip_saved: 'IP address saved.',
+        ip_saved: 'Connection & Accounts saved.',
         room_ip_label: 'Server IP',
 
         // --- Activities ---
@@ -381,7 +381,7 @@ const TRANSLATIONS = {
         profile_ip_desc: 'Deine PC-IP wird anderen Spielern angezeigt, wenn du einen Raum erstellst.',
         profile_ip_placeholder: 'z.B. 192.168.1.10',
         btn_save_ip: 'Speichern',
-        ip_saved: 'IP-Adresse gespeichert.',
+        ip_saved: 'Verbindung & Konten gespeichert.',
         room_ip_label: 'Server-IP',
 
         // --- Activities ---
