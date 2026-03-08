@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.15 (2026-03-08)
+- fix: initialize coinsApproved=0 on proposal creation
+
 ## v2.3.31 (2026-03-08)
 - fix: prevent leader from joining own session (join validation)
 - fix: prevent unauthorized session end (only leader or admin can end sessions)
