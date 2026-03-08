@@ -548,17 +548,7 @@
 
             const suggestedGames = state.games.filter(g => g.status === 'suggested');
 
-            const attendeesHTML = admin ? `
-                <div class="attendees-config card">
-                    <div class="card-title">${t('who_is_present')} <span class="admin-badge">Admin</span></div>
-                    <div class="attendees-grid" id="attendees-grid">
-                        ${state.players.map(p => `
-                            <button class="attendee-toggle ${state.attendees.includes(p) ? 'active' : ''}" data-player="${p}">
-                                ${p}
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>` : `
+            const attendeesHTML = `
                 <div class="card">
                     <div class="card-title">${t('present')}</div>
                     <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
@@ -639,25 +629,6 @@
                     filterGames();
                 });
             });
-
-            // --- Attendees (Admin) ---
-            if (admin) {
-                $$('#attendees-grid .attendee-toggle').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const player = btn.dataset.player;
-                        if (state.attendees.includes(player)) {
-                            state.attendees = state.attendees.filter(p => p !== player);
-                        } else {
-                            state.attendees.push(player);
-                        }
-                        btn.classList.toggle('active');
-                        try {
-                            await api('PUT', '/attendees', { attendees: state.attendees });
-                        } catch (e) { console.error(e); }
-                        filterGames();
-                    });
-                });
-            }
 
             // --- Suggest Game ---
             const suggestNameEl = $('#suggest-name');
@@ -1394,7 +1365,7 @@
 
         try {
             const player = state.currentPlayer;
-            const [coinsData, starsData, history, tokens, sessions, allUsers] = await Promise.all([
+            const [coinsData, starsData, history, tokens, sessionsData, allUsers] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
                 api('GET', `/history/${encodeURIComponent(player)}`),
@@ -1402,6 +1373,7 @@
                 api('GET', '/sessions'),
                 api('GET', '/users')
             ]);
+            const sessions = sessionsData;
             const currentUserIp = (allUsers.find(u => u.name === player) || {}).ip || '';
             const currentUser = allUsers.find(u => u.name === player) || {};
             state.coins = coinsData;
@@ -1415,6 +1387,30 @@
             const skipTokens = tokens.filter(t => t.type === 'skip_token');
             const forceTokens = tokens.filter(t => t.type === 'force_play');
             const chooseTokens = tokens.filter(t => t.type === 'choose_next');
+
+            // Recent sessions (letzte 5)
+            const recentSessions = sessions.filter(s => s.players.includes(player)).slice(0, 5);
+            let recentSessionsHTML = '';
+            if (recentSessions.length > 0) {
+                recentSessionsHTML = `
+                    <div class="card">
+                        <div class="card-title">${t('recent_sessions')}</div>
+                        <div style="display:flex;flex-direction:column;gap:0.4rem">
+                            ${recentSessions.map(s => `
+                                <div class="session-history-item">
+                                    <div class="session-history-header">
+                                        <span class="session-history-game">${s.game}</span>
+                                        <span class="session-history-time">${formatTime(s.timestamp)}</span>
+                                    </div>
+                                    <div class="session-history-players">
+                                        ${s.players.map(p => `<span class="player-chip">${p}</span>`).join('')}
+                                    </div>
+                                    <div class="session-history-coins">${s.coinsPerPlayer} ${t('coins_per_player')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+            }
 
             let tokensHTML = '';
             if (skipTokens.length || forceTokens.length || chooseTokens.length) {
@@ -1502,6 +1498,7 @@
                     <button class="btn-admin-coins" id="btn-save-accounts" style="width:100%;margin-top:0.75rem">${t('btn_save_accounts')}</button>
                 </div>
                 ${tokensHTML}
+                ${recentSessionsHTML}
                 <div class="card">
                     <div class="card-title">${t('change_pin')}</div>
                     <div class="admin-coins-form">
@@ -1534,6 +1531,18 @@
                             <button class="btn-secondary" id="notif-test-btn">🔔 Testen</button>
                         </div>` : ''}
                     </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">${t('settings_title', '⚙️ Einstellungen')}</div>
+                    <div class="notif-settings">
+                        <div class="notif-row">
+                            <span>🌐 ${t('change_language', 'Sprache')}</span>
+                            <button class="lang-toggle-btn" id="profile-lang-toggle" title="Switch language">${document.documentElement.lang === 'de' ? '🇩🇪 DE' : '🇬🇧 EN'}</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <button class="btn-danger" id="btn-logout" style="width:100%">⏻ ${t('btn_logout', 'Ausloggen')}</button>
                 </div>
             `;
 
@@ -1650,6 +1659,24 @@
                         if (idx >= 0) Object.assign(state.allUsers[idx], { ip, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak });
                         showToast(t('ip_saved'), 'success');
                     } catch (e2) { console.error(e2); }
+                });
+            }
+
+            // Logout Button
+            const logoutBtn = container.querySelector('#btn-logout');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', logout);
+            }
+
+            // Lang Toggle im Profil
+            const langToggleBtn = container.querySelector('#profile-lang-toggle');
+            if (langToggleBtn) {
+                langToggleBtn.addEventListener('click', () => {
+                    const currentLang = document.documentElement.lang;
+                    const newLang = currentLang === 'de' ? 'en' : 'de';
+                    localStorage.setItem('lang', newLang);
+                    document.documentElement.lang = newLang;
+                    location.reload();
                 });
             }
 
