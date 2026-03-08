@@ -1,10 +1,9 @@
 # Changelog
 
-## v2.3.16 (2026-03-08)
-- fix: handle null coinsApproved in proposal freigabe filter
-
-## v2.3.15 (2026-03-08)
-- fix: initialize coinsApproved=0 on proposal creation
+## v2.3.32 (2026-03-08)
+- fix: initialize coinsApproved=0 on proposal creation (prevents null values)
+- fix: geplante sessions now appear in "Ausstehende Freigaben" (admin approval section)
+- fix: robust filter for completed proposals in admin panel
 
 ## v2.3.31 (2026-03-08)
 - fix: prevent leader from joining own session (join validation)
