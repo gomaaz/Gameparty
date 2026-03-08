@@ -450,7 +450,7 @@
                     const isInSession = s.players.includes(state.currentPlayer);
                     const duration = s.startedAt ? formatDuration(Date.now() - s.startedAt) : '';
                     const playersHTML = s.players.map(p =>
-                        `<span class="player-chip">${p}${p === s.leader ? '<span class="session-leader-badge">GL</span>' : ''}</span>`
+                        `<span class="player-chip player-name-clickable" data-player-info="${p}">${p === s.leader ? '<span class="session-leader-badge">GL</span>' : ''}${p}</span>`
                     ).join('');
 
                     let statusBadge = '';
@@ -486,11 +486,9 @@
                     return `
                         <div class="card live-session-card ${s.status}">
                             <div class="live-session-header">
-                                <span class="live-session-game">${s.game}</span>
+                                <span class="live-session-game">${renderLeaderIcons(s.leader, s.medium, s.medium_account)}${s.game}</span>
                                 ${statusBadge}
                             </div>
-                            <div class="live-session-meta">${t('session_group_leader')} <span class="player-name-clickable" data-player-info="${s.leader}">${s.leader}</span></div>
-                            ${renderLeaderIcons(s.leader, s.medium, s.medium_account)}
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>`;
@@ -1241,16 +1239,14 @@
         return `
             <div class="card live-session-card ${statusClass}" data-proposal-id="${p.id}">
                 <div class="live-session-header">
-                    <span class="live-session-game">${p.game}</span>
+                    <span class="live-session-game">${p.medium ? renderLeaderIcons(p.leader, p.medium, p.medium_account) : renderLeaderIcons(p.leader)}${p.game}</span>
                     ${statusBadge}
                 </div>
-                <div class="live-session-meta">${t('session_group_leader')} ${p.leader}</div>
-                ${p.medium ? renderLeaderIcons(p.leader, p.medium, p.medium_account) : renderLeaderIcons(p.leader)}
                 ${messageHTML}
                 ${scheduleHTML}
                 ${coinStatusHTML}
                 ${leaderEditHTML}
-                <div>${p.players.map(n => `<span class="player-chip">${n}${n === p.leader ? '<span class="session-leader-badge">GL</span>' : ''}</span>`).join('')}</div>
+                <div>${p.players.map(n => `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? '<span class="session-leader-badge">GL</span>' : ''}${n}</span>`).join('')}</div>
                 ${actionsHTML}
             </div>`;
     }
