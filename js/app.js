@@ -21,14 +21,14 @@
 
     // ---- Medium Options ----
     const MEDIUM_OPTIONS = [
-        { id: 'lan',       label: 'LAN',        icon: '🖥️' },
-        { id: 'steam',     label: 'Steam',      icon: '🎮' },
-        { id: 'ubisoft',   label: 'Ubisoft',    icon: '📦' },
-        { id: 'battlenet', label: 'Battle.net', icon: '💀' },
-        { id: 'epic',      label: 'Epic Games', icon: '⚡' },
-        { id: 'ea',        label: 'EA App',     icon: '🎯' },
-        { id: 'riot',      label: 'Riot Games', icon: '💎' },
-        { id: 'other',     label: 'Andere',     icon: '🗂️' }
+        { id: 'lan',       label: 'LAN',        icon: '🖥️',   svg: null },
+        { id: 'steam',     label: 'Steam',      icon: null,    svg: '/svg/steam.svg' },
+        { id: 'ubisoft',   label: 'Ubisoft',    icon: null,    svg: '/svg/ubisoft.svg' },
+        { id: 'battlenet', label: 'Battle.net', icon: null,    svg: '/svg/battledotnet.svg' },
+        { id: 'epic',      label: 'Epic Games', icon: null,    svg: '/svg/epicgames.svg' },
+        { id: 'ea',        label: 'EA App',     icon: null,    svg: '/svg/ea.svg' },
+        { id: 'riot',      label: 'Riot Games', icon: null,    svg: '/svg/riotgames.svg' },
+        { id: 'other',     label: 'Andere',     icon: '🗂️',   svg: null }
     ];
 
     // ---- Bulk Select State ----
@@ -2461,12 +2461,17 @@
         let selectedMedium = preferredMedium;
         let customText = '';
 
-        const mediumGrid = MEDIUM_OPTIONS.map(opt => `
+        const mediumGrid = MEDIUM_OPTIONS.map(opt => {
+            const iconHtml = opt.svg
+                ? `<img src="${opt.svg}" alt="${opt.label}" style="width:2rem;height:2rem;object-fit:contain;filter:brightness(0) invert(1) opacity(0.85)">`
+                : `<span style="font-size:2rem">${opt.icon}</span>`;
+            return `
             <button class="medium-select-btn ${opt.id === preferredMedium ? 'selected' : ''}" data-medium="${opt.id}" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;padding:1rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-secondary);cursor:pointer;transition:all 0.2s;text-align:center">
-                <span style="font-size:2rem">${opt.icon}</span>
+                ${iconHtml}
                 <span style="font-size:0.9rem;font-weight:600">${opt.label}</span>
             </button>
-        `).join('');
+        `;
+        }).join('');
 
         modal.innerHTML = `
             <div class="modal-title">Wie wird gespielt?</div>

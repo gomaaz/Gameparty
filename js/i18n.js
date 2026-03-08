@@ -62,6 +62,7 @@ const TRANSLATIONS = {
         btn_join: '+ Join',
         btn_leave: 'Leave',
         btn_start_session: '▶ Start Session',
+        btn_start: 'Start',
         btn_cancel: 'Cancel',
         btn_end: 'End',
 
@@ -425,6 +426,7 @@ const TRANSLATIONS = {
         btn_join: '+ Beitreten',
         btn_leave: 'Verlassen',
         btn_start_session: '▶ Session starten',
+        btn_start: 'Starten',
         btn_cancel: 'Abbrechen',
         btn_end: 'Beenden',
 
