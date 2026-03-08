@@ -3337,11 +3337,10 @@
         }
         updateNavLabels();
 
-        // Header player selection + logout
+        // Header player selection
         $('#header-player-btn').addEventListener('click', () => {
             if (!state.currentPlayer) showLoginModal();
         });
-        $('#header-logout-btn').addEventListener('click', logout);
 
         // Admin gear panel
         $('#admin-gear-btn').addEventListener('click', toggleAdminPanel);
