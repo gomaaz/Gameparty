@@ -1286,7 +1286,7 @@
                     showToast(t('session_started'), 'success');
                     playSound('coin');
                     renderProposals();
-                } catch (e) { console.error(e); }
+                } catch (e) { showToast(e.message || t('save_error'), 'error'); }
             });
         });
 
