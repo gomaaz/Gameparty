@@ -400,7 +400,7 @@
             leaderboard.forEach((p, i) => {
                 const isCurrent = p.name === state.currentPlayer;
                 const starsHTML = p.stars > 0
-                    ? `<span class="leaderboard-stars">${p.stars > 5 ? `${p.stars} x ` : ''}${'🎮'.repeat(Math.min(p.stars, 5))}</span>`
+                    ? `<span class="leaderboard-stars">${p.stars > 5 ? `${p.stars} x ` : ''}${'<img src="svg/console-controller.svg" class="controller-svg-icon">'.repeat(Math.min(p.stars, 5))}</span>`
                     : '';
                 leaderboardHTML += `
                     <div class="leaderboard-item ${isCurrent ? 'current-player' : ''}">
@@ -408,7 +408,7 @@
                         <div class="leaderboard-name player-name-clickable" data-player-info="${p.name}">${p.name}</div>
                         <div class="leaderboard-coins">
                             <span>${p.coins}</span>
-                            <span class="leaderboard-coin-symbol">🪙</span>
+                            <img src="svg/coins.svg" class="coin-svg-icon">
                             ${starsHTML}
                         </div>
                     </div>`;
@@ -1528,7 +1528,7 @@
                 <div class="card profile-header">
                     <div class="profile-name">${player}${isAdmin() ? ' <span class="admin-badge">Admin</span>' : ''}</div>
                     <div class="profile-coins-big">${coins} Coins</div>
-                    ${playerStars > 0 ? `<div class="profile-stars">🎮 x${playerStars}</div>` : ''}
+                    ${playerStars > 0 ? `<div class="profile-stars"><img src="svg/console-controller.svg" class="controller-svg-icon"> x${playerStars}</div>` : ''}
                     <div class="profile-stats">
                         <div class="stat-box">
                             <div class="stat-value earned">${earned}</div>

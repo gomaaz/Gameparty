@@ -319,10 +319,17 @@ body {
     font-size: 1.1rem;
     color: var(--accent-gold);
 }
-.leaderboard-coin-symbol,
-.coin-symbol {
-    font-size: 0.95rem;
-    filter: grayscale(1) brightness(1.2) contrast(1.1);
+.coin-svg-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+.controller-svg-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    vertical-align: middle;
+    flex-shrink: 0;
 }
 
 /* ---- Game Suggestion ---- */
@@ -2236,17 +2243,24 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .leaderboard-stars {
     display: inline-flex;
     align-items: center;
+    gap: 0.1rem;
     font-size: 0.85rem;
-    letter-spacing: -0.05em;
-    filter: sepia(1) saturate(5) hue-rotate(5deg) brightness(1.1);
 }
 
 /* Profil Sterne */
 .profile-stars {
-    font-size: 1.5rem;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 1.1rem;
+    font-weight: 700;
     margin: 0.4rem 0;
     color: var(--accent-gold);
+}
+.profile-stars .controller-svg-icon {
+    width: 1.5rem;
+    height: 1.5rem;
 }
 
 /* Profil-Stats auf 4 Spalten */
