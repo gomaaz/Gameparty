@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.26 (2026-03-08)
+- fix: include svg/ folder in Docker image
+
 ## v2.3.25 (2026-03-08)
 - fix: add fill color to all SVG icons for proper visibility in dark theme
 
