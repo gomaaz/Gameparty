@@ -3308,10 +3308,7 @@
         if (copyIcon && copyIcon.getAttribute('data-copy-value')) {
             const value = copyIcon.getAttribute('data-copy-value');
             navigator.clipboard.writeText(value).then(() => {
-                // Show brief feedback
-                const originalTitle = copyIcon.title || '';
-                copyIcon.title = '✓ Kopiert!';
-                setTimeout(() => { copyIcon.title = originalTitle; }, 1500);
+                showToast('✓ In Zwischenablage kopiert!');
             });
             return;
         }
@@ -3324,5 +3321,22 @@
         }
         hidePlayerTooltip();
     });
+
+    function showToast(message) {
+        let toast = document.getElementById('toast-notification');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast-notification';
+            toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#4CAF50;color:white;padding:12px 20px;border-radius:4px;font-size:14px;z-index:10000;box-shadow:0 2px 5px rgba(0,0,0,0.2);animation:slideIn 0.3s ease-out';
+            document.body.appendChild(toast);
+            const style = document.createElement('style');
+            style.textContent = '@keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }';
+            document.head.appendChild(style);
+        }
+        toast.textContent = message;
+        toast.style.display = 'block';
+        clearTimeout(toast.timeout);
+        toast.timeout = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
 
 })();
