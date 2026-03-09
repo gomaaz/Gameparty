@@ -552,9 +552,12 @@ app.put('/api/proposals/:id', (req, res) => {
         const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM proposal_players WHERE proposal_id = ?').get(req.params.id).cnt;
         const coinsPerMinSetting = db.prepare("SELECT value FROM settings WHERE key = 'coins_per_minute'").get();
         const maxMultiplierSetting = db.prepare("SELECT value FROM settings WHERE key = 'max_multiplier'").get();
+        const playerMultipliersSetting = db.prepare("SELECT value FROM settings WHERE key = 'player_multipliers'").get();
         const coinsPerMin = parseFloat(coinsPerMinSetting?.value || '1');
         const maxMultiplier = parseInt(maxMultiplierSetting?.value || '10');
-        const multiplier = Math.min(playerCount, maxMultiplier);
+        const playerMultipliersMap = (() => { try { return JSON.parse(playerMultipliersSetting?.value || '{}'); } catch { return {}; } })();
+        const cappedCount = Math.min(playerCount, maxMultiplier);
+        const multiplier = playerMultipliersMap[String(cappedCount)] !== undefined ? parseFloat(playerMultipliersMap[String(cappedCount)]) : cappedCount;
         const durationMin = proposal.startedAt ? Math.ceil((completedAt - proposal.startedAt) / 60000) : 0;
         req.body.pendingCoins = Math.round(durationMin * coinsPerMin * multiplier);
     }
@@ -1104,9 +1107,12 @@ app.put('/api/live-sessions/:id/end', (req, res) => {
     const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM live_session_players WHERE session_id = ?').get(req.params.id).cnt;
     const coinsPerMinSetting = db.prepare("SELECT value FROM settings WHERE key = 'coins_per_minute'").get();
     const maxMultiplierSetting = db.prepare("SELECT value FROM settings WHERE key = 'max_multiplier'").get();
+    const playerMultipliersSetting = db.prepare("SELECT value FROM settings WHERE key = 'player_multipliers'").get();
     const coinsPerMin = parseFloat(coinsPerMinSetting?.value || '1');
     const maxMultiplier = parseInt(maxMultiplierSetting?.value || '10');
-    const multiplier = Math.min(playerCount, maxMultiplier);
+    const playerMultipliersMap = (() => { try { return JSON.parse(playerMultipliersSetting?.value || '{}'); } catch { return {}; } })();
+    const cappedCount = Math.min(playerCount, maxMultiplier);
+    const multiplier = playerMultipliersMap[String(cappedCount)] !== undefined ? parseFloat(playerMultipliersMap[String(cappedCount)]) : cappedCount;
     const durationMin = sessionData?.startedAt ? Math.ceil((endedAt - sessionData.startedAt) / 60000) : 0;
     const pendingCoins = Math.round(durationMin * coinsPerMin * multiplier);
     db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ?, pending_coins = ? WHERE id = ?").run(endedAt, pendingCoins, req.params.id);

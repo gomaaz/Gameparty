@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1 (2026-03-09)
+- feat: use player_multipliers map for coin multiplier calc
+
 ## v.1.1.1 (2026-03-09)
 - feat: player multiplier for coins, remove genre tracking
 
