@@ -2012,6 +2012,7 @@
         }
 
         const coinsPerMin = parseFloat(settingsData?.coins_per_minute || '1');
+        const maxMultiplier = parseInt(settingsData?.max_multiplier || '10');
 
         const attendeesGridHTML = `
             <div class="card">
@@ -2033,10 +2034,18 @@
             <div class="admin-panel-body">
 
                 <div class="card" style="margin-bottom:0.75rem">
-                    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                        <span style="font-size:0.85rem;color:var(--text-secondary)">Coins pro Minute (laufende Sessions):</span>
-                        <input type="number" id="coins-per-minute-input" value="${coinsPerMin}" min="0.1" max="10" step="0.1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
-                        <button class="btn-approve" id="save-coins-per-minute" style="padding:4px 12px;font-size:0.8rem">Speichern</button>
+                    <div style="display:flex;flex-direction:column;gap:0.6rem">
+                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Coins pro Minute:</span>
+                            <input type="number" id="coins-per-minute-input" value="${coinsPerMin}" min="0.1" max="100" step="0.1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
+                            <button class="btn-approve" id="save-coins-per-minute" style="padding:4px 12px;font-size:0.8rem">Speichern</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Max. Spieler-Multiplikator:</span>
+                            <input type="number" id="max-multiplier-input" value="${maxMultiplier}" min="1" max="100" step="1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
+                            <button class="btn-approve" id="save-max-multiplier" style="padding:4px 12px;font-size:0.8rem">Speichern</button>
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--text-muted)">Formel: Minuten × C/min × min(Spieler, Max-Multiplikator)</div>
                     </div>
                 </div>
 
@@ -2132,6 +2141,18 @@
                 try {
                     await api('PUT', '/settings/coins_per_minute', { value: val });
                     showToast('Rate gespeichert', 'success');
+                } catch (e) { showToast('Fehler beim Speichern', 'error'); }
+            });
+        }
+
+        const saveMultiplierBtn = panel.querySelector('#save-max-multiplier');
+        if (saveMultiplierBtn) {
+            saveMultiplierBtn.addEventListener('click', async () => {
+                const val = parseInt(panel.querySelector('#max-multiplier-input').value);
+                if (isNaN(val) || val < 1) return;
+                try {
+                    await api('PUT', '/settings/max_multiplier', { value: val });
+                    showToast('Multiplikator gespeichert', 'success');
                 } catch (e) { showToast('Fehler beim Speichern', 'error'); }
             });
         }
