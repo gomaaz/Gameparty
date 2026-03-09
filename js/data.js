@@ -23,13 +23,6 @@ const CONFIG = {
     STAR_PRICE: 20,  // Coins, die ein Stern kostet
     SHOP_ITEMS: [
         {
-            id: 'choose_next',
-            name: 'Naechstes Spiel bestimmen',
-            cost: 3,
-            icon: '🎮',
-            description: 'Du bestimmst, welches Spiel als naechstes gespielt wird.'
-        },
-        {
             id: 'force_play',
             name: 'Zwangsspielen',
             cost: 5,
