@@ -2013,6 +2013,19 @@
 
         const coinsPerMin = parseFloat(settingsData?.coins_per_minute || '1');
         const maxMultiplier = parseInt(settingsData?.max_multiplier || '10');
+        const playerMultipliersMap = (() => { try { return JSON.parse(settingsData?.player_multipliers || '{}'); } catch { return {}; } })();
+
+        function buildMultipliersTable(maxMult, currentMap) {
+            let rows = '';
+            for (let i = 1; i <= maxMult; i++) {
+                const val = currentMap[String(i)] !== undefined ? currentMap[String(i)] : i;
+                rows += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.1rem 0">
+                    <span style="font-size:0.82rem;color:var(--text-secondary);width:8rem">${i}${i === maxMult ? '+' : ''} Spieler:</span>
+                    <input type="number" class="player-multiplier-input" data-count="${i}" value="${val}" min="0" max="999" step="0.1" style="width:5rem;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center;font-size:0.85rem">
+                </div>`;
+            }
+            return rows;
+        }
 
         const attendeesGridHTML = `
             <div class="card">
@@ -2032,22 +2045,6 @@
                 <button class="admin-panel-close" id="ap-close">✕</button>
             </div>
             <div class="admin-panel-body">
-
-                <div class="card" style="margin-bottom:0.75rem">
-                    <div style="display:flex;flex-direction:column;gap:0.6rem">
-                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Coins pro Minute:</span>
-                            <input type="number" id="coins-per-minute-input" value="${coinsPerMin}" min="0.1" max="100" step="0.1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
-                            <button class="btn-approve" id="save-coins-per-minute" style="padding:4px 12px;font-size:0.8rem">Speichern</button>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Max. Spieler-Multiplikator:</span>
-                            <input type="number" id="max-multiplier-input" value="${maxMultiplier}" min="1" max="100" step="1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
-                            <button class="btn-approve" id="save-max-multiplier" style="padding:4px 12px;font-size:0.8rem">Speichern</button>
-                        </div>
-                        <div style="font-size:0.75rem;color:var(--text-muted)">Formel: Minuten × C/min × min(Spieler, Max-Multiplikator)</div>
-                    </div>
-                </div>
 
                 ${freigabeHTML}
                 ${attendeesGridHTML}
@@ -2094,6 +2091,23 @@
                     </div>
                 </div>
 
+                <div class="card">
+                    <div class="card-title">⚙️ Session-Coins</div>
+                    <div style="display:flex;flex-direction:column;gap:0.5rem">
+                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Coins pro Minute:</span>
+                            <input type="number" id="coins-per-minute-input" value="${coinsPerMin}" min="0.1" max="100" step="0.1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Max. Spieler-Limit:</span>
+                            <input type="number" id="max-multiplier-input" value="${maxMultiplier}" min="1" max="100" step="1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">Formel: Minuten × C/min × Multiplikator(Spieler)</div>
+                        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.2rem">Multiplikator pro Spieleranzahl:</div>
+                        <div id="player-multipliers-table">${buildMultipliersTable(maxMultiplier, playerMultipliersMap)}</div>
+                    </div>
+                </div>
+
                 <div class="danger-zone">
                     <div class="card-title">${t('danger_zone')}</div>
                     <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
@@ -2133,29 +2147,40 @@
             });
         });
 
-        const saveRateBtn = panel.querySelector('#save-coins-per-minute');
-        if (saveRateBtn) {
-            saveRateBtn.addEventListener('click', async () => {
-                const val = parseFloat(panel.querySelector('#coins-per-minute-input').value);
-                if (isNaN(val) || val < 0) return;
-                try {
-                    await api('PUT', '/settings/coins_per_minute', { value: val });
-                    showToast('Rate gespeichert', 'success');
-                } catch (e) { showToast('Fehler beim Speichern', 'error'); }
-            });
-        }
+        // Live-save: Coins pro Minute
+        panel.querySelector('#coins-per-minute-input')?.addEventListener('change', async (e) => {
+            const val = parseFloat(e.target.value);
+            if (isNaN(val) || val < 0) return;
+            try { await api('PUT', '/settings/coins_per_minute', { value: val }); showToast('C/min gespeichert', 'success'); }
+            catch { showToast('Fehler', 'error'); }
+        });
 
-        const saveMultiplierBtn = panel.querySelector('#save-max-multiplier');
-        if (saveMultiplierBtn) {
-            saveMultiplierBtn.addEventListener('click', async () => {
-                const val = parseInt(panel.querySelector('#max-multiplier-input').value);
-                if (isNaN(val) || val < 1) return;
-                try {
-                    await api('PUT', '/settings/max_multiplier', { value: val });
-                    showToast('Multiplikator gespeichert', 'success');
-                } catch (e) { showToast('Fehler beim Speichern', 'error'); }
+        // Live-save: Max-Multiplikator + Tabelle neu aufbauen
+        panel.querySelector('#max-multiplier-input')?.addEventListener('change', async (e) => {
+            const val = parseInt(e.target.value);
+            if (isNaN(val) || val < 1) return;
+            try {
+                await api('PUT', '/settings/max_multiplier', { value: val });
+                showToast('Limit gespeichert', 'success');
+                const currentMap = {};
+                panel.querySelectorAll('.player-multiplier-input').forEach(inp => { currentMap[inp.dataset.count] = parseFloat(inp.value) || 0; });
+                const tableEl = panel.querySelector('#player-multipliers-table');
+                if (tableEl) { tableEl.innerHTML = buildMultipliersTable(val, currentMap); bindMultiplierInputs(); }
+            } catch { showToast('Fehler', 'error'); }
+        });
+
+        // Live-save: Multiplikator pro Spieleranzahl
+        function bindMultiplierInputs() {
+            panel.querySelectorAll('.player-multiplier-input').forEach(inp => {
+                inp.addEventListener('change', async () => {
+                    const map = {};
+                    panel.querySelectorAll('.player-multiplier-input').forEach(i => { map[i.dataset.count] = parseFloat(i.value) || 0; });
+                    try { await api('PUT', '/settings/player_multipliers', { value: JSON.stringify(map) }); }
+                    catch { showToast('Fehler', 'error'); }
+                });
             });
         }
+        bindMultiplierInputs();
 
         // Attendees Toggle Events
         panel.querySelectorAll('#attendees-grid-admin .attendee-toggle').forEach(btn => {
