@@ -1981,12 +1981,13 @@
         const panel = $('#admin-panel');
         if (!panel) return;
 
-        let usersData, liveSessionsData, allProposals;
+        let usersData, liveSessionsData, allProposals, settingsData;
         try {
-            [usersData, liveSessionsData, allProposals] = await Promise.all([
+            [usersData, liveSessionsData, allProposals, settingsData] = await Promise.all([
                 api('GET', '/users'),
                 api('GET', '/live-sessions'),
-                api('GET', '/proposals')
+                api('GET', '/proposals'),
+                api('GET', '/settings')
             ]);
         } catch (e) {
             panel.innerHTML = `<div class="admin-panel-header"><span class="admin-panel-title">⚙️ Admin</span><button class="admin-panel-close" id="ap-close">✕</button></div><div class="admin-panel-body"><p class="text-muted">${t('error_loading')}</p></div>`;
@@ -2005,11 +2006,11 @@
                 <div class="card" style="border-left: 3px solid var(--accent-gold)">
                     <div class="card-title" style="color:var(--accent-gold)">📋 ${t('freigabe_pending', 'Ausstehende Freigaben')} (${endedSessions.length + completedProposals.length})</div>
                     ${endedSessions.map(s => {
-                        const coins = calculateSessionCoins(s.players.length, state.attendees.length);
+                        const coins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
                         return `
                             <div style="padding:0.5rem 0;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
                                 <div style="font-weight:600">${s.game}</div>
-                                <div style="font-size:0.85rem;color:var(--text-secondary)">Leader: ${s.leader} · ${s.players.length} Spieler</div>
+                                <div style="font-size:0.85rem;color:var(--text-secondary)">Leader: ${s.leader} · ${s.players.length} Spieler${s.startedAt && s.endedAt ? ` · ${Math.ceil((s.endedAt - s.startedAt) / 60000)} Min` : ''}</div>
                                 <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin:0.3rem 0">
                                     ${s.players.map(p => `<span class="player-chip">${p}</span>`).join('')}
                                 </div>
@@ -2034,6 +2035,8 @@
                 </div>`;
         }
 
+        const coinsPerMin = parseFloat(settingsData?.coins_per_minute || '1');
+
         const attendeesGridHTML = `
             <div class="card">
                 <div class="card-title">👥 ${t('who_is_present', 'Anwesenheit')}</div>
@@ -2052,6 +2055,14 @@
                 <button class="admin-panel-close" id="ap-close">✕</button>
             </div>
             <div class="admin-panel-body">
+
+                <div class="card" style="margin-bottom:0.75rem">
+                    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+                        <span style="font-size:0.85rem;color:var(--text-secondary)">Coins pro Minute (laufende Sessions):</span>
+                        <input type="number" id="coins-per-minute-input" value="${coinsPerMin}" min="0.1" max="10" step="0.1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
+                        <button class="btn-approve" id="save-coins-per-minute" style="padding:4px 12px;font-size:0.8rem">Speichern</button>
+                    </div>
+                </div>
 
                 ${freigabeHTML}
                 ${attendeesGridHTML}
@@ -2136,6 +2147,18 @@
                 }
             });
         });
+
+        const saveRateBtn = panel.querySelector('#save-coins-per-minute');
+        if (saveRateBtn) {
+            saveRateBtn.addEventListener('click', async () => {
+                const val = parseFloat(panel.querySelector('#coins-per-minute-input').value);
+                if (isNaN(val) || val < 0) return;
+                try {
+                    await api('PUT', '/settings/coins_per_minute', { value: val });
+                    showToast('Rate gespeichert', 'success');
+                } catch (e) { showToast('Fehler beim Speichern', 'error'); }
+            });
+        }
 
         // Attendees Toggle Events
         panel.querySelectorAll('#attendees-grid-admin .attendee-toggle').forEach(btn => {

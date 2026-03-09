@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.46 (2026-03-09)
+- feat: add coins_per_minute setting and pending_coins in admin
+
 ## v2.3.45 (2026-03-09)
 - feat: time-based pending_coins for live sessions
 
