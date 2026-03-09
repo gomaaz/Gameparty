@@ -2493,6 +2493,10 @@
             showTargetModal(itemId, cost, t('who_to_force'), (target) => t('force_toast', item.name, target));
         } else if (itemId === 'drink_order') {
             showTargetModal(itemId, cost, t('who_to_drink'), (target) => t('drink_toast', state.currentPlayer, target));
+        } else if (itemId === 'rob_coins') {
+            showRobModal('rob_coins', cost);
+        } else if (itemId === 'rob_controller') {
+            showRobModal('rob_controller', cost);
         } else {
             if (confirm(t('buy_item_confirm', item.name, cost))) {
                 try {
@@ -2547,6 +2551,73 @@
                     renderShop();
                 } catch (e) {
                     showToast('Nicht genug Coins!', 'error');
+                    playSound('error');
+                }
+            });
+        });
+
+        $('#modal-cancel').addEventListener('click', () => {
+            overlay.classList.remove('show');
+        });
+    }
+
+    async function showRobModal(itemId, cost) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        const isController = itemId === 'rob_controller';
+
+        const otherPlayers = state.players.filter(p => p !== state.currentPlayer);
+
+        modal.innerHTML = `
+            <div class="modal-title">${isController ? t('rob_controller_pick_target') : t('rob_coins_pick_target')}</div>
+            <div class="shop-modal-content">
+                ${otherPlayers.map(p => `
+                    <button class="shop-target-btn" data-target="${p}">${p}</button>
+                `).join('')}
+            </div>
+            <button class="modal-close-btn" id="modal-cancel">${t('btn_cancel')}</button>
+        `;
+
+        overlay.classList.add('show');
+
+        modal.querySelectorAll('.shop-target-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const target = btn.dataset.target;
+                overlay.classList.remove('show');
+                try {
+                    if (isController) {
+                        const result = await api('POST', '/shop/rob-controller', { thief: state.currentPlayer, target, cost });
+                        playSound('spend');
+                        if (result.success) {
+                            showToast(t('rob_controller_success', target), 'gold');
+                            await api('POST', '/player-events', {
+                                target, type: 'rob_controller_victim', from_player: state.currentPlayer,
+                                message: JSON.stringify({ thief: state.currentPlayer, success: true })
+                            });
+                        } else {
+                            showToast(t('rob_controller_fail', target), 'error');
+                            await api('POST', '/player-events', {
+                                target, type: 'rob_controller_victim', from_player: state.currentPlayer,
+                                message: JSON.stringify({ thief: state.currentPlayer, success: false })
+                            });
+                        }
+                    } else {
+                        const result = await api('POST', '/shop/rob-coins', { thief: state.currentPlayer, target, cost });
+                        playSound('spend');
+                        if (result.stolen > 0) {
+                            showToast(t('rob_coins_success', result.stolen, target), 'gold');
+                            await api('POST', '/player-events', {
+                                target, type: 'rob_coins_victim', from_player: state.currentPlayer,
+                                message: JSON.stringify({ thief: state.currentPlayer, stolen: result.stolen })
+                            });
+                        } else {
+                            showToast(t('rob_coins_fail', target), 'error');
+                        }
+                    }
+                    updateHeader();
+                    renderShop();
+                } catch (e) {
+                    showToast(t('not_enough_coins'), 'error');
                     playSound('error');
                 }
             });
@@ -3724,6 +3795,28 @@
                             renderNotifPanel();
                         }
                         if (getNotifPref('sound')) playSound('coin');
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
+                if (ev.type === 'rob_coins_victim') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        showToast(t('rob_coins_victim_notif', data.thief, data.stolen), 'error');
+                        if (getNotifPref('sound')) playSound('error');
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
+                if (ev.type === 'rob_controller_victim') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        if (data.success) {
+                            showToast(t('rob_controller_victim_success', data.thief), 'error');
+                        } else {
+                            showToast(t('rob_controller_victim_fail', data.thief), 'success');
+                        }
+                        if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                     continue;

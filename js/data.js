@@ -55,6 +55,24 @@ const CONFIG = {
     ]
 };
 
+// Add pickpocket shop items
+CONFIG.SHOP_ITEMS.push(
+    {
+        id: 'rob_coins',
+        name: 'Taschendieb Münzen',
+        cost: 10,
+        icon: '<img src="svg/robber_coins.svg" style="width:2rem;height:2rem;display:block;">',
+        description: 'Klaut 0–20 Coins von einem Mitspieler.'
+    },
+    {
+        id: 'rob_controller',
+        name: 'Taschendieb Controller',
+        cost: 50,
+        icon: '<img src="svg/robber_controller.svg" style="width:2rem;height:2rem;display:block;">',
+        description: 'Klaut einen Controller-Punkt – 50% Chance.'
+    }
+);
+
 // Add star shop item
 CONFIG.SHOP_ITEMS.unshift({
     id: 'buy_star',

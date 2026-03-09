@@ -327,6 +327,21 @@ const TRANSLATIONS = {
         tc_payout_stake: 'Stake per person',
         notif_tc_winner_review: '🏆 Winner set!',
 
+        // --- Pickpocket Shop Items ---
+        item_rob_coins_name: 'Coin Pickpocket',
+        item_rob_coins_desc: 'Steal 0–20 coins from another player.',
+        item_rob_controller_name: 'Controller Pickpocket',
+        item_rob_controller_desc: 'Steal a Controller Point – 50% success chance.',
+        rob_coins_pick_target: '🥷 Who do you want to rob?',
+        rob_controller_pick_target: '🥷 Whose Controller Point do you want?',
+        rob_coins_success: '💰 Jackpot! You stole {0} Coins from {1}!',
+        rob_coins_fail: '😬 Unlucky! {0} had nothing for you.',
+        rob_controller_success: '🎮 Score! You stole a Controller Point from {0}!',
+        rob_controller_fail: '😬 Caught red-handed! {0} noticed and got away.',
+        rob_coins_victim_notif: '🥷 {0} stole {1} Coins from you!',
+        rob_controller_victim_success: '🎮 {0} stole a Controller Point from you!',
+        rob_controller_victim_fail: '🥷 {0} tried to steal your Controller Point — and failed!',
+
         // --- Notifications Panel ---
         notif_panel_title: '⚔️ Challenges',
         notif_challenge_from: '{0} challenges you!',
@@ -730,6 +745,21 @@ const TRANSLATIONS = {
         tc_payout_breakdown: 'Abrechnung',
         tc_payout_stake: 'Einsatz/Person',
         notif_tc_winner_review: '🏆 Gewinner gesetzt!',
+
+        // --- Taschendieb Shop-Items ---
+        item_rob_coins_name: 'Taschendieb Münzen',
+        item_rob_coins_desc: 'Klaut 0–20 Coins von einem Mitspieler.',
+        item_rob_controller_name: 'Taschendieb Controller',
+        item_rob_controller_desc: 'Klaut einen Controller-Punkt – 50% Erfolgswahrscheinlichkeit.',
+        rob_coins_pick_target: '🥷 Wen willst du ausrauben?',
+        rob_controller_pick_target: '🥷 Wessen Controller-Punkt willst du stehlen?',
+        rob_coins_success: '💰 Treffer! Du hast {0} Coins von {1} gestohlen!',
+        rob_coins_fail: '😬 Pech! Bei {0} war nichts zu holen.',
+        rob_controller_success: '🎮 Erfolg! Du hast einen Controller-Punkt von {0} gestohlen!',
+        rob_controller_fail: '😬 Erwischt! {0} hat dich bemerkt.',
+        rob_coins_victim_notif: '🥷 {0} hat {1} Coins von dir gestohlen!',
+        rob_controller_victim_success: '🎮 {0} hat einen Controller-Punkt von dir gestohlen!',
+        rob_controller_victim_fail: '🥷 {0} hat versucht, deinen Controller-Punkt zu stehlen — und ist gescheitert!',
 
         // --- Notifications Panel ---
         notif_panel_title: '⚔️ Herausforderungen',

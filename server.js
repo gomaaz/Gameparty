@@ -503,6 +503,69 @@ app.post('/api/coins/spend', (req, res) => {
     res.json({ newBalance: row.amount - amount });
 });
 
+// POST /api/shop/rob-coins
+app.post('/api/shop/rob-coins', (req, res) => {
+    const { thief, target, cost } = req.body;
+    if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
+
+    const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
+    if (!thiefRow || thiefRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });
+
+    const stolen = Math.floor(Math.random() * 21); // 0 bis 20
+
+    const tx = db.transaction(() => {
+        // Kosten vom Täter abziehen
+        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(cost, thief);
+        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, -cost, `Shop: Taschendieb Münzen (Ziel: ${target})`, Date.now());
+
+        if (stolen > 0) {
+            // Gestohlene Coins vom Opfer abziehen (mindestens 0)
+            const targetRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(target);
+            const actualStolen = targetRow ? Math.min(stolen, targetRow.amount) : 0;
+            if (actualStolen > 0) {
+                db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(actualStolen, target);
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(target, -actualStolen, `Taschendieb: ${thief} hat ${actualStolen} Coins gestohlen`, Date.now());
+                db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(thief, actualStolen, actualStolen);
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, actualStolen, `Beute: ${actualStolen} Coins von ${target} gestohlen`, Date.now());
+                return actualStolen;
+            }
+        }
+        return 0;
+    });
+
+    const actualStolen = tx();
+    broadcast({ type: 'update' });
+    res.json({ stolen: actualStolen });
+});
+
+// POST /api/shop/rob-controller
+app.post('/api/shop/rob-controller', (req, res) => {
+    const { thief, target, cost } = req.body;
+    if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
+
+    const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
+    if (!thiefRow || thiefRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });
+
+    const targetStars = db.prepare('SELECT amount FROM stars WHERE player = ?').get(target);
+    const success = Math.random() < 0.5 && targetStars && targetStars.amount > 0;
+
+    const tx = db.transaction(() => {
+        // Kosten vom Täter abziehen
+        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(cost, thief);
+        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, -cost, `Shop: Taschendieb Controller (Ziel: ${target})`, Date.now());
+
+        if (success) {
+            // 1 Controller-Punkt vom Opfer stehlen
+            db.prepare('UPDATE stars SET amount = amount - 1 WHERE player = ?').run(target);
+            db.prepare('INSERT INTO stars (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(thief);
+        }
+    });
+
+    tx();
+    broadcast({ type: 'update' });
+    res.json({ success });
+});
+
 // GET /api/stars
 app.get('/api/stars', (req, res) => {
     const stars = {};
