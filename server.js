@@ -549,10 +549,14 @@ app.put('/api/proposals/:id', (req, res) => {
     if (!proposal) return res.status(404).json({ error: 'Proposal nicht gefunden' });
     if (req.body.status === 'completed') {
         const completedAt = req.body.completedAt || Date.now();
+        const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM proposal_players WHERE proposal_id = ?').get(req.params.id).cnt;
         const coinsPerMinSetting = db.prepare("SELECT value FROM settings WHERE key = 'coins_per_minute'").get();
+        const maxMultiplierSetting = db.prepare("SELECT value FROM settings WHERE key = 'max_multiplier'").get();
         const coinsPerMin = parseFloat(coinsPerMinSetting?.value || '1');
+        const maxMultiplier = parseInt(maxMultiplierSetting?.value || '10');
+        const multiplier = Math.min(playerCount, maxMultiplier);
         const durationMin = proposal.startedAt ? Math.ceil((completedAt - proposal.startedAt) / 60000) : 0;
-        req.body.pendingCoins = Math.round(durationMin * coinsPerMin);
+        req.body.pendingCoins = Math.round(durationMin * coinsPerMin * multiplier);
     }
     if (req.body.status === 'active') {
         const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM proposal_players WHERE proposal_id = ?').get(req.params.id).cnt;
@@ -623,20 +627,10 @@ app.post('/api/proposals/:id/approve', (req, res) => {
     if (proposal.coinsApproved) return res.status(400).json({ error: 'Bereits freigegeben' });
 
     const players = db.prepare('SELECT player FROM proposal_players WHERE proposal_id = ?').all(req.params.id).map(r => r.player);
-    const game = db.prepare('SELECT * FROM games WHERE name = ?').get(proposal.game);
-    const genres = game && game.genre ? game.genre.split(',').map(g => g.trim()).filter(g => g) : [];
 
     for (const player of players) {
         db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, coinsPerPlayer, coinsPerPlayer);
         db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsPerPlayer, `Session: ${proposal.game} (${players.length} Spieler)`, Date.now());
-        for (const genre of genres) {
-            const existing = db.prepare('SELECT 1 FROM genres_played WHERE player = ? AND genre = ?').get(player, genre);
-            if (!existing) {
-                db.prepare('INSERT INTO genres_played (player, genre) VALUES (?, ?)').run(player, genre);
-                db.prepare('INSERT INTO coins (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
-                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, 1, ?, ?)').run(player, `Neues Genre: ${genre}`, Date.now());
-            }
-        }
     }
 
     db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp) VALUES (?, ?, ?, ?)').run(proposal.game, JSON.stringify(players), coinsPerPlayer, Date.now());
@@ -1107,10 +1101,14 @@ app.put('/api/live-sessions/:id/end', (req, res) => {
 
     const endedAt = Date.now();
     const sessionData = db.prepare('SELECT startedAt FROM live_sessions WHERE id = ?').get(req.params.id);
+    const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM live_session_players WHERE session_id = ?').get(req.params.id).cnt;
     const coinsPerMinSetting = db.prepare("SELECT value FROM settings WHERE key = 'coins_per_minute'").get();
+    const maxMultiplierSetting = db.prepare("SELECT value FROM settings WHERE key = 'max_multiplier'").get();
     const coinsPerMin = parseFloat(coinsPerMinSetting?.value || '1');
+    const maxMultiplier = parseInt(maxMultiplierSetting?.value || '10');
+    const multiplier = Math.min(playerCount, maxMultiplier);
     const durationMin = sessionData?.startedAt ? Math.ceil((endedAt - sessionData.startedAt) / 60000) : 0;
-    const pendingCoins = Math.round(durationMin * coinsPerMin);
+    const pendingCoins = Math.round(durationMin * coinsPerMin * multiplier);
     db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ?, pending_coins = ? WHERE id = ?").run(endedAt, pendingCoins, req.params.id);
     res.json({ success: true });
 });
@@ -1122,20 +1120,10 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
     const players = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id).map(r => r.player);
     const now = Date.now();
-    const gameForGenres = db.prepare('SELECT genre FROM games WHERE name = ?').get(session.game);
-    const genres = gameForGenres && gameForGenres.genre ? gameForGenres.genre.split(',').map(g => g.trim()).filter(g => g) : [];
     const approve = db.transaction(() => {
         for (const player of players) {
             db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, coinsPerPlayer, coinsPerPlayer);
             db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsPerPlayer, `Session: ${session.game} (${players.length} Spieler)`, now);
-            for (const genre of genres) {
-                const existing = db.prepare('SELECT 1 FROM genres_played WHERE player = ? AND genre = ?').get(player, genre);
-                if (!existing) {
-                    db.prepare('INSERT INTO genres_played (player, genre) VALUES (?, ?)').run(player, genre);
-                    db.prepare('INSERT INTO coins (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
-                    db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, 1, ?, ?)').run(player, `Neues Genre: ${genre}`, now);
-                }
-            }
         }
         db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp, medium) VALUES (?, ?, ?, ?, ?)').run(session.game, JSON.stringify(players), coinsPerPlayer, now, session.medium);
         db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(req.params.id);

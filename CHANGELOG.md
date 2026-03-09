@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1 (2026-03-09)
+- feat: player multiplier for coins, remove genre tracking
+
 ## v.1.1 (2026-03-09)
 - feat: unify active proposals with live sessions
 
