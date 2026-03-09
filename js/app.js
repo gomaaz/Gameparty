@@ -3640,12 +3640,13 @@
                 <button class="notif-panel-close" id="notif-panel-close">✕</button>
             </div>
             ${pendingNotifications.map(n => `
-                <div class="notif-panel-item" data-id="${n.id}">
+                <div class="notif-panel-item${n.type === 'rob' ? ' rob-notif' : ''}" data-id="${n.id}" data-type="${n.type || ''}">
                     <div class="notif-panel-body">
-                        <div class="notif-panel-title">${n.type === 'review' ? n.title : n.isTeam ? '👥 ' + t('notif_team_challenge', n.challenger) : t('notif_challenge_from', n.challenger)}</div>
-                        <div class="notif-panel-sub">${n.game} · ${n.stakeStr}</div>
+                        <div class="notif-panel-title">${n.type === 'rob' || n.type === 'review' ? n.title : n.isTeam ? '👥 ' + t('notif_team_challenge', n.challenger) : t('notif_challenge_from', n.challenger)}</div>
+                        ${n.game || n.stakeStr ? `<div class="notif-panel-sub">${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}</div>` : ''}
                     </div>
-                    ${n.type !== 'review' ? `<div class="notif-panel-actions">
+                    ${n.type === 'rob' ? `<button class="notif-dismiss" data-id="${n.id}" data-ev-id="${n.evId}" title="OK" style="padding:4px 10px;font-size:1rem;background:var(--accent-green);color:#fff;border:none;border-radius:4px;cursor:pointer;flex-shrink:0;">✓</button>` :
+                      n.type !== 'review' ? `<div class="notif-panel-actions">
                         <button class="notif-accept" data-id="${n.id}" title="${t('notif_accept')}">✓</button>
                         <button class="notif-reject" data-id="${n.id}" title="${t('notif_reject')}">✕</button>
                     </div>` : ''}
@@ -3741,9 +3742,20 @@
             });
         });
 
+        // Rob-Bestätigung
+        panel.querySelectorAll('.notif-dismiss').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                const evId = btn.dataset.evId;
+                try { await api('DELETE', `/player-events/${evId}`); } catch {}
+                removeNotification(id);
+            });
+        });
+
         // Duel notification items click to navigate
         panel.querySelectorAll('.notif-panel-item').forEach(item => {
-            if (!item.classList.contains('notif-activity-done')) {
+            if (!item.classList.contains('notif-activity-done') && item.dataset.type !== 'rob') {
                 item.addEventListener('click', () => {
                     const id = item.dataset.id;
                     if (id.startsWith('tc_')) {
@@ -3802,24 +3814,29 @@
                 if (ev.type === 'rob_coins_victim') {
                     try {
                         const data = JSON.parse(ev.message);
-                        showToast(t('rob_coins_victim_notif', data.thief, data.stolen), 'error');
+                        const notifId = 'rob_' + ev.id;
+                        if (!pendingNotifications.find(n => n.id === notifId)) {
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, data.stolen) });
+                            notifPanelOpen = true;
+                            renderNotifPanel();
+                        }
                         if (getNotifPref('sound')) playSound('error');
                     } catch {}
-                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
-                    continue;
+                    continue; // Event bleibt bis Nutzer bestätigt
                 }
                 if (ev.type === 'rob_controller_victim') {
                     try {
                         const data = JSON.parse(ev.message);
-                        if (data.success) {
-                            showToast(t('rob_controller_victim_success', data.thief), 'error');
-                        } else {
-                            showToast(t('rob_controller_victim_fail', data.thief), 'success');
+                        const notifId = 'rob_' + ev.id;
+                        if (!pendingNotifications.find(n => n.id === notifId)) {
+                            const title = data.success ? t('rob_controller_victim_success', data.thief) : t('rob_controller_victim_fail', data.thief);
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title });
+                            notifPanelOpen = true;
+                            renderNotifPanel();
                         }
                         if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                     } catch {}
-                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
-                    continue;
+                    continue; // Event bleibt bis Nutzer bestätigt
                 }
                 if (ev.type === 'task_ack') {
                     // Bestätigung für den Auftraggeber – sofort löschen

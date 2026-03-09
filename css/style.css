@@ -2620,6 +2620,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .notif-panel-item:last-child { border-bottom: none; }
 .notif-panel-item:hover { background: var(--bg-card-hover); }
+.notif-panel-item.rob-notif {
+    background: rgba(255,68,68,0.06);
+    border-left: 3px solid var(--accent-red);
+    cursor: default;
+}
+.notif-panel-item.rob-notif:hover { background: rgba(255,68,68,0.10); }
 .notif-panel-body { flex: 1; min-width: 0; }
 .notif-panel-title {
     font-size: 0.85rem; font-weight: 600; color: var(--text-primary);
