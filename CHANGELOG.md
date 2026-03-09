@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
+- feat: team challenge payout modal and card labels
+
 ## v.1.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
 - feat: add payout notifications to team challenge payout
 

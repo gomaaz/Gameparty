@@ -2653,6 +2653,68 @@
         shownPenaltyIds.delete(ev.id);
     }
 
+    function showTcPayoutModal(data) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        const isWinner = (data.winnerTeam === 'A' ? data.teamA : data.teamB).includes(state.currentPlayer);
+        const winnerTeamLabel = data.winnerTeam === 'A' ? t('team_a') : t('team_b');
+        const loserTeamLabel  = data.winnerTeam === 'A' ? t('team_b') : t('team_a');
+        const winners = data.winnerTeam === 'A' ? data.teamA : data.teamB;
+        const losers  = data.winnerTeam === 'A' ? data.teamB : data.teamA;
+
+        const rows = [];
+        winners.forEach((p, idx) => {
+            const coins = data.baseCoins + (idx === 0 ? data.remainder : 0);
+            const stars = (data.baseStars || 0) + (idx === 0 ? (data.starRemainder || 0) : 0);
+            const parts = [];
+            if (coins > 0) parts.push(`+${coins} Coins`);
+            if (stars > 0) parts.push(`+${stars} 🎮`);
+            rows.push({ player: p, text: parts.join(' + ') || '–', winner: true });
+        });
+        losers.forEach(p => {
+            const parts = [];
+            if (data.stakeCoinsPerPerson > 0) parts.push(`-${data.stakeCoinsPerPerson} Coins`);
+            if (data.stakeStarsPerPerson > 0) parts.push(`-${data.stakeStarsPerPerson} 🎮`);
+            rows.push({ player: p, text: parts.join(' + ') || '–', winner: false });
+        });
+
+        const rowsHTML = rows.map(r => `
+            <div style="display:flex;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);">
+                <span>${r.player}</span>
+                <span style="font-weight:600;color:${r.winner ? 'var(--accent-green, #00e676)' : 'var(--danger)'};">${r.text}</span>
+            </div>`).join('');
+
+        const potParts = [];
+        if (data.totalPot > 0) potParts.push(`${data.totalPot} Coins`);
+        if (data.totalStarPot > 0) potParts.push(`${data.totalStarPot} 🎮`);
+        const potStr = potParts.join(' + ') || '–';
+
+        const stakeParts = [];
+        if (data.stakeCoinsPerPerson > 0) stakeParts.push(`${data.stakeCoinsPerPerson} Coins`);
+        if (data.stakeStarsPerPerson > 0) stakeParts.push(`${data.stakeStarsPerPerson} 🎮`);
+        const stakeStr = stakeParts.join(' + ') || '–';
+
+        modal.innerHTML = `
+            <div class="modal-title" style="color:${isWinner ? 'var(--accent-green, #00e676)' : 'var(--danger)'};">
+                ${isWinner ? t('tc_payout_won', winnerTeamLabel) : t('tc_payout_lost', loserTeamLabel)}
+            </div>
+            <div style="text-align:center;font-size:1rem;margin-bottom:1rem;color:var(--text-secondary);">
+                ${isWinner ? t('tc_payout_won_sub') : t('tc_payout_lost_sub')}
+            </div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.5rem;">
+                🎮 ${data.game}
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.25rem;">
+                ${t('tc_payout_stake')}: <strong>${stakeStr}</strong> &nbsp;·&nbsp; ${t('total_pot_preview', potStr)}
+            </div>
+            <div style="font-weight:700;margin:0.75rem 0 0.4rem;">📋 ${t('tc_payout_breakdown')}</div>
+            <div style="font-size:0.9rem;">${rowsHTML}</div>
+            <button class="btn-propose" id="tc-payout-close" style="margin-top:1.25rem;">OK</button>
+        `;
+        overlay.classList.add('show');
+        $('#tc-payout-close').addEventListener('click', () => overlay.classList.remove('show'));
+    }
+
     function showAckModal(msg) {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
@@ -3036,7 +3098,7 @@
                 return `
                     <div class="proposal-card${highlightClass}" data-id="${tc.id}">
                         <div class="proposal-card-header">
-                            <span style="font-weight:700;">👥 ${teamA.join(', ')} vs ${teamB.join(', ')}</span>
+                            <span style="font-weight:700;">👥 <span style="color:var(--accent-purple)">${t('team_a')}:</span> ${teamA.join(', ')} <span style="color:var(--text-secondary)">vs</span> <span style="color:var(--accent-blue)">${t('team_b')}:</span> ${teamB.join(', ')}</span>
                             <span class="status-badge ${tc.status}">${statusLabels[tc.status] || tc.status}</span>
                         </div>
                         <div class="game-meta">${tc.game}</div>
@@ -3624,6 +3686,15 @@
         try {
             const events = await api('GET', `/player-events/${encodeURIComponent(state.currentPlayer)}`);
             for (const ev of events) {
+                if (ev.type === 'tc_payout') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        showTcPayoutModal(data);
+                        if (getNotifPref('sound')) playSound('coin');
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
                 if (ev.type === 'task_ack') {
                     // Bestätigung für den Auftraggeber – sofort löschen
                     showAckModal(ev.message);
