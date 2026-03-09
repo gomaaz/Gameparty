@@ -1,37 +1,15 @@
 # Changelog
 
-## v.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
-- feat: add team duel feature to challenges view
-
-## v.1.1.1.1.1.1.1.1.1 (2026-03-09)
-- feat: add team challenges backend API
-
-## v.1.1.1.1.1.1.1.1 (2026-03-09)
-- feat: add Team Duel i18n keys for en and de
-
-## v.1.1.1.1.1.1.1 (2026-03-09)
-- fix: double name, duel subtitle, payout coin anim
-
-## v.1.1.1.1.1.1 (2026-03-09)
-- fix: deduct duel stakes at acceptance not payout
-
-## v.1.1.1.1.1 (2026-03-09)
-- chore: add missing i18n keys, remove unused keys
+## v2.3.83 (2026-03-09)
+- feat: Team Duels in Challenge-Tab — Tab-Toggle 1v1/Team, Checkbox-Formular, Live-Pott-Vorschau
+- feat: Einsatz bei Annahme von allen Spielern beider Teams abgezogen (db.transaction)
+- feat: Payout mit floor-Division, erster Spieler bekommt Rest
+- feat: DELETE mit Refund wenn bereits angenommen
+- feat: Notification-Panel und Polling für Team-Challenges (tc_-Prefix)
+- fix: 4 Challenge-Bugs: doppelter Name, DUELS-Label, Einsatz-Abzug, Payout-Animation
 
 ## v2.3.74 (2026-03-09)
 - feat: direct coin rate per player count, remove coins_per_minute multiplier
-
-## v.1.1.1.1 (2026-03-09)
-- feat: use player_multipliers map for coin multiplier calc
-
-## v.1.1.1 (2026-03-09)
-- feat: player multiplier for coins, remove genre tracking
-
-## v.1.1 (2026-03-09)
-- feat: unify active proposals with live sessions
-
-## v.1 (2026-03-09)
-- feat: genre tracking in live-session approve, broadcast proposals
 
 ## v2.3.46 (2026-03-09)
 - feat: add coins_per_minute setting and pending_coins in admin
