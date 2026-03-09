@@ -789,6 +789,24 @@ app.delete('/api/reset', (req, res) => {
     res.json({ success: true });
 });
 
+app.delete('/api/reset/coins', (req, res) => {
+    db.prepare('UPDATE coins SET amount = 0').run();
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
+app.delete('/api/reset/stars', (req, res) => {
+    db.prepare('UPDATE stars SET amount = 0').run();
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
+app.delete('/api/reset/challenges', (req, res) => {
+    db.prepare('DELETE FROM challenges').run();
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
 // ---- Challenges API ----
 
 // GET /api/challenges

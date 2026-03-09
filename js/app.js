@@ -2186,6 +2186,9 @@
 
                 <div class="danger-zone">
                     <div class="card-title">${t('danger_zone')}</div>
+                    <button class="btn-danger" id="ap-btn-reset-coins">${t('btn_reset_coins')}</button>
+                    <button class="btn-danger" id="ap-btn-reset-stars">${t('btn_reset_stars')}</button>
+                    <button class="btn-danger" id="ap-btn-reset-challenges">${t('btn_reset_challenges')}</button>
                     <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
                 </div>
 
@@ -2331,6 +2334,24 @@
         });
 
         // Danger zone
+        $('#ap-btn-reset-coins').addEventListener('click', async () => {
+            if (confirm(t('confirm_reset_coins'))) {
+                try { await api('DELETE', '/reset/coins'); showToast(t('reset_coins_done'), 'error'); }
+                catch (e) { console.error(e); }
+            }
+        });
+        $('#ap-btn-reset-stars').addEventListener('click', async () => {
+            if (confirm(t('confirm_reset_stars'))) {
+                try { await api('DELETE', '/reset/stars'); showToast(t('reset_stars_done'), 'error'); }
+                catch (e) { console.error(e); }
+            }
+        });
+        $('#ap-btn-reset-challenges').addEventListener('click', async () => {
+            if (confirm(t('confirm_reset_challenges'))) {
+                try { await api('DELETE', '/reset/challenges'); showToast(t('reset_challenges_done'), 'error'); }
+                catch (e) { console.error(e); }
+            }
+        });
         $('#ap-btn-reset-all').addEventListener('click', async () => {
             if (confirm(t('reset_confirm_1'))) {
                 if (confirm(t('reset_confirm_2'))) {
