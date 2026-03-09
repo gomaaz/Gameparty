@@ -1122,6 +1122,17 @@ app.put('/api/team-challenges/:id/complete', (req, res) => {
     }
 
     db.prepare('UPDATE team_challenges SET status = ?, winnerTeam = ? WHERE id = ?').run('completed', winnerTeam, req.params.id);
+
+    // Notify all admins so they can pay out
+    const admins = db.prepare("SELECT name FROM users WHERE role = 'admin'").all().map(r => r.name);
+    const reviewPayload = JSON.stringify({ tcId: tc.id, game: tc.game, winnerTeam });
+    const notifyNow = Date.now();
+    admins.forEach(admin => {
+        db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(admin, 'tc_winner_review', tc.createdBy, reviewPayload, notifyNow, 'active');
+    });
+
+    broadcast({ type: 'update' });
     res.json({ success: true });
 });
 

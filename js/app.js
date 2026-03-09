@@ -3095,10 +3095,18 @@
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave tc-delete" data-id="${tc.id}">${t('btn_delete_duel')}</button></div>`;
                 }
 
+                // Sort creator first in their team; render GL badge for creator
+                const sortCreatorFirst = (arr) => [...arr].sort((a, b) => a === tc.createdBy ? -1 : b === tc.createdBy ? 1 : 0);
+                const renderPlayerName = (name) => name === tc.createdBy
+                    ? `<span style="font-size:0.65rem;background:var(--accent-gold,#ffd700);color:#000;padding:0.1rem 0.3rem;border-radius:3px;font-weight:700;margin-right:0.2rem;vertical-align:middle;">GL</span>${name}`
+                    : name;
+                const teamADisplay = sortCreatorFirst(teamA).map(renderPlayerName).join(', ');
+                const teamBDisplay = sortCreatorFirst(teamB).map(renderPlayerName).join(', ');
+
                 return `
                     <div class="proposal-card${highlightClass}" data-id="${tc.id}">
                         <div class="proposal-card-header">
-                            <span style="font-weight:700;">👥 <span style="color:var(--accent-purple)">${t('team_a')}:</span> ${teamA.join(', ')} <span style="color:var(--text-secondary)">vs</span> <span style="color:var(--accent-blue)">${t('team_b')}:</span> ${teamB.join(', ')}</span>
+                            <span style="font-weight:700;">👥 <span style="color:var(--accent-purple)">${t('team_a')}:</span> ${teamADisplay} <span style="color:var(--text-secondary)">vs</span> <span style="color:var(--accent-blue)">${t('team_b')}:</span> ${teamBDisplay}</span>
                             <span class="status-badge ${tc.status}">${statusLabels[tc.status] || tc.status}</span>
                         </div>
                         <div class="game-meta">${tc.game}</div>
@@ -3563,13 +3571,13 @@
             ${pendingNotifications.map(n => `
                 <div class="notif-panel-item" data-id="${n.id}">
                     <div class="notif-panel-body">
-                        <div class="notif-panel-title">${t('notif_challenge_from', n.challenger)}</div>
+                        <div class="notif-panel-title">${n.type === 'review' ? n.title : n.isTeam ? '👥 ' + t('notif_team_challenge', n.challenger) : t('notif_challenge_from', n.challenger)}</div>
                         <div class="notif-panel-sub">${n.game} · ${n.stakeStr}</div>
                     </div>
-                    <div class="notif-panel-actions">
+                    ${n.type !== 'review' ? `<div class="notif-panel-actions">
                         <button class="notif-accept" data-id="${n.id}" title="${t('notif_accept')}">✓</button>
                         <button class="notif-reject" data-id="${n.id}" title="${t('notif_reject')}">✕</button>
-                    </div>
+                    </div>` : ''}
                 </div>
             `).join('')}
             ${incomingActivities.length > 0 ? `<div style="border-bottom:1px solid var(--border);padding:0.5rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);font-weight:600">📋 TASKS</div>` : ''}
@@ -3666,7 +3674,17 @@
         panel.querySelectorAll('.notif-panel-item').forEach(item => {
             if (!item.classList.contains('notif-activity-done')) {
                 item.addEventListener('click', () => {
-                    focusChallengeId = item.dataset.id;
+                    const id = item.dataset.id;
+                    if (id.startsWith('tc_')) {
+                        challengeActiveTab = 'team';
+                        focusChallengeId = id.slice(3);
+                    } else if (id.startsWith('tcw_')) {
+                        challengeActiveTab = 'team';
+                        focusChallengeId = id.slice(4);
+                        removeNotification(id);
+                    } else {
+                        focusChallengeId = id;
+                    }
                     notifPanelOpen = false;
                     panel.classList.remove('open');
                     navigateTo('challenges');
@@ -3690,6 +3708,21 @@
                     try {
                         const data = JSON.parse(ev.message);
                         showTcPayoutModal(data);
+                        if (getNotifPref('sound')) playSound('coin');
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
+                if (ev.type === 'tc_winner_review') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        const winnerLabel = data.winnerTeam === 'A' ? t('team_a_wins') : t('team_b_wins');
+                        const notifId = 'tcw_' + data.tcId;
+                        if (!pendingNotifications.find(n => n.id === notifId)) {
+                            pendingNotifications.push({ id: notifId, game: data.game, stakeStr: winnerLabel, isTeam: true, type: 'review', title: t('notif_tc_winner_review'), tcId: data.tcId });
+                            notifPanelOpen = true;
+                            renderNotifPanel();
+                        }
                         if (getNotifPref('sound')) playSound('coin');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
@@ -3754,7 +3787,7 @@
             for (const tc of newTeamOnes) {
                 notifiedChallengeIds.add('tc_' + tc.id);
                 const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} Coins/Person` : t('no_stake');
-                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr });
+                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true });
                 notifPanelOpen = true;
                 renderNotifPanel();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {

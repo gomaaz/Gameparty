@@ -325,6 +325,7 @@ const TRANSLATIONS = {
         tc_payout_lost_sub: 'You lost.',
         tc_payout_breakdown: 'Statement',
         tc_payout_stake: 'Stake per person',
+        notif_tc_winner_review: '🏆 Winner set!',
 
         // --- Notifications Panel ---
         notif_panel_title: '⚔️ Challenges',
@@ -728,6 +729,7 @@ const TRANSLATIONS = {
         tc_payout_lost_sub: 'Ihr habt verloren.',
         tc_payout_breakdown: 'Abrechnung',
         tc_payout_stake: 'Einsatz/Person',
+        notif_tc_winner_review: '🏆 Gewinner gesetzt!',
 
         // --- Notifications Panel ---
         notif_panel_title: '⚔️ Herausforderungen',
