@@ -74,6 +74,19 @@ db.exec(`
         createdAt INT,
         resolvedAt INT
     );
+    CREATE TABLE IF NOT EXISTS team_challenges (
+        id TEXT PRIMARY KEY,
+        game TEXT,
+        stakeCoinsPerPerson INT DEFAULT 0,
+        stakeStarsPerPerson INT DEFAULT 0,
+        teamA TEXT,
+        teamB TEXT,
+        status TEXT DEFAULT 'pending',
+        winnerTeam TEXT,
+        createdBy TEXT,
+        createdAt INT,
+        resolvedAt INT
+    );
     CREATE TABLE IF NOT EXISTS player_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         target TEXT,
