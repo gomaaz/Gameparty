@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1 (2026-03-09)
+- feat: unify active proposals with live sessions
+
 ## v.1 (2026-03-09)
 - feat: genre tracking in live-session approve, broadcast proposals
 

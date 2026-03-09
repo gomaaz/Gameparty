@@ -1219,12 +1219,12 @@
         }
 
         let scheduleHTML = '';
-        if (p.scheduledDay || p.scheduledTime) {
+        if ((p.scheduledDay || p.scheduledTime) && p.status !== 'active') {
             scheduleHTML = `<div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
         }
 
         let messageHTML = '';
-        if (p.message) {
+        if (p.message && p.status !== 'active') {
             messageHTML = `<div class="live-session-meta">${p.message}</div>`;
         }
 
@@ -1250,7 +1250,7 @@
         if (isLeader && ['pending', 'approved'].includes(p.status)) {
             actions.push(`<button class="btn-session-start btn-start-session" data-id="${p.id}">${t('btn_start_now')}</button>`);
         }
-        if (isLeader && p.status === 'active') {
+        if ((isLeader || admin) && p.status === 'active') {
             actions.push(`<button class="btn-session-end btn-end-session" data-id="${p.id}">${t('btn_end_session')}</button>`);
         }
         if (isLeader && ['pending', 'approved'].includes(p.status)) {
@@ -1270,7 +1270,7 @@
         const actionsHTML = actions.length ? `<div class="live-session-actions">${actions.join('')}</div>` : '';
 
         // Status-based CSS class like live-session-card
-        const statusClass = { pending: 'proposal-pending', approved: 'proposal-approved', active: 'lobby', completed: 'ended', rejected: '' }[p.status] || '';
+        const statusClass = { pending: 'proposal-pending', approved: 'proposal-approved', active: 'running', completed: 'ended', rejected: '' }[p.status] || '';
 
         return `
             <div class="card live-session-card ${statusClass}" data-proposal-id="${p.id}">
@@ -1335,8 +1335,7 @@
                         coinsApproved: 0
                     });
                     showToast(t('session_ended', coinsAmount), 'gold');
-                    renderProposals();
-                    if (typeof renderDashboard === 'function') await renderDashboard();
+                    refreshActiveView();
                 } catch (e) { console.error(e); }
             });
         });
@@ -1347,33 +1346,11 @@
                     const proposals = await api('GET', '/proposals');
                     const proposal = proposals.find(x => x.id === btn.dataset.id);
                     if (!proposal || proposal.coinsApproved) return;
-
                     const coinsPerPlayer = proposal.pendingCoins || 0;
-                    const gameObj = state.games.find(g => g.name === proposal.game);
-                    const gameGenres = gameObj && gameObj.genre
-                        ? gameObj.genre.split(',').map(g => g.trim()).filter(g => g)
-                        : [];
-
-                    for (const player of proposal.players) {
-                        await api('POST', '/coins/add', { player, amount: coinsPerPlayer, reason: `Session: ${proposal.game} (${proposal.players.length} Spieler)` });
-                        for (const genre of gameGenres) {
-                            const result = await api('POST', '/genres-played', { player, genre });
-                            if (result.isNew) {
-                                await api('POST', '/coins/add', { player, amount: CONFIG.COIN_REWARDS.NEW_GENRE, reason: `Neues Genre: ${genre}` });
-                            }
-                        }
-                    }
-
-                    await api('POST', '/sessions', {
-                        game: proposal.game,
-                        players: [...proposal.players],
-                        coinsPerPlayer
-                    });
-
-                    await api('PUT', `/proposals/${btn.dataset.id}`, { coinsApproved: 1 });
+                    await api('POST', `/proposals/${btn.dataset.id}/approve`, { coins: coinsPerPlayer });
                     showCoinAnimation(coinsPerPlayer);
                     showToast(t('coins_released', coinsPerPlayer, proposal.players.length), 'success');
-                    renderProposals();
+                    renderDashboard();
                 } catch (e) { console.error(e); }
             });
         });
