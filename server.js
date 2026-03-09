@@ -547,6 +547,13 @@ app.post('/api/proposals', (req, res) => {
 app.put('/api/proposals/:id', (req, res) => {
     const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id);
     if (!proposal) return res.status(404).json({ error: 'Proposal nicht gefunden' });
+    if (req.body.status === 'completed') {
+        const completedAt = req.body.completedAt || Date.now();
+        const coinsPerMinSetting = db.prepare("SELECT value FROM settings WHERE key = 'coins_per_minute'").get();
+        const coinsPerMin = parseFloat(coinsPerMinSetting?.value || '1');
+        const durationMin = proposal.startedAt ? Math.ceil((completedAt - proposal.startedAt) / 60000) : 0;
+        req.body.pendingCoins = Math.round(durationMin * coinsPerMin);
+    }
     if (req.body.status === 'active') {
         const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM proposal_players WHERE proposal_id = ?').get(req.params.id).cnt;
         if (playerCount < 2) return res.status(400).json({ error: 'Eine Session benötigt mindestens 2 Spieler' });
