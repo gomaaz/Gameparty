@@ -61,7 +61,7 @@
     }
 
     function coinSvgIcon() {
-        return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins" style="width:0.9rem;height:0.9rem;vertical-align:middle">`;
+        return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins">`;
     }
 
     function startCoinAccumulatorInterval() {
