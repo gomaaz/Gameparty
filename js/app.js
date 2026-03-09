@@ -3157,10 +3157,16 @@ function getNowPlus10() {
                 const winnerInfo = c.winner ? `<div class="game-meta" style="margin-top:0.3rem;">🏆 ${c.winner}</div>` : '';
 
                 const highlightClass = String(c.id) === String(focusChallengeId) ? ' highlight-challenge' : '';
+                let challengerStyle = '';
+                let opponentStyle = '';
+                if (c.status === 'paid' && c.winner) {
+                    challengerStyle = c.challenger === c.winner ? 'color:var(--accent-green);font-weight:700' : 'color:var(--accent-red);font-weight:700';
+                    opponentStyle   = c.opponent   === c.winner ? 'color:var(--accent-green);font-weight:700' : 'color:var(--accent-red);font-weight:700';
+                }
                 return `
                     <div class="proposal-card${highlightClass}" data-id="${c.id}">
                         <div class="proposal-card-header">
-                            <span style="font-weight:700;">${c.challenger} ⚔️ ${c.opponent}</span>
+                            <span><span style="${challengerStyle}">${c.challenger}</span> ⚔️ <span style="${opponentStyle}">${c.opponent}</span></span>
                             <span class="status-badge ${c.status}">${statusLabels[c.status] || c.status}</span>
                         </div>
                         <div class="game-meta">${c.game}</div>
@@ -3235,10 +3241,17 @@ function getNowPlus10() {
                 const teamADisplay = sortCreatorFirst(teamA).map(renderPlayerName).join(', ');
                 const teamBDisplay = sortCreatorFirst(teamB).map(renderPlayerName).join(', ');
 
+                let teamALabelColor = 'var(--accent-purple)';
+                let teamBLabelColor = 'var(--accent-blue)';
+                if (tc.status === 'paid' && tc.winnerTeam) {
+                    teamALabelColor = tc.winnerTeam === 'A' ? 'var(--accent-green)' : 'var(--accent-red)';
+                    teamBLabelColor = tc.winnerTeam === 'B' ? 'var(--accent-green)' : 'var(--accent-red)';
+                }
+
                 return `
                     <div class="proposal-card${highlightClass}" data-id="${tc.id}">
                         <div class="proposal-card-header">
-                            <span style="font-weight:700;">👥 <span style="color:var(--accent-purple)">${t('team_a')}:</span> ${teamADisplay} <span style="color:var(--text-secondary)">vs</span> <span style="color:var(--accent-blue)">${t('team_b')}:</span> ${teamBDisplay}</span>
+                            <span style="font-weight:700;">👥 <span style="color:${teamALabelColor}">${t('team_a')}:</span> ${teamADisplay} <span style="color:var(--text-secondary)">vs</span> <span style="color:${teamBLabelColor}">${t('team_b')}:</span> ${teamBDisplay}</span>
                             <span class="status-badge ${tc.status}">${statusLabels[tc.status] || tc.status}</span>
                         </div>
                         <div class="game-meta">${tc.game}</div>
@@ -3960,6 +3973,11 @@ function getNowPlus10() {
                         if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
+                }
+                if (ev.type === 'duel_conflict') {
+                    // Kein Modal — Admin-Auflösung läuft über die Session-Karte
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch(e) {}
+                    continue;
                 }
                 if (ev.type === 'task_ack') {
                     // Bestätigung für den Auftraggeber – sofort löschen
