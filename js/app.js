@@ -3630,8 +3630,8 @@ function getNowPlus10() {
             renderNotifPanel();
         });
         container.appendChild(toast);
-        setTimeout(() => toast.classList.add('notif-toast-fadeout'), 8000);
-        setTimeout(() => toast.remove(), 8600);
+        setTimeout(() => toast.classList.add('notif-toast-fadeout'), 7000);
+        setTimeout(() => toast.remove(), 7600);
     }
 
     async function renderNotifPanel() {
