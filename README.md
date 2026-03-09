@@ -13,7 +13,7 @@ We all know the situation: you've got a group of friends at a LAN party, everyon
 
 **Gameparty** was built to fix exactly that.
 
-The idea is simple: turn your LAN party into a shared experience with a little friendly competition. Players earn **Coins** for gaming together, spend them on fun actions in the **Shop**, challenge each other to **Duels**, and fight for the top spot on the **Leaderboard**. Suddenly, joining a group session isn't just something you do — it's something you *want* to do, because there's something at stake and the whole crew is in on it.
+The idea is simple: turn your LAN party into a shared experience with a little friendly competition. Players earn **Coins** for gaming together, spend them on fun actions in the **Shop**, challenge each other to **Duels** and **Team Duels**, and fight for the top spot on the **Leaderboard**. Suddenly, joining a group session isn't just something you do — it's something you *want* to do, because there's something at stake and the whole crew is in on it.
 
 It's not about winning. It's about getting everyone off their corner of the couch and into the same game — laughing, competing, and actually spending time together. That's the whole point.
 
@@ -59,8 +59,36 @@ Spend Coins on actions that shake up the session:
 | Force Play | 5 Coins | Force one other player to participate |
 | Drink Order | 3 Coins | Order someone to drink immediately |
 
-### Duels
-Players can challenge each other 1-on-1, with Coins or Controller Points as stakes. Accept a challenge and a live duel session starts immediately.
+Shop actions that target another player (Force Play, Drink Order) generate a **real-time notification** for the recipient, including an acknowledgement flow so the initiator knows the action was received.
+
+### Duels (1v1)
+Challenge another player head-to-head with Coins or Controller Points as stakes:
+
+- Set your stake and pick an opponent — the challenge appears in their notification panel immediately
+- Stakes are **deducted from both players as soon as the duel is accepted** — no backing out
+- Once the duel is live, the challenger marks the winner and the admin pays out the pot
+- The winner receives a **payout modal** with a full breakdown of winnings
+
+### Team Duels
+The full group gets in on the action — not just two players:
+
+- **Build two teams** from all LAN-present players; each player can only be on one side
+- Set a **stake per person** — the input is automatically capped to the lowest balance in the current lineup, so no one can bet more than they have
+- A **live pot preview** updates as players are added or stakes are changed
+- Every participant must **individually accept** the challenge before it goes live; anyone can reject and cancel it
+- The creator is the **Gruppenleiter (GL)** — shown first in the team list with a gold GL badge, and the only one who can select the winning team
+- When the winner is set, **all admins receive a notification** in their challenge panel with a direct link to the card
+- After the admin pays out, **every participant gets a payout modal** showing whether they won or lost, their earnings (or losses), and the full team breakdown
+- Remainder Coins that can't be split evenly go to the first winner in the list
+
+### Notifications Panel
+A live panel in the header (⚔️ badge) collects all pending actions for the current player:
+
+- **Duels** — accept or reject directly from the panel; clicking the item navigates to the challenge card
+- **Team Duels** — shown with a 👥 indicator; clicking opens the Team tab and scrolls to the card
+- **Admin winner review** — admins see a 🏆 notification when a Team Duel creator sets the winning team
+- **Shop tasks** — Force Play and Drink Order arrive here; confirm with ✓ to send an acknowledgement back to the buyer
+- Badge count combines all pending items across types
 
 ### Game Library
 - Large game library with genre filtering and LAN ratings
@@ -175,8 +203,8 @@ gameparty/
 
 | Role | Permissions |
 |---|---|
-| `player` | Earn Coins, use Shop, create duels, mark game interest, join sessions |
-| `admin` | + Start/end sessions, manage players, adjust Coins, configure coin rates |
+| `player` | Earn Coins, use Shop, create and accept Duels & Team Duels, mark game interest, join sessions |
+| `admin` | + Start/end sessions, manage players, adjust Coins, configure coin rates, pay out duel pots |
 
 ---
 
