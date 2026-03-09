@@ -76,9 +76,9 @@ CONFIG.SHOP_ITEMS.push(
 // Add star shop item
 CONFIG.SHOP_ITEMS.unshift({
     id: 'buy_star',
-    name: 'Controller-Punkt 🎮',
+    name: 'Controller-Punkt',
     cost: CONFIG.STAR_PRICE,
-    icon: '🎮',
+    icon: '<img src="/svg/console-controller.svg" style="width:2rem;height:2rem">',
     description: `Kaufe einen Controller-Punkt für ${CONFIG.STAR_PRICE} Coins. Das sind dauerhafte Siegpunkte!`
 });
 

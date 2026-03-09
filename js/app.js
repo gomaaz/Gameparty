@@ -2479,17 +2479,15 @@ function getNowPlus10() {
         if (!item) return;
 
         if (itemId === 'buy_star') {
-            if (confirm(t('buy_star_confirm', cost))) {
-                try {
-                    await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${t('item_buy_star_name')}` });
-                    await api('POST', '/stars/add', { player, amount: 1 });
-                    state.coins[player] = (state.coins[player] || 0) - cost;
-                    state.stars[player] = (state.stars[player] || 0) + 1;
-                    showToast(t('star_bought', state.stars[player]), 'success');
-                    updateHeader();
-                    renderShop();
-                } catch (e) { showToast(t('not_enough_coins'), 'error'); }
-            }
+            try {
+                await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${t('item_buy_star_name')}` });
+                await api('POST', '/stars/add', { player, amount: 1 });
+                state.coins[player] = (state.coins[player] || 0) - cost;
+                state.stars[player] = (state.stars[player] || 0) + 1;
+                showToast(t('star_bought', state.stars[player]), 'success');
+                updateHeader();
+                renderShop();
+            } catch (e) { showToast(t('not_enough_coins'), 'error'); }
             return;
         }
 

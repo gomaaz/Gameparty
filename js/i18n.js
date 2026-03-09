@@ -240,7 +240,7 @@ const TRANSLATIONS = {
         drink_toast: '🍺 {0} orders: {1} DRINK!',
 
         // --- Shop Items ---
-        item_buy_star_name: 'Controller Point 🎮',
+        item_buy_star_name: 'Controller Point',
         item_buy_star_desc: 'Buy a Controller Point for {0} Coins. These are permanent victory points!',
         item_choose_next_name: 'Choose Next Game',
         item_choose_next_desc: 'You decide which game is played next.',
@@ -660,7 +660,7 @@ const TRANSLATIONS = {
         drink_toast: '🍺 {0} befiehlt: {1} TRINKEN!',
 
         // --- Shop Items ---
-        item_buy_star_name: 'Controller-Punkt 🎮',
+        item_buy_star_name: 'Controller-Punkt',
         item_buy_star_desc: 'Kaufe einen Controller-Punkt für {0} Coins. Das sind dauerhafte Siegpunkte!',
         item_choose_next_name: 'Naechstes Spiel bestimmen',
         item_choose_next_desc: 'Du bestimmst, welches Spiel als naechstes gespielt wird.',
