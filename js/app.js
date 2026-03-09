@@ -524,7 +524,7 @@ function getNowPlus10() {
                         }
                     } else if (s.status === 'running') {
                         const initialMins0 = s.startedAt ? Math.floor((Date.now() - s.startedAt) / 60000) : 0;
-                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
+                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
                         if (rate > 0 && s.startedAt) {
                             const initialMinutes = (Date.now() - s.startedAt) / 60000;
                             const initialCoins = Math.ceil(initialMinutes * rate);
