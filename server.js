@@ -32,6 +32,12 @@ app.use((req, res, next) => {
     next();
 });
 
+// Kein Cache für alle API-Routen
+app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+});
+
 app.get('/api/events', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');

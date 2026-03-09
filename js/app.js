@@ -103,7 +103,7 @@
 
     // ---- API Helper ----
     async function api(method, path, body) {
-        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        const opts = { method, headers: { 'Content-Type': 'application/json' }, cache: 'no-store' };
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch('/api' + path, opts);
         if (!res.ok) {
@@ -3836,6 +3836,16 @@
 
     async function pollChallenges() {
         if (!state.currentPlayer) return;
+        // Coins und Sterne live refreshen (unabhängig von der aktiven View)
+        try {
+            const [coinsData, starsData] = await Promise.all([
+                api('GET', '/coins'),
+                api('GET', '/stars')
+            ]);
+            state.coins = coinsData;
+            state.stars = starsData;
+            updateHeaderCoins();
+        } catch {}
         try {
             const events = await api('GET', `/player-events/${encodeURIComponent(state.currentPlayer)}`);
             for (const ev of events) {
