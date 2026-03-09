@@ -457,7 +457,8 @@
                     const isLeader = s.leader === state.currentPlayer;
                     const isInSession = s.players.includes(state.currentPlayer);
                     const duration = s.startedAt ? formatDuration(Date.now() - s.startedAt) : '';
-                    const playersHTML = s.players.map(p =>
+                    const sortedPlayers = [s.leader, ...s.players.filter(p => p !== s.leader).sort()];
+                    const playersHTML = sortedPlayers.map(p =>
                         `<span class="player-chip player-name-clickable" data-player-info="${p}">${p === s.leader ? '<span class="session-leader-badge">GL</span>' : ''}${p}</span>`
                     ).join('');
 
@@ -1283,7 +1284,7 @@
                 ${scheduleHTML}
                 ${coinStatusHTML}
                 ${leaderEditHTML}
-                <div>${p.players.map(n => `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? '<span class="session-leader-badge">GL</span>' : ''}${n}</span>`).join('')}</div>
+                <div>${[p.leader, ...p.players.filter(n => n !== p.leader).sort()].map(n => `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? '<span class="session-leader-badge">GL</span>' : ''}${n}</span>`).join('')}</div>
                 ${actionsHTML}
             </div>`;
     }
