@@ -843,6 +843,7 @@ function updateNavLabels() {
         shop: t('nav_shop'),
         challenges: t('nav_duels'),
         activities: t('nav_activities'),
+        profile: t('nav_profile'),
     };
     document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
         const span = btn.querySelector('span:last-child');
