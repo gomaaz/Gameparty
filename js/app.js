@@ -45,6 +45,7 @@
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
     let notifPanelOpen = false;
     let focusChallengeId = null;
+    let challengeActiveTab = '1v1'; // '1v1' | 'team'
 
     // ---- Coin Rate Helper ----
     function getPlayerRate(playerCount) {

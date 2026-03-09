@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1.1.1 (2026-03-09)
+- feat: add team challenges backend API
+
 ## v.1.1.1.1.1.1.1.1 (2026-03-09)
 - feat: add Team Duel i18n keys for en and de
 

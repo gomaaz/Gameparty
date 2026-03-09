@@ -797,6 +797,7 @@ app.delete('/api/reset', (req, res) => {
         DELETE FROM tokens; DELETE FROM genres_played; DELETE FROM proposals;
         DELETE FROM proposal_players; DELETE FROM attendees; DELETE FROM settings;
         DELETE FROM challenges;
+        DELETE FROM team_challenges;
     `);
     seedIfEmpty();
     res.json({ success: true });
@@ -816,6 +817,12 @@ app.delete('/api/reset/stars', (req, res) => {
 
 app.delete('/api/reset/challenges', (req, res) => {
     db.prepare('DELETE FROM challenges').run();
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
+app.delete('/api/reset/team-challenges', (req, res) => {
+    db.prepare('DELETE FROM team_challenges').run();
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
@@ -958,6 +965,210 @@ app.put('/api/challenges/:id/payout', (req, res) => {
 // DELETE /api/challenges/:id
 app.delete('/api/challenges/:id', (req, res) => {
     db.prepare('DELETE FROM challenges WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+});
+
+// ---- Team Challenges API ----
+
+// GET /api/team-challenges
+app.get('/api/team-challenges', (req, res) => {
+    const rows = db.prepare('SELECT * FROM team_challenges ORDER BY createdAt DESC').all();
+    res.json(rows);
+});
+
+// POST /api/team-challenges
+app.post('/api/team-challenges', (req, res) => {
+    const { createdBy, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB } = req.body;
+    if (!createdBy || !game || !Array.isArray(teamA) || !Array.isArray(teamB)) {
+        return res.status(400).json({ error: 'createdBy, game, teamA und teamB erforderlich' });
+    }
+    if (teamA.length < 2) return res.status(400).json({ error: 'Team A braucht mindestens 2 Spieler' });
+    if (teamB.length < 2) return res.status(400).json({ error: 'Team B braucht mindestens 2 Spieler' });
+
+    const setB = new Set(teamB);
+    const overlap = teamA.filter(p => setB.has(p));
+    if (overlap.length > 0) return res.status(400).json({ error: 'Ein Spieler kann nicht in beiden Teams sein' });
+
+    const inA = new Set(teamA).has(createdBy);
+    const inB = setB.has(createdBy);
+    if (!inA && !inB) return res.status(400).json({ error: 'Ersteller muss in einem Team sein' });
+
+    const coins = stakeCoinsPerPerson || 0;
+    const stars = stakeStarsPerPerson || 0;
+    if (coins < 0 || stars < 0) return res.status(400).json({ error: 'Einsatz darf nicht negativ sein' });
+
+    if (coins > 0) {
+        const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(createdBy);
+        if (!row || row.amount < coins) return res.status(400).json({ error: 'Nicht genug Coins' });
+    }
+    if (stars > 0) {
+        const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(createdBy);
+        if (!row || row.amount < stars) return res.status(400).json({ error: 'Nicht genug Sterne' });
+    }
+
+    const id = 'tc_' + Date.now();
+    db.prepare(
+        'INSERT INTO team_challenges (id, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB, status, createdBy, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, game, coins, stars, JSON.stringify(teamA), JSON.stringify(teamB), 'pending', createdBy, Date.now());
+    res.json({ success: true, id });
+});
+
+// PUT /api/team-challenges/:id/accept
+app.put('/api/team-challenges/:id/accept', (req, res) => {
+    const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(req.params.id);
+    if (!tc) return res.status(404).json({ error: 'Team-Challenge nicht gefunden' });
+    if (tc.status !== 'pending') return res.status(400).json({ error: 'Team-Challenge ist nicht mehr offen' });
+
+    const { player } = req.body;
+    const teamB = JSON.parse(tc.teamB);
+    if (!teamB.includes(player)) {
+        return res.status(403).json({ error: 'Nur ein Team-B-Mitglied kann annehmen' });
+    }
+
+    const teamA = JSON.parse(tc.teamA);
+    const allPlayers = [...teamA, ...teamB];
+
+    if (tc.stakeCoinsPerPerson > 0) {
+        for (const p of allPlayers) {
+            const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(p);
+            if (!row || row.amount < tc.stakeCoinsPerPerson) {
+                return res.status(400).json({ error: `${p} hat nicht genug Coins` });
+            }
+        }
+    }
+    if (tc.stakeStarsPerPerson > 0) {
+        for (const p of allPlayers) {
+            const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(p);
+            if (!row || row.amount < tc.stakeStarsPerPerson) {
+                return res.status(400).json({ error: `${p} hat nicht genug Sterne` });
+            }
+        }
+    }
+
+    const accept = db.transaction(() => {
+        for (const p of allPlayers) {
+            if (tc.stakeCoinsPerPerson > 0) {
+                db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
+            }
+            if (tc.stakeStarsPerPerson > 0) {
+                db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+            }
+        }
+        db.prepare('UPDATE team_challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
+    });
+    accept();
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
+// PUT /api/team-challenges/:id/reject
+app.put('/api/team-challenges/:id/reject', (req, res) => {
+    const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(req.params.id);
+    if (!tc) return res.status(404).json({ error: 'Team-Challenge nicht gefunden' });
+    if (tc.status !== 'pending') return res.status(400).json({ error: 'Team-Challenge ist nicht mehr offen' });
+
+    const { player } = req.body;
+    const teamB = JSON.parse(tc.teamB);
+    if (!teamB.includes(player)) {
+        return res.status(403).json({ error: 'Nur ein Team-B-Mitglied kann ablehnen' });
+    }
+
+    db.prepare('UPDATE team_challenges SET status = ?, resolvedAt = ? WHERE id = ?').run('rejected', Date.now(), req.params.id);
+    res.json({ success: true });
+});
+
+// PUT /api/team-challenges/:id/complete
+app.put('/api/team-challenges/:id/complete', (req, res) => {
+    const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(req.params.id);
+    if (!tc) return res.status(404).json({ error: 'Team-Challenge nicht gefunden' });
+    if (tc.status !== 'accepted') return res.status(400).json({ error: 'Team-Challenge muss erst angenommen sein' });
+
+    const { player, winnerTeam } = req.body;
+    const teamA = JSON.parse(tc.teamA);
+    if (!teamA.includes(player)) {
+        return res.status(403).json({ error: 'Nur ein Team-A-Mitglied kann den Gewinner setzen' });
+    }
+    if (winnerTeam !== 'A' && winnerTeam !== 'B') {
+        return res.status(400).json({ error: 'Gewinner muss "A" oder "B" sein' });
+    }
+
+    db.prepare('UPDATE team_challenges SET status = ?, winnerTeam = ? WHERE id = ?').run('completed', winnerTeam, req.params.id);
+    res.json({ success: true });
+});
+
+// PUT /api/team-challenges/:id/payout
+app.put('/api/team-challenges/:id/payout', (req, res) => {
+    const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(req.params.id);
+    if (!tc) return res.status(404).json({ error: 'Team-Challenge nicht gefunden' });
+    if (tc.status !== 'completed') return res.status(400).json({ error: 'Team-Challenge muss erst abgeschlossen sein' });
+    if (!tc.winnerTeam) return res.status(400).json({ error: 'Kein Gewinnerteam gesetzt' });
+
+    const teamA = JSON.parse(tc.teamA);
+    const teamB = JSON.parse(tc.teamB);
+    const totalPlayers = teamA.length + teamB.length;
+    const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
+    const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
+
+    const winners = tc.winnerTeam === 'A' ? teamA : teamB;
+    const losers  = tc.winnerTeam === 'A' ? teamB : teamA;
+
+    const baseCoins = Math.floor(totalPot / winners.length);
+    const remainder = totalPot - baseCoins * winners.length;
+    const baseStars = Math.floor(totalStarPot / winners.length);
+    const starRemainder = totalStarPot - baseStars * winners.length;
+
+    const now = Date.now();
+    const winnerTeamLabel = tc.winnerTeam === 'A' ? 'Team A' : 'Team B';
+    const loserTeamLabel  = tc.winnerTeam === 'A' ? 'Team B' : 'Team A';
+
+    const payout = db.transaction(() => {
+        winners.forEach((p, idx) => {
+            const coinAmount = baseCoins + (idx === 0 ? remainder : 0);
+            const starAmount = baseStars + (idx === 0 ? starRemainder : 0);
+            if (coinAmount > 0) {
+                db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(coinAmount, p);
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)')
+                    .run(p, coinAmount, `Team-Duell gewonnen (${winnerTeamLabel}) – ${tc.game}`, now);
+            }
+            if (starAmount > 0) {
+                db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(starAmount, p);
+            }
+        });
+        losers.forEach(p => {
+            if (tc.stakeCoinsPerPerson > 0) {
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)')
+                    .run(p, -tc.stakeCoinsPerPerson, `Team-Duell verloren (${loserTeamLabel}) – ${tc.game}`, now);
+            }
+        });
+        db.prepare('UPDATE team_challenges SET status = ?, resolvedAt = ? WHERE id = ?').run('paid', now, req.params.id);
+    });
+    payout();
+    res.json({ success: true, winnerTeam: tc.winnerTeam, totalPot, baseCoins, remainder });
+});
+
+// DELETE /api/team-challenges/:id
+app.delete('/api/team-challenges/:id', (req, res) => {
+    const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(req.params.id);
+    if (!tc) return res.status(404).json({ error: 'Team-Challenge nicht gefunden' });
+
+    if (tc.status === 'accepted') {
+        const teamA = JSON.parse(tc.teamA);
+        const teamB = JSON.parse(tc.teamB);
+        const allPlayers = [...teamA, ...teamB];
+        const refund = db.transaction(() => {
+            for (const p of allPlayers) {
+                if (tc.stakeCoinsPerPerson > 0) {
+                    db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
+                }
+                if (tc.stakeStarsPerPerson > 0) {
+                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+                }
+            }
+        });
+        refund();
+    }
+
+    db.prepare('DELETE FROM team_challenges WHERE id = ?').run(req.params.id);
     res.json({ success: true });
 });
 
