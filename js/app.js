@@ -42,6 +42,7 @@
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
     const notifiedChallengeIds = new Set();
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
+    const dismissedRobIds = new Set(); // Rob-Benachrichtigungen die bereits bestätigt wurden
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
     let notifPanelOpen = false;
     let focusChallengeId = null;
@@ -3735,8 +3736,10 @@
         panel.querySelectorAll('.notif-dismiss').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
+                const id = btn.dataset.id;
+                dismissedRobIds.add(id);
                 try { await api('DELETE', `/player-events/${btn.dataset.evId}`); } catch {}
-                removeNotification(btn.dataset.id);
+                removeNotification(id);
             });
         });
 
@@ -3817,12 +3820,12 @@
                     try {
                         const data = JSON.parse(ev.message);
                         const notifId = 'rob_' + ev.id;
-                        if (!pendingNotifications.find(n => n.id === notifId)) {
+                        if (!dismissedRobIds.has(notifId) && !pendingNotifications.find(n => n.id === notifId)) {
                             pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, data.stolen) });
                             notifPanelOpen = true;
                             renderNotifPanel();
+                            if (getNotifPref('sound')) playSound('error');
                         }
-                        if (getNotifPref('sound')) playSound('error');
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
                 }
@@ -3830,11 +3833,12 @@
                     try {
                         const data = JSON.parse(ev.message);
                         const notifId = 'rob_' + ev.id;
-                        if (!pendingNotifications.find(n => n.id === notifId)) {
+                        if (!dismissedRobIds.has(notifId) && !pendingNotifications.find(n => n.id === notifId)) {
                             const title = data.success ? t('rob_controller_victim_success', data.thief) : t('rob_controller_victim_fail', data.thief);
                             pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title });
                             notifPanelOpen = true;
                             renderNotifPanel();
+                            if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                         }
                         if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                     } catch {}
@@ -4048,6 +4052,7 @@
         closeAdminPanel();
         notifiedChallengeIds.clear();
         shownPenaltyIds.clear();
+        dismissedRobIds.clear();
         pendingNotifications.length = 0;
         renderNotifPanel();
         state.currentPlayer = null;

@@ -338,12 +338,12 @@ const TRANSLATIONS = {
         rob_coins_fail: '😬 Unlucky! {0} had nothing for you.',
         rob_controller_success: '🎮 Score! You stole a Controller Point from {0}!',
         rob_controller_fail: '😬 Caught red-handed! {0} noticed and got away.',
-        rob_coins_victim_notif: '🥷 {0} stole {1} Coins from you!',
-        rob_controller_victim_success: '🎮 {0} stole a Controller Point from you!',
-        rob_controller_victim_fail: '🥷 {0} tried to steal your Controller Point — and failed!',
+        rob_coins_victim_notif: '{0} stole {1} Coins from you!',
+        rob_controller_victim_success: '{0} stole a Controller Point from you!',
+        rob_controller_victim_fail: '{0} tried to steal your Controller Point — and failed!',
 
         // --- Notifications Panel ---
-        notif_panel_title: '⚔️ Challenges',
+        notif_panel_title: '🔔 Notifications',
         notif_challenge_from: '{0} challenges you!',
         duel_challenge_notif_title: '⚔️ Duel Challenge!',
         duel_challenge_notif_body: '{0} challenges you!\n{1} – Stake: {2}',
@@ -757,12 +757,12 @@ const TRANSLATIONS = {
         rob_coins_fail: '😬 Pech! Bei {0} war nichts zu holen.',
         rob_controller_success: '🎮 Erfolg! Du hast einen Controller-Punkt von {0} gestohlen!',
         rob_controller_fail: '😬 Erwischt! {0} hat dich bemerkt.',
-        rob_coins_victim_notif: '🥷 {0} hat {1} Coins von dir gestohlen!',
-        rob_controller_victim_success: '🎮 {0} hat einen Controller-Punkt von dir gestohlen!',
-        rob_controller_victim_fail: '🥷 {0} hat versucht, deinen Controller-Punkt zu stehlen — und ist gescheitert!',
+        rob_coins_victim_notif: '{0} hat {1} Coins von dir gestohlen!',
+        rob_controller_victim_success: '{0} hat einen Controller-Punkt von dir gestohlen!',
+        rob_controller_victim_fail: '{0} hat versucht, deinen Controller-Punkt zu stehlen — und ist gescheitert!',
 
         // --- Notifications Panel ---
-        notif_panel_title: '⚔️ Herausforderungen',
+        notif_panel_title: '🔔 Benachrichtigungen',
         notif_challenge_from: '{0} fordert dich heraus!',
         duel_challenge_notif_title: '⚔️ Duell-Herausforderung!',
         duel_challenge_notif_body: '{0} fordert dich heraus!\n{1} – Einsatz: {2}',
