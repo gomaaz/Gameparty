@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1 (2026-03-09)
+- chore: add missing i18n keys, remove unused keys
+
 ## v2.3.74 (2026-03-09)
 - feat: direct coin rate per player count, remove coins_per_minute multiplier
 

@@ -55,6 +55,7 @@ const TRANSLATIONS = {
         leaderboard: 'Leaderboard',
         recent_sessions: 'Recent Sessions',
         coins_per_player: 'Coins per player',
+        coins_paid_out: 'paid out',
         session_lobby: '🚪 Lobby',
         session_running: '● Running',
         session_awaiting_approval: '⏳ Waiting for Admin Approval',
@@ -96,10 +97,7 @@ const TRANSLATIONS = {
         search_game: 'Search game...',
         all_genres: 'All Genres',
         min_matches: 'Min. Matches',
-        col_number: '#',
         col_game_genre_max: 'Game / Genre / Max',
-        col_like: 'Like',
-        col_coins: 'Coins',
         col_edit: 'Edit',
         no_games_found: 'No games found',
         selected_count: '{0} game(s) selected',
@@ -109,7 +107,6 @@ const TRANSLATIONS = {
         btn_interest: 'Interest',
         btn_unregister: 'Remove',
         btn_release: 'Approve',
-        coins_updated: 'Coins updated.',
         game_already_exists: 'Game already exists!',
         game_suggested: '"{0}" suggested!',
         game_deleted: 'Game deleted.',
@@ -134,6 +131,7 @@ const TRANSLATIONS = {
         save_error: 'Error saving.',
         modal_preview_title: 'Game Preview',
         modal_close: 'Close',
+        no_shop_links: 'No shop links',
         invalid_link: 'Invalid Link',
         invalid_link_text: 'No valid YouTube video found.',
 
@@ -145,9 +143,6 @@ const TRANSLATIONS = {
         stat_sessions: 'Sessions',
         stat_ctrl_points: 'Controller Points',
         active_tokens: 'Active Tokens',
-        token_skip: 'Skip-Token',
-        token_force: 'Force Play',
-        token_choose: 'Choose Game',
         token_tap_to_redeem: 'Tap to redeem',
         history_title: 'History',
         change_pin: 'Change PIN',
@@ -170,7 +165,7 @@ const TRANSLATIONS = {
         notif_permission_rejected: 'Permission denied',
         on: 'On',
         off: 'Off',
-        change_language: 'Change language',
+        settings_title: '⚙️ Settings',
 
         // --- Session (Admin) ---
         session_admin_only: 'Only admins can start sessions.',
@@ -229,7 +224,6 @@ const TRANSLATIONS = {
         who_to_drink: 'Who has to drink? 🍺',
         force_toast: '{0} – {1} has to play!',
         drink_toast: '🍺 {0} orders: {1} DRINK!',
-        modal_select_target_cancel: 'Cancel',
 
         // --- Shop Items ---
         item_buy_star_name: 'Controller Point 🎮',
@@ -364,7 +358,6 @@ const TRANSLATIONS = {
         profile_teamspeak: 'TeamSpeak',
         profile_accounts_placeholder_teamspeak: 'TeamSpeak username',
         btn_save_accounts: 'Save',
-        player_info_popup_no_data: 'No data available',
 
         // --- Medium Account Step ---
         medium_account_hint: 'What account link / nickname should others use to find you?',
@@ -423,6 +416,7 @@ const TRANSLATIONS = {
         leaderboard: 'Leaderboard',
         recent_sessions: 'Letzte Sessions',
         coins_per_player: 'Coins pro Spieler',
+        coins_paid_out: 'ausgezahlt',
         session_lobby: '🚪 Wartezimmer',
         session_running: '● läuft',
         session_awaiting_approval: '⏳ Wartet auf Admin-Freigabe',
@@ -464,10 +458,7 @@ const TRANSLATIONS = {
         search_game: 'Spiel suchen...',
         all_genres: 'Alle Genres',
         min_matches: 'Min. Uebereinstimmungen',
-        col_number: '#',
         col_game_genre_max: 'Spiel / Genre / Max',
-        col_like: 'Like',
-        col_coins: 'Coins',
         col_edit: 'Edit',
         no_games_found: 'Keine Spiele gefunden',
         selected_count: '{0} Spiel(e) ausgewählt',
@@ -477,7 +468,6 @@ const TRANSLATIONS = {
         btn_interest: 'Interesse',
         btn_unregister: 'Austragen',
         btn_release: 'Freigeben',
-        coins_updated: 'Coins aktualisiert.',
         game_already_exists: 'Spiel existiert bereits!',
         game_suggested: '"{0}" vorgeschlagen!',
         game_deleted: 'Spiel geloescht.',
@@ -502,6 +492,7 @@ const TRANSLATIONS = {
         save_error: 'Fehler beim Speichern.',
         modal_preview_title: 'Spielvorschau',
         modal_close: 'Schliessen',
+        no_shop_links: 'Keine Shop-Links',
         invalid_link: 'Ungültiger Link',
         invalid_link_text: 'Kein gültiges YouTube-Video gefunden.',
 
@@ -513,9 +504,6 @@ const TRANSLATIONS = {
         stat_sessions: 'Sessions',
         stat_ctrl_points: 'Controller-Punkte',
         active_tokens: 'Aktive Tokens',
-        token_skip: 'Skip-Token',
-        token_force: 'Zwangsspielen',
-        token_choose: 'Spiel bestimmen',
         token_tap_to_redeem: 'Antippen zum Einloesen',
         history_title: 'Verlauf',
         change_pin: 'PIN aendern',
@@ -538,7 +526,7 @@ const TRANSLATIONS = {
         notif_permission_rejected: 'Berechtigung verweigert',
         on: 'An',
         off: 'Aus',
-        change_language: 'Sprache ändern',
+        settings_title: '⚙️ Einstellungen',
 
         // --- Session (Admin) ---
         session_admin_only: 'Nur die Turnierleitung kann Sessions starten.',
@@ -597,7 +585,6 @@ const TRANSLATIONS = {
         who_to_drink: 'Wer muss trinken? 🍺',
         force_toast: '{0} – {1} muss mitspielen!',
         drink_toast: '🍺 {0} befiehlt: {1} TRINKEN!',
-        modal_select_target_cancel: 'Abbrechen',
 
         // --- Shop Items ---
         item_buy_star_name: 'Controller-Punkt 🎮',
@@ -732,7 +719,6 @@ const TRANSLATIONS = {
         profile_teamspeak: 'TeamSpeak',
         profile_accounts_placeholder_teamspeak: 'TeamSpeak-Nutzername',
         btn_save_accounts: 'Speichern',
-        player_info_popup_no_data: 'Keine Daten vorhanden',
 
         // --- Medium Account Step ---
         medium_account_hint: 'Welchen Account-Link / Nickname sollen andere verwenden?',
