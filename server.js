@@ -155,6 +155,9 @@ try { db.prepare("ALTER TABLE games ADD COLUMN shop_links TEXT DEFAULT '[]'").ru
 // ---- Migration: pending_coins Feld in live_sessions ----
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN pending_coins INT DEFAULT 0").run(); } catch {}
 
+// ---- Migration: acceptances Feld in team_challenges ----
+try { db.prepare("ALTER TABLE team_challenges ADD COLUMN acceptances TEXT DEFAULT '[]'").run(); } catch {}
+
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
     const result = db.prepare('DELETE FROM attendees WHERE player NOT IN (SELECT name FROM users)').run();
@@ -1008,8 +1011,8 @@ app.post('/api/team-challenges', (req, res) => {
 
     const id = 'tc_' + Date.now();
     db.prepare(
-        'INSERT INTO team_challenges (id, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB, status, createdBy, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, game, coins, stars, JSON.stringify(teamA), JSON.stringify(teamB), 'pending', createdBy, Date.now());
+        'INSERT INTO team_challenges (id, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB, status, createdBy, createdAt, acceptances) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, game, coins, stars, JSON.stringify(teamA), JSON.stringify(teamB), 'pending', createdBy, Date.now(), JSON.stringify([createdBy]));
     res.json({ success: true, id });
 });
 
@@ -1020,45 +1023,69 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
     if (tc.status !== 'pending') return res.status(400).json({ error: 'Team-Challenge ist nicht mehr offen' });
 
     const { player } = req.body;
-    const teamB = JSON.parse(tc.teamB);
-    if (!teamB.includes(player)) {
-        return res.status(403).json({ error: 'Nur ein Team-B-Mitglied kann annehmen' });
-    }
-
     const teamA = JSON.parse(tc.teamA);
+    const teamB = JSON.parse(tc.teamB);
     const allPlayers = [...teamA, ...teamB];
 
-    if (tc.stakeCoinsPerPerson > 0) {
-        for (const p of allPlayers) {
-            const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(p);
-            if (!row || row.amount < tc.stakeCoinsPerPerson) {
-                return res.status(400).json({ error: `${p} hat nicht genug Coins` });
-            }
-        }
-    }
-    if (tc.stakeStarsPerPerson > 0) {
-        for (const p of allPlayers) {
-            const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(p);
-            if (!row || row.amount < tc.stakeStarsPerPerson) {
-                return res.status(400).json({ error: `${p} hat nicht genug Sterne` });
-            }
-        }
+    if (!allPlayers.includes(player)) {
+        return res.status(403).json({ error: 'Nur Teilnehmer können annehmen' });
     }
 
-    const accept = db.transaction(() => {
-        for (const p of allPlayers) {
-            if (tc.stakeCoinsPerPerson > 0) {
-                db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
-            }
-            if (tc.stakeStarsPerPerson > 0) {
-                db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+    const acceptances = JSON.parse(tc.acceptances || '[]');
+    if (acceptances.includes(player)) {
+        return res.status(400).json({ error: 'Du hast bereits angenommen' });
+    }
+
+    const newAcceptances = [...acceptances, player];
+    const allAccepted = allPlayers.every(p => newAcceptances.includes(p));
+
+    if (allAccepted) {
+        // Check all players have sufficient coins/stars
+        if (tc.stakeCoinsPerPerson > 0) {
+            for (const p of allPlayers) {
+                const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(p);
+                if (!row || row.amount < tc.stakeCoinsPerPerson) {
+                    return res.status(400).json({ error: `${p} hat nicht genug Coins` });
+                }
             }
         }
-        db.prepare('UPDATE team_challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
-    });
-    accept();
-    broadcast({ type: 'update' });
-    res.json({ success: true });
+        if (tc.stakeStarsPerPerson > 0) {
+            for (const p of allPlayers) {
+                const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(p);
+                if (!row || row.amount < tc.stakeStarsPerPerson) {
+                    return res.status(400).json({ error: `${p} hat nicht genug Sterne` });
+                }
+            }
+        }
+
+        const now = Date.now();
+        const sid = 'ls_duel_team_' + now;
+
+        const finalizeAccept = db.transaction(() => {
+            for (const p of allPlayers) {
+                if (tc.stakeCoinsPerPerson > 0) {
+                    db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
+                }
+                if (tc.stakeStarsPerPerson > 0) {
+                    db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+                }
+            }
+            db.prepare('UPDATE team_challenges SET status = ?, acceptances = ? WHERE id = ?').run('accepted', JSON.stringify(newAcceptances), req.params.id);
+            // Create a live session for all participants
+            db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt) VALUES (?, ?, ?, 'running', ?)").run(sid, tc.game, tc.createdBy, now);
+            for (const p of allPlayers) {
+                db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, p, now);
+            }
+        });
+        finalizeAccept();
+        broadcast({ type: 'update' });
+        res.json({ success: true, allAccepted: true, sessionId: sid });
+    } else {
+        // Not all accepted yet — just record this acceptance
+        db.prepare('UPDATE team_challenges SET acceptances = ? WHERE id = ?').run(JSON.stringify(newAcceptances), req.params.id);
+        broadcast({ type: 'update' });
+        res.json({ success: true, allAccepted: false });
+    }
 });
 
 // PUT /api/team-challenges/:id/reject
@@ -1068,12 +1095,15 @@ app.put('/api/team-challenges/:id/reject', (req, res) => {
     if (tc.status !== 'pending') return res.status(400).json({ error: 'Team-Challenge ist nicht mehr offen' });
 
     const { player } = req.body;
+    const teamA = JSON.parse(tc.teamA);
     const teamB = JSON.parse(tc.teamB);
-    if (!teamB.includes(player)) {
-        return res.status(403).json({ error: 'Nur ein Team-B-Mitglied kann ablehnen' });
+    if (![...teamA, ...teamB].includes(player)) {
+        return res.status(403).json({ error: 'Nur Teilnehmer können ablehnen' });
     }
 
+    // Status is pending, so no stakes have been deducted yet — no refund needed
     db.prepare('UPDATE team_challenges SET status = ?, resolvedAt = ? WHERE id = ?').run('rejected', Date.now(), req.params.id);
+    broadcast({ type: 'update' });
     res.json({ success: true });
 });
 
@@ -1084,9 +1114,8 @@ app.put('/api/team-challenges/:id/complete', (req, res) => {
     if (tc.status !== 'accepted') return res.status(400).json({ error: 'Team-Challenge muss erst angenommen sein' });
 
     const { player, winnerTeam } = req.body;
-    const teamA = JSON.parse(tc.teamA);
-    if (!teamA.includes(player)) {
-        return res.status(403).json({ error: 'Nur ein Team-A-Mitglied kann den Gewinner setzen' });
+    if (player !== tc.createdBy) {
+        return res.status(403).json({ error: 'Nur der Herausforderer kann den Gewinner setzen' });
     }
     if (winnerTeam !== 'A' && winnerTeam !== 'B') {
         return res.status(400).json({ error: 'Gewinner muss "A" oder "B" sein' });

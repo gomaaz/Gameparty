@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
+- feat: per-player acceptance flow for team challenges
+
 ## v.1.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
 - fix: cap challenge stakes to min balance of all players
 
