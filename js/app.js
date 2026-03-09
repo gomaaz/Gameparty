@@ -2967,26 +2967,53 @@
                 const admin = isAdmin();
                 const inTeamA = teamA.includes(state.currentPlayer);
                 const inTeamB = teamB.includes(state.currentPlayer);
+                const inChallenge = inTeamA || inTeamB;
+                const isCreator = tc.createdBy === state.currentPlayer;
                 const totalPlayers = teamA.length + teamB.length;
                 const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
-
                 const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
+                const acceptances = JSON.parse(tc.acceptances || '[]');
+                const allPlayers = [...teamA, ...teamB];
+                const hasAccepted = acceptances.includes(state.currentPlayer);
+
+                const statusLabels = {
+                    pending: t('duel_status_pending'),
+                    accepted: t('duel_status_accepted'),
+                    completed: t('duel_status_completed'),
+                    paid: t('duel_status_paid'),
+                    rejected: t('duel_status_rejected')
+                };
+
                 const potParts = [];
                 if (tc.stakeCoinsPerPerson > 0) potParts.push(`${tc.stakeCoinsPerPerson} Coins/Person · ${t('total_pot_preview', totalPot + ' Coins')}`);
                 if (tc.stakeStarsPerPerson > 0) potParts.push(`${tc.stakeStarsPerPerson} 🎮/Person · ${t('total_pot_preview', totalStarPot + ' 🎮')}`);
                 const potStr = potParts.length ? potParts.join(' · ') : t('no_stake');
 
                 const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
-                const highlightClass = (inTeamA || inTeamB) ? ' highlight' : '';
+                const highlightClass = inChallenge ? ' highlight' : '';
+
+                // Acceptance status list (only shown while pending)
+                let acceptanceHTML = '';
+                if (tc.status === 'pending') {
+                    const acceptanceItems = allPlayers.map(p => {
+                        const accepted = acceptances.includes(p);
+                        const inA = teamA.includes(p);
+                        const teamColor = inA ? 'var(--accent-purple)' : 'var(--accent-blue)';
+                        return `<span style="display:inline-flex;align-items:center;gap:0.25rem;font-size:0.8rem;padding:0.15rem 0.4rem;border-radius:var(--radius-sm);background:${accepted ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.05)'};color:${accepted ? 'var(--accent-green, #00e676)' : 'var(--text-secondary)'};border:1px solid ${accepted ? 'rgba(0,230,118,0.3)' : 'var(--border)'};">
+                            <span style="font-size:0.65rem;color:${teamColor};">●</span>${p}${accepted ? ' ✓' : ' ⏳'}
+                        </span>`;
+                    }).join('');
+                    acceptanceHTML = `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin:0.4rem 0;">${acceptanceItems}</div>`;
+                }
 
                 let actionsHTML = '';
-                if (tc.status === 'pending' && inTeamB) {
+                if (tc.status === 'pending' && inChallenge && !hasAccepted) {
                     actionsHTML = `
                         <div class="proposal-actions">
                             <button class="btn-join tc-accept" data-id="${tc.id}">${t('notif_accept')}</button>
                             <button class="btn-leave tc-reject" data-id="${tc.id}">${t('notif_reject')}</button>
                         </div>`;
-                } else if (tc.status === 'accepted' && inTeamA) {
+                } else if (tc.status === 'accepted' && isCreator) {
                     actionsHTML = `
                         <div class="proposal-actions">
                             <select class="tc-winner-select" data-id="${tc.id}" style="background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem 0.5rem;font-size:0.85rem;">
@@ -3014,6 +3041,7 @@
                         </div>
                         <div class="game-meta">${tc.game}</div>
                         <div class="game-meta">${potStr}</div>
+                        ${acceptanceHTML}
                         ${winnerLabel ? `<div class="game-meta" style="margin-top:0.3rem;">🏆 ${winnerLabel}</div>` : ''}
                         ${actionsHTML}
                     </div>`;
@@ -3511,11 +3539,15 @@
                 const id = btn.dataset.id;
                 try {
                     if (id.startsWith('tc_')) {
-                        await api('PUT', `/team-challenges/${id.slice(3)}/accept`, { player: state.currentPlayer });
+                        const result = await api('PUT', `/team-challenges/${id.slice(3)}/accept`, { player: state.currentPlayer });
                         removeNotification(id);
                         showToast(t('team_duel_accepted'), 'success');
                         playSound('coin');
-                        if ($('#view-challenges').classList.contains('active')) renderChallenges();
+                        if (result.allAccepted) {
+                            navigateTo('dashboard');
+                        } else if ($('#view-challenges').classList.contains('active')) {
+                            renderChallenges();
+                        }
                     } else {
                         await api('PUT', `/challenges/${id}/accept`, { player: state.currentPlayer });
                         removeNotification(id);
@@ -3639,9 +3671,13 @@
         try {
             const teamChallenges = await api('GET', '/team-challenges');
             const newTeamOnes = teamChallenges.filter(tc => {
+                const teamA = JSON.parse(tc.teamA);
                 const teamB = JSON.parse(tc.teamB);
+                const allPlayers = [...teamA, ...teamB];
+                const acceptances = JSON.parse(tc.acceptances || '[]');
                 return tc.status === 'pending' &&
-                       teamB.includes(state.currentPlayer) &&
+                       allPlayers.includes(state.currentPlayer) &&
+                       !acceptances.includes(state.currentPlayer) &&
                        !notifiedChallengeIds.has('tc_' + tc.id);
             });
             for (const tc of newTeamOnes) {
