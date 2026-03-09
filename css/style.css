@@ -2392,9 +2392,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .session-coin-rate { font-size:0.78rem; color:var(--accent-gold); margin-bottom:0.35rem; }
 .session-coin-accumulator { font-size:0.85rem; color:var(--accent-gold); font-weight:600; }
 
-.session-runtime {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+.session-runtime-badge {
     animation: sessionRuntimePulse 2.5s ease-in-out infinite;
 }
 

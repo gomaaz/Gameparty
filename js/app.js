@@ -78,10 +78,8 @@
             document.querySelectorAll('.session-runtime').forEach(el => {
                 const startedAt = parseInt(el.dataset.startedAt || '0');
                 if (!startedAt) return;
-                const minutes = (Date.now() - startedAt) / 60000;
-                const mins = Math.floor(minutes);
-                const secs = Math.floor((minutes * 60) % 60);
-                el.textContent = `⏱ ${mins}:${String(secs).padStart(2, '0')} Min.`;
+                const mins = Math.floor((Date.now() - startedAt) / 60000);
+                el.textContent = `${mins} Min.`;
             });
             if (!document.querySelector('.session-coin-accumulator') && !document.querySelector('.session-runtime')) {
                 clearInterval(coinAccumulatorInterval);
@@ -231,13 +229,7 @@
         return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
-    function formatDuration(ms) {
-        const m = Math.floor(ms / 60000);
-        if (m < 60) return `${m} Min.`;
-        return `${Math.floor(m / 60)}h ${m % 60}m`;
-    }
-
-    function getNowPlus10() {
+function getNowPlus10() {
         const d = new Date(Date.now() + 10 * 60 * 1000);
         const date = d.toISOString().slice(0, 10);
         const time = d.toTimeString().slice(0, 5);
@@ -504,7 +496,6 @@
                 liveSessionsHTML = liveSessionsData.map(s => {
                     const isLeader = s.leader === state.currentPlayer;
                     const isInSession = s.players.includes(state.currentPlayer);
-                    const duration = s.startedAt ? formatDuration(Date.now() - s.startedAt) : '';
                     const sortedPlayers = [s.leader, ...s.players.filter(p => p !== s.leader).sort()];
                     const playersHTML = sortedPlayers.map(p =>
                         `<span class="player-chip player-name-clickable" data-player-info="${p}">${p === s.leader ? '<span class="session-leader-badge">GL</span>' : ''}${p}</span>`
@@ -532,18 +523,18 @@
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">${t('btn_cancel')}</button>`;
                         }
                     } else if (s.status === 'running') {
-                        statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('session_running')}${duration ? ` · ${duration}` : ''}</span>`;
+                        const initialMins0 = s.startedAt ? Math.floor((Date.now() - s.startedAt) / 60000) : 0;
+                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
                         if (rate > 0 && s.startedAt) {
                             const initialMinutes = (Date.now() - s.startedAt) / 60000;
                             const initialCoins = Math.ceil(initialMinutes * rate);
-                            const mins = Math.floor(initialMinutes);
-                            const secs = Math.floor((initialMinutes * 60) % 60);
-                            const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
-                            const startTimeStr = new Date(s.startedAt).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+                            const sd = new Date(s.startedAt);
+                            const startTimeStr = `${sd.toLocaleDateString('de-DE')} ${sd.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
                             coinInfoHTML = `
-    <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
-    <div><span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()}</span></div>
-    <div><span class="session-runtime" data-started-at="${s.startedAt}">⏱ ${timeStr} Min.</span></div>`;
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
+        <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()}</span>
+    </div>`;
                         }
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
@@ -1276,8 +1267,8 @@
         } else if (p.status === 'approved') {
             statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_approved')}</span>`;
         } else if (p.status === 'active') {
-            const duration = p.startedAt ? formatDuration(Date.now() - p.startedAt) : '';
-            statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_active')}${duration ? ` · ${duration}` : ''}</span>`;
+            const initialMins0 = p.startedAt ? Math.floor((Date.now() - p.startedAt) / 60000) : 0;
+            statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('status_active')} · <span class="session-runtime" data-started-at="${p.startedAt || 0}">${initialMins0} Min.</span></span>`;
         } else if (p.status === 'completed' && !p.coinsApproved) {
             statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
         } else if (p.status === 'completed' && p.coinsApproved) {
@@ -1303,14 +1294,13 @@
         } else if (p.status === 'active' && proposalRate > 0 && p.startedAt) {
             const initialMinutes = (Date.now() - p.startedAt) / 60000;
             const initialCoins = Math.ceil(initialMinutes * proposalRate);
-            const mins = Math.floor(initialMinutes);
-            const secs = Math.floor((initialMinutes * 60) % 60);
-            const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
-            const startTimeStr = new Date(p.startedAt).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+            const pd = new Date(p.startedAt);
+            const startTimeStr = `${pd.toLocaleDateString('de-DE')} ${pd.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
             coinRateHTML = `
-    <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
-    <div><span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${initialCoins} ${coinSvgIcon()}</span></div>
-    <div><span class="session-runtime" data-started-at="${p.startedAt}">⏱ ${timeStr} Min.</span></div>`;
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
+        <span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${initialCoins} ${coinSvgIcon()}</span>
+    </div>`;
         }
 
         let scheduleHTML = '';
