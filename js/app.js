@@ -3629,8 +3629,8 @@
             renderNotifPanel();
         });
         container.appendChild(toast);
-        setTimeout(() => toast.classList.add('notif-toast-fadeout'), 4000);
-        setTimeout(() => toast.remove(), 4600);
+        setTimeout(() => toast.classList.add('notif-toast-fadeout'), 8000);
+        setTimeout(() => toast.remove(), 8600);
     }
 
     async function renderNotifPanel() {
