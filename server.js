@@ -1326,12 +1326,12 @@ function _duelPayout(session, winner, db) {
         const now = Date.now();
         const payout = db.transaction(() => {
             if (c.stakeCoins > 0) {
-                db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(c.stakeCoins * 2, winner);
+                db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, c.stakeCoins * 2, c.stakeCoins * 2);
                 db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(winner, c.stakeCoins * 2, `Duell gewonnen vs ${loser} (${c.game})`, now);
                 db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(loser, -c.stakeCoins, `Duell verloren vs ${winner} (${c.game})`, now);
             }
             if (c.stakeStars > 0) {
-                db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(c.stakeStars * 2, winner);
+                db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, c.stakeStars * 2, c.stakeStars * 2);
             }
             db.prepare('UPDATE challenges SET status = ?, winner = ?, resolvedAt = ? WHERE id = ?').run('paid', winner, now, c.id);
         });
@@ -1359,11 +1359,11 @@ function _duelPayout(session, winner, db) {
                 const coinAmount = baseCoins + (idx === 0 ? remainder : 0);
                 const starAmount = baseStars + (idx === 0 ? starRemainder : 0);
                 if (coinAmount > 0) {
-                    db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(coinAmount, p);
+                    db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, coinAmount, coinAmount);
                     db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(p, coinAmount, `Team-Duell gewonnen (${winnerTeamLabel}) – ${tc.game}`, now);
                 }
                 if (starAmount > 0) {
-                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(starAmount, p);
+                    db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, starAmount, starAmount);
                 }
             });
             losers.forEach(p => {

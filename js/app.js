@@ -1964,7 +1964,7 @@ function getNowPlus10() {
             ]);
             state.games = gamesData;
 
-            const endedSessions = liveSessionsData.filter(s => s.status === 'ended');
+            const endedSessions = liveSessionsData.filter(s => s.status === 'ended' && !s.challenge_id);
             const completedProposals = allProposals.filter(p => p.status === 'completed' && !p.coinsApproved);
 
             const sortedGames = [...state.games].sort((a, b) => {
@@ -2148,7 +2148,7 @@ function getNowPlus10() {
         }
 
         // Prepare freigabe section
-        const endedSessions = liveSessionsData.filter(s => s.status === 'ended');
+        const endedSessions = liveSessionsData.filter(s => s.status === 'ended' && !s.challenge_id);
         const completedProposals = allProposals.filter(p => p.status === 'completed' && !p.coinsApproved);
         const hasFreigabe = endedSessions.length > 0 || completedProposals.length > 0;
 
