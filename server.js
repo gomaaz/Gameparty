@@ -50,7 +50,7 @@ db.pragma('foreign_keys = ON');
 
 db.exec(`
     CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, pin TEXT, role TEXT DEFAULT 'player');
-    CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, maxPlayers INT, genre TEXT, lanRating INT DEFAULT 0, previewUrl TEXT, ready INT DEFAULT 0, status TEXT DEFAULT 'approved', suggestedBy TEXT, sessionCoins INT DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, maxPlayers INT, genre TEXT, lanRating INT DEFAULT 0, previewUrl TEXT, ready INT DEFAULT 0, status TEXT DEFAULT 'approved', suggestedBy TEXT, sessionCoins INT DEFAULT 0, shop_links TEXT DEFAULT '[]');
     CREATE TABLE IF NOT EXISTS game_players (game_id INT, player TEXT, PRIMARY KEY(game_id, player));
     CREATE TABLE IF NOT EXISTS coins (player TEXT PRIMARY KEY, amount INT DEFAULT 0);
     CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, player TEXT, amount INT, reason TEXT, timestamp INT);
@@ -135,6 +135,8 @@ try {
     console.log('Migration: steamRating → previewUrl');
 } catch (e) { /* bereits migriert oder Spalte existiert nicht */ }
 
+// ---- Migration: shop_links Feld in games ----
+try { db.prepare("ALTER TABLE games ADD COLUMN shop_links TEXT DEFAULT '[]'").run(); } catch {}
 
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
@@ -331,6 +333,7 @@ function getGameWithPlayers(game) {
         status: game.status,
         suggestedBy: game.suggestedBy,
         sessionCoins: game.sessionCoins || 0,
+        shopLinks: JSON.parse(game.shop_links || '[]'),
         players: playersObj
     };
 }
@@ -410,7 +413,7 @@ app.delete('/api/games/:name', (req, res) => {
 app.put('/api/games/:name', (req, res) => {
     const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
-    const { newName, genre, maxPlayers, previewUrl, sessionCoins } = req.body;
+    const { newName, genre, maxPlayers, previewUrl, sessionCoins, shopLinks } = req.body;
     const updates = [];
     const params = [];
     if (newName !== undefined) { updates.push('name = ?'); params.push(newName); }
@@ -418,6 +421,7 @@ app.put('/api/games/:name', (req, res) => {
     if (maxPlayers !== undefined) { updates.push('maxPlayers = ?'); params.push(maxPlayers); }
     if (previewUrl !== undefined) { updates.push('previewUrl = ?'); params.push(previewUrl); }
     if (sessionCoins !== undefined) { updates.push('sessionCoins = ?'); params.push(sessionCoins); }
+    if (shopLinks !== undefined) { updates.push('shop_links = ?'); params.push(JSON.stringify(shopLinks)); }
     if (updates.length > 0) {
         params.push(game.id);
         db.prepare(`UPDATE games SET ${updates.join(', ')} WHERE id = ?`).run(...params);
