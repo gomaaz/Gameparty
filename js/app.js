@@ -193,7 +193,7 @@
         setTimeout(() => {
             toast.style.animation = 'toastOut 0.3s ease forwards';
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        }, 7000);
     }
 
     function showCoinAnimation(amount) {
