@@ -2970,9 +2970,10 @@
                 const totalPlayers = teamA.length + teamB.length;
                 const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
 
+                const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
                 const potParts = [];
                 if (tc.stakeCoinsPerPerson > 0) potParts.push(`${tc.stakeCoinsPerPerson} Coins/Person · ${t('total_pot_preview', totalPot + ' Coins')}`);
-                if (tc.stakeStarsPerPerson > 0) potParts.push(`${tc.stakeStarsPerPerson} 🎮/Person`);
+                if (tc.stakeStarsPerPerson > 0) potParts.push(`${tc.stakeStarsPerPerson} 🎮/Person · ${t('total_pot_preview', totalStarPot + ' 🎮')}`);
                 const potStr = potParts.length ? potParts.join(' · ') : t('no_stake');
 
                 const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
@@ -3111,6 +3112,31 @@
             });
 
             if (challengeActiveTab === '1v1') {
+                // Stake cap: update max based on selected opponent
+                const chOpponent = container.querySelector('#ch-opponent');
+                const chCoins = container.querySelector('#ch-coins');
+                const chStars = container.querySelector('#ch-stars');
+                if (chOpponent && chCoins && chStars) {
+                    chOpponent.addEventListener('change', () => {
+                        const opp = chOpponent.value;
+                        if (!opp) {
+                            chCoins.max = myCoins;
+                            chCoins.placeholder = `Coins (max ${myCoins})`;
+                            chStars.max = myStars;
+                            chStars.placeholder = `🎮 (max ${myStars})`;
+                            return;
+                        }
+                        const effCoins = Math.min(myCoins, getPlayerCoins(opp));
+                        const effStars = Math.min(myStars, getPlayerStars(opp));
+                        chCoins.max = effCoins;
+                        chCoins.placeholder = `Coins (max ${effCoins})`;
+                        chStars.max = effStars;
+                        chStars.placeholder = `🎮 (max ${effStars})`;
+                        if (parseInt(chCoins.value) > effCoins) chCoins.value = effCoins;
+                        if (parseInt(chStars.value) > effStars) chStars.value = effStars;
+                    });
+                }
+
                 // Event: Create challenge
                 $('#ch-create').addEventListener('click', async () => {
                     const opponent = $('#ch-opponent').value;
@@ -3214,22 +3240,76 @@
             }
 
             if (challengeActiveTab === 'team') {
-                // Live pot preview
+                // Live pot preview + stake cap based on selected players
                 function updateTcPotPreview() {
-                    const checkedA = container.querySelectorAll('.tc-team-a-check:checked').length;
-                    const checkedB = container.querySelectorAll('.tc-team-b-check:checked').length;
-                    const coinsVal = parseInt(container.querySelector('#tc-coins')?.value) || 0;
+                    const checkedA = [...container.querySelectorAll('.tc-team-a-check:checked')].map(cb => cb.value);
+                    const checkedB = [...container.querySelectorAll('.tc-team-b-check:checked')].map(cb => cb.value);
+                    const allChecked = [...new Set([...checkedA, ...checkedB])];
+                    const totalCount = checkedA.length + checkedB.length;
+
+                    const tcCoinsInput = container.querySelector('#tc-coins');
+                    const tcStarsInput = container.querySelector('#tc-stars');
                     const preview = container.querySelector('#tc-pot-preview');
+
+                    if (allChecked.length > 0) {
+                        const minCoins = Math.min(...allChecked.map(p => getPlayerCoins(p)));
+                        const minStars = Math.min(...allChecked.map(p => getPlayerStars(p)));
+                        if (tcCoinsInput) {
+                            tcCoinsInput.max = minCoins;
+                            tcCoinsInput.placeholder = `${t('stake_per_person')} Coins (max ${minCoins})`;
+                            if (parseInt(tcCoinsInput.value) > minCoins) tcCoinsInput.value = minCoins;
+                        }
+                        if (tcStarsInput) {
+                            tcStarsInput.max = minStars;
+                            tcStarsInput.placeholder = `${t('stake_per_person')} 🎮 (max ${minStars})`;
+                            if (parseInt(tcStarsInput.value) > minStars) tcStarsInput.value = minStars;
+                        }
+                    } else {
+                        if (tcCoinsInput) {
+                            tcCoinsInput.max = myCoins;
+                            tcCoinsInput.placeholder = `${t('stake_per_person')} Coins (max ${myCoins})`;
+                        }
+                        if (tcStarsInput) {
+                            tcStarsInput.max = myStars;
+                            tcStarsInput.placeholder = `${t('stake_per_person')} 🎮 (max ${myStars})`;
+                        }
+                    }
+
                     if (!preview) return;
-                    if (coinsVal > 0 && (checkedA + checkedB) > 0) {
-                        preview.textContent = t('total_pot_preview', `${coinsVal * (checkedA + checkedB)} Coins`);
+                    const coinsVal = parseInt(tcCoinsInput?.value) || 0;
+                    const starsVal = parseInt(tcStarsInput?.value) || 0;
+                    if (totalCount > 0 && (coinsVal > 0 || starsVal > 0)) {
+                        const parts = [];
+                        if (coinsVal > 0) parts.push(`${coinsVal * totalCount} Coins`);
+                        if (starsVal > 0) parts.push(`${starsVal * totalCount} 🎮`);
+                        preview.textContent = t('total_pot_preview', parts.join(' + '));
                     } else {
                         preview.textContent = '';
                     }
                 }
-                container.querySelectorAll('.tc-team-a-check, .tc-team-b-check').forEach(cb => cb.addEventListener('change', updateTcPotPreview));
+                // Mutual exclusion: a player cannot be on both teams simultaneously
+                container.querySelectorAll('.tc-team-a-check').forEach(cb => {
+                    cb.addEventListener('change', () => {
+                        if (cb.checked) {
+                            const oppCheck = container.querySelector(`.tc-team-b-check[value="${cb.value}"]`);
+                            if (oppCheck) oppCheck.checked = false;
+                        }
+                        updateTcPotPreview();
+                    });
+                });
+                container.querySelectorAll('.tc-team-b-check').forEach(cb => {
+                    cb.addEventListener('change', () => {
+                        if (cb.checked) {
+                            const oppCheck = container.querySelector(`.tc-team-a-check[value="${cb.value}"]`);
+                            if (oppCheck) oppCheck.checked = false;
+                        }
+                        updateTcPotPreview();
+                    });
+                });
                 const tcCoins = container.querySelector('#tc-coins');
                 if (tcCoins) tcCoins.addEventListener('input', updateTcPotPreview);
+                const tcStars = container.querySelector('#tc-stars');
+                if (tcStars) tcStars.addEventListener('input', updateTcPotPreview);
 
                 // Create
                 const tcCreateBtn = container.querySelector('#tc-create');
