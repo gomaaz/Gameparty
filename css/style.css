@@ -317,19 +317,20 @@ body {
     gap: 0.3rem;
     font-weight: 700;
     font-size: 1.1rem;
+    line-height: 1;
     color: var(--accent-gold);
 }
 .coin-svg-icon {
     width: 1.1rem;
     height: 1.1rem;
-    vertical-align: middle;
     flex-shrink: 0;
+    display: block;
 }
 .controller-svg-icon {
     width: 1.1rem;
     height: 1.1rem;
-    vertical-align: middle;
     flex-shrink: 0;
+    display: block;
 }
 
 /* ---- Game Suggestion ---- */
@@ -2281,6 +2282,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     gap: 0.3rem;
     font-weight: 700;
     font-size: 1.1rem;
+    line-height: 1;
     color: var(--accent-gold);
 }
 

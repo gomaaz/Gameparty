@@ -2924,7 +2924,7 @@
         const starsContainer = $('#header-stars-display');
 
         if (state.currentPlayer) {
-            playerBtn.textContent = state.currentPlayer + (isAdmin() ? ' (Admin)' : '');
+            playerBtn.textContent = state.currentPlayer;
             playerBtn.style.display = 'inline-block';
             coinsDisplay.textContent = getPlayerCoins(state.currentPlayer);
             coinsDisplay.parentElement.style.display = 'flex';
