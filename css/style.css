@@ -2654,6 +2654,54 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     background: rgba(255,215,0,0.05);
     border-left: 3px solid var(--accent-gold);
 }
+#notif-toast-container {
+    position: fixed;
+    top: 4.5rem;
+    right: 1rem;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+}
+.notif-toast {
+    background: var(--card-bg);
+    border: 1px solid var(--accent-purple);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    min-width: 240px;
+    max-width: 320px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    pointer-events: all;
+    cursor: pointer;
+    animation: notifToastIn 0.25s ease;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.notif-toast.notif-toast-fadeout {
+    opacity: 0;
+    transform: translateX(20px);
+}
+.notif-toast-icon { font-size: 1.4rem; line-height: 1; }
+.notif-toast-text { font-size: 0.88rem; line-height: 1.4; color: var(--text-primary); }
+.notif-toast-text small { color: var(--text-secondary); font-size: 0.78rem; }
+@keyframes notifToastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+.notif-clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.notif-clear-btn:hover { color: var(--danger); border-color: var(--danger); }
 .highlight-challenge {
     border-color: var(--accent-gold) !important;
     box-shadow: 0 0 12px rgba(255,215,0,0.25);

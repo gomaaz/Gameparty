@@ -344,6 +344,7 @@ const TRANSLATIONS = {
 
         // --- Notifications Panel ---
         notif_panel_title: '🔔 Notifications',
+        notif_clear_all: 'Clear all',
         notif_challenge_from: '{0} challenges you!',
         duel_challenge_notif_title: '⚔️ Duel Challenge!',
         duel_challenge_notif_body: '{0} challenges you!\n{1} – Stake: {2}',
@@ -763,6 +764,7 @@ const TRANSLATIONS = {
 
         // --- Notifications Panel ---
         notif_panel_title: '🔔 Benachrichtigungen',
+        notif_clear_all: 'Leeren',
         notif_challenge_from: '{0} fordert dich heraus!',
         duel_challenge_notif_title: '⚔️ Duell-Herausforderung!',
         duel_challenge_notif_body: '{0} fordert dich heraus!\n{1} – Einsatz: {2}',

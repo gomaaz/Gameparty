@@ -3605,6 +3605,34 @@
         }
     }
 
+    function updateBadge() {
+        const badge = $('#notif-badge');
+        if (!badge) return;
+        const count = pendingNotifications.length;
+        badge.textContent = count;
+        badge.style.display = count > 0 ? '' : 'none';
+    }
+
+    function showNotifToast(item) {
+        const container = $('#notif-toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = 'notif-toast';
+        const icon = item.icon || (item.type === 'rob' ? '🥷' : item.type === 'review' ? '🏆' : item.isTeam ? '👥' : '⚔️');
+        const titleText = item.title || (item.isTeam ? t('notif_team_challenge', item.challenger) : item.challenger ? t('notif_challenge_from', item.challenger) : '');
+        const subText = item.sub || ((!item.title && (item.game || item.stakeStr)) ? `${item.game || ''}${item.game && item.stakeStr ? ' · ' : ''}${item.stakeStr || ''}` : '');
+        toast.innerHTML = `<span class="notif-toast-icon">${icon}</span><span class="notif-toast-text">${titleText}${subText ? `<br><small>${subText}</small>` : ''}</span>`;
+        toast.addEventListener('click', () => {
+            toast.remove();
+            notifPanelOpen = true;
+            $('#notif-panel').classList.add('open');
+            renderNotifPanel();
+        });
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('notif-toast-fadeout'), 5000);
+        setTimeout(() => toast.remove(), 5600);
+    }
+
     async function renderNotifPanel() {
         const panel = $('#notif-panel');
         const badge = $('#notif-badge');
@@ -3647,8 +3675,9 @@
 
         const TASK_ICONS = { force_play: '🎮', drink_order: '🍺' };
 
+        const sorted = [...pendingNotifications].sort((a, b) => (b.ts || 0) - (a.ts || 0));
         const itemsHtml = [
-            ...pendingNotifications.map(n => {
+            ...sorted.map(n => {
                 const isRob    = n.type === 'rob';
                 const isReview = n.type === 'review';
                 const isTeam   = n.isTeam;
@@ -3675,7 +3704,10 @@
         panel.innerHTML = `
             <div class="notif-panel-header">
                 <span>${t('notif_panel_title')}</span>
-                <button class="notif-panel-close" id="notif-panel-close">✕</button>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <button class="notif-clear-btn" id="notif-clear-btn">${t('notif_clear_all')}</button>
+                    <button class="notif-panel-close" id="notif-panel-close">✕</button>
+                </div>
             </div>
             ${itemsHtml}
         `;
@@ -3687,6 +3719,21 @@
             notifPanelOpen = false;
             panel.classList.remove('open');
         });
+
+        const clearBtn = $('#notif-clear-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                for (const item of pendingNotifications) {
+                    if (item.evId) {
+                        try { await api('DELETE', `/player-events/${item.evId}`); } catch {}
+                    }
+                }
+                pendingNotifications.length = 0;
+                updateBadge();
+                renderNotifPanel();
+            });
+        }
 
         // Accept (1v1 + team duels)
         panel.querySelectorAll('.notif-accept').forEach(btn => {
@@ -3807,9 +3854,9 @@
                         const winnerLabel = data.winnerTeam === 'A' ? t('team_a_wins') : t('team_b_wins');
                         const notifId = 'tcw_' + data.tcId;
                         if (!pendingNotifications.find(n => n.id === notifId)) {
-                            pendingNotifications.push({ id: notifId, game: data.game, stakeStr: winnerLabel, isTeam: true, type: 'review', title: t('notif_tc_winner_review'), tcId: data.tcId });
-                            notifPanelOpen = true;
-                            renderNotifPanel();
+                            pendingNotifications.push({ id: notifId, game: data.game, stakeStr: winnerLabel, isTeam: true, type: 'review', title: t('notif_tc_winner_review'), tcId: data.tcId, ts: Date.now() });
+                            showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                            updateBadge();
                         }
                         if (getNotifPref('sound')) playSound('coin');
                     } catch {}
@@ -3821,9 +3868,9 @@
                         const data = JSON.parse(ev.message);
                         const notifId = 'rob_' + ev.id;
                         if (!dismissedRobIds.has(notifId) && !pendingNotifications.find(n => n.id === notifId)) {
-                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, data.stolen) });
-                            notifPanelOpen = true;
-                            renderNotifPanel();
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, data.stolen), ts: Date.now() });
+                            showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                            updateBadge();
                             if (getNotifPref('sound')) playSound('error');
                         }
                     } catch {}
@@ -3835,9 +3882,9 @@
                         const notifId = 'rob_' + ev.id;
                         if (!dismissedRobIds.has(notifId) && !pendingNotifications.find(n => n.id === notifId)) {
                             const title = data.success ? t('rob_controller_victim_success', data.thief) : t('rob_controller_victim_fail', data.thief);
-                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title });
-                            notifPanelOpen = true;
-                            renderNotifPanel();
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title, ts: Date.now() });
+                            showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                            updateBadge();
                             if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                         }
                         if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
@@ -3875,9 +3922,9 @@
                     c.stakeCoins > 0 ? `${c.stakeCoins} Coins` : '',
                     c.stakeStars > 0 ? `${c.stakeStars} 🎮` : ''
                 ].filter(Boolean).join(' + ') || 'Kein Einsatz';
-                pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr });
-                notifPanelOpen = true;
-                renderNotifPanel();
+                pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: Date.now() });
+                showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                updateBadge();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
                     new Notification(t('duel_challenge_notif_title'), {
                         body: t('duel_challenge_notif_body', c.challenger, c.game, stakeStr)
@@ -3903,9 +3950,9 @@
             for (const tc of newTeamOnes) {
                 notifiedChallengeIds.add('tc_' + tc.id);
                 const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} Coins/Person` : t('no_stake');
-                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true });
-                notifPanelOpen = true;
-                renderNotifPanel();
+                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true, ts: Date.now() });
+                showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                updateBadge();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
                     new Notification('👥 Team Duel!', {
                         body: t('notif_team_challenge', tc.createdBy) + '\n' + tc.game
@@ -4338,9 +4385,9 @@
 
         // Notification bell toggle
         $('#notif-bell-btn').addEventListener('click', () => {
-            if (pendingNotifications.length === 0) return;
             notifPanelOpen = !notifPanelOpen;
             $('#notif-panel').classList.toggle('open', notifPanelOpen);
+            if (notifPanelOpen) renderNotifPanel();
         });
 
         // Sound toggle
