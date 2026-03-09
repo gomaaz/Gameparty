@@ -3609,19 +3609,15 @@
         const badge = $('#notif-badge');
         if (!panel) return;
 
-        let activitiesData = { incoming: [], outgoing: [] };
+        let incomingActivities = [];
         if (state.currentPlayer) {
             try {
-                activitiesData = await api('GET', `/activities/${encodeURIComponent(state.currentPlayer)}`);
-            } catch (e) {
-                // Fehler bei Activities ignorieren - nicht kritisch
-            }
+                const data = await api('GET', `/activities/${encodeURIComponent(state.currentPlayer)}`);
+                incomingActivities = data.incoming.filter(a => a.status === 'active');
+            } catch {}
         }
 
-        const duelCount = pendingNotifications.length;
-        const activitiesCount = activitiesData.incoming.filter(a => a.status === 'active').length;
-        const totalCount = duelCount + activitiesCount;
-
+        const totalCount = pendingNotifications.length + incomingActivities.length;
         if (badge) { badge.textContent = totalCount; badge.style.display = totalCount > 0 ? '' : 'none'; }
 
         if (totalCount === 0) {
@@ -3631,40 +3627,56 @@
             return;
         }
 
-        const PENALTY_ICONS = { force_play: '🎮', drink_order: '🍺' };
-        const incomingActivities = activitiesData.incoming.filter(a => a.status === 'active');
+        // Unified item builder
+        const btnOk  = (cls, attrs) => `<button class="notif-btn notif-btn-ok ${cls}" ${attrs}>✓</button>`;
+        const btnNo  = (cls, attrs) => `<button class="notif-btn notif-btn-no ${cls}" ${attrs}>✕</button>`;
+
+        function itemHtml({ id, icon, title, sub, actions, accent, navigate }) {
+            return `
+                <div class="notif-item${accent ? ' notif-accent-' + accent : ''}"
+                     data-id="${id}"${navigate ? ` data-navigate="${navigate}"` : ''}>
+                    <div class="notif-item-icon">${icon}</div>
+                    <div class="notif-item-body">
+                        <div class="notif-item-title">${title}</div>
+                        ${sub ? `<div class="notif-item-sub">${sub}</div>` : ''}
+                    </div>
+                    ${actions ? `<div class="notif-item-actions">${actions}</div>` : ''}
+                </div>`;
+        }
+
+        const TASK_ICONS = { force_play: '🎮', drink_order: '🍺' };
+
+        const itemsHtml = [
+            ...pendingNotifications.map(n => {
+                const isRob    = n.type === 'rob';
+                const isReview = n.type === 'review';
+                const isTeam   = n.isTeam;
+                const icon   = isRob ? '🥷' : isReview ? '🏆' : isTeam ? '👥' : '⚔️';
+                const accent = isRob ? 'red' : isReview ? 'gold' : null;
+                const title  = (isRob || isReview) ? n.title
+                             : isTeam ? t('notif_team_challenge', n.challenger)
+                             : t('notif_challenge_from', n.challenger);
+                const sub    = (!isRob && !isReview && (n.game || n.stakeStr))
+                             ? `${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}` : '';
+                const navigate = !isRob ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : 'duel') : null;
+                let actions = '';
+                if (isRob)         actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
+                else if (!isReview) actions = btnOk('notif-accept', `data-id="${n.id}"`) + btnNo('notif-reject', `data-id="${n.id}"`);
+                return itemHtml({ id: n.id, icon, title, sub, actions, accent, navigate });
+            }),
+            ...incomingActivities.map(a => {
+                const icon    = TASK_ICONS[a.type] || '⚡';
+                const actions = btnOk('notif-task-done', `data-id="${a.id}" data-from="${a.from_player || ''}" data-type="${a.type}"`);
+                return itemHtml({ id: 'activity-' + a.id, icon, title: a.message, sub: a.from_player || '', actions, accent: null, navigate: null });
+            })
+        ].join('');
 
         panel.innerHTML = `
             <div class="notif-panel-header">
                 <span>${t('notif_panel_title')}</span>
                 <button class="notif-panel-close" id="notif-panel-close">✕</button>
             </div>
-            ${pendingNotifications.map(n => `
-                <div class="notif-panel-item${n.type === 'rob' ? ' rob-notif' : ''}" data-id="${n.id}" data-type="${n.type || ''}">
-                    <div class="notif-panel-body">
-                        <div class="notif-panel-title">${n.type === 'rob' || n.type === 'review' ? n.title : n.isTeam ? '👥 ' + t('notif_team_challenge', n.challenger) : t('notif_challenge_from', n.challenger)}</div>
-                        ${n.game || n.stakeStr ? `<div class="notif-panel-sub">${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}</div>` : ''}
-                    </div>
-                    ${n.type === 'rob' ? `<button class="notif-dismiss" data-id="${n.id}" data-ev-id="${n.evId}" title="OK" style="padding:4px 10px;font-size:1rem;background:var(--accent-green);color:#fff;border:none;border-radius:4px;cursor:pointer;flex-shrink:0;">✓</button>` :
-                      n.type !== 'review' ? `<div class="notif-panel-actions">
-                        <button class="notif-accept" data-id="${n.id}" title="${t('notif_accept')}">✓</button>
-                        <button class="notif-reject" data-id="${n.id}" title="${t('notif_reject')}">✕</button>
-                    </div>` : ''}
-                </div>
-            `).join('')}
-            ${incomingActivities.length > 0 ? `<div style="border-bottom:1px solid var(--border);padding:0.5rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);font-weight:600">📋 TASKS</div>` : ''}
-            ${incomingActivities.map(a => `
-                <div class="notif-panel-item" data-id="activity-${a.id}" style="padding:0.6rem 0.75rem;border-bottom:1px solid var(--border)">
-                    <div class="notif-panel-body" style="font-size:0.85rem">
-                        <div style="display:flex;gap:0.3rem;align-items:center">
-                            <span>${PENALTY_ICONS[a.type] || '⚡'}</span>
-                            <span>${a.message}</span>
-                        </div>
-                        <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem">${a.from_player || ''}</div>
-                    </div>
-                    <button class="activity-done-btn notif-activity-done" data-id="${a.id}" data-from="${a.from_player || ''}" data-type="${a.type}" style="padding:4px 8px;font-size:0.75rem;background:var(--accent-green);color:white;border:none;border-radius:4px;cursor:pointer">✓</button>
-                </div>
-            `).join('')}
+            ${itemsHtml}
         `;
 
         if (notifPanelOpen) panel.classList.add('open');
@@ -3675,6 +3687,7 @@
             panel.classList.remove('open');
         });
 
+        // Accept (1v1 + team duels)
         panel.querySelectorAll('.notif-accept').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -3685,11 +3698,8 @@
                         removeNotification(id);
                         showToast(t('team_duel_accepted'), 'success');
                         playSound('coin');
-                        if (result.allAccepted) {
-                            navigateTo('dashboard');
-                        } else if ($('#view-challenges').classList.contains('active')) {
-                            renderChallenges();
-                        }
+                        if (result.allAccepted) navigateTo('dashboard');
+                        else if ($('#view-challenges').classList.contains('active')) renderChallenges();
                     } else {
                         await api('PUT', `/challenges/${id}/accept`, { player: state.currentPlayer });
                         removeNotification(id);
@@ -3701,6 +3711,7 @@
             });
         });
 
+        // Reject (1v1 + team duels)
         panel.querySelectorAll('.notif-reject').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -3720,59 +3731,50 @@
             });
         });
 
-        // Activity Done Button Events
-        panel.querySelectorAll('.notif-activity-done').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const id = btn.dataset.id;
-                const fromPlayer = btn.dataset.from;
-                const type = btn.dataset.type;
-                const ackMessages = {
-                    drink_order: `🍺 ${state.currentPlayer} hat getrunken!`,
-                    force_play: `🎮 ${state.currentPlayer} spielt mit!`,
-                };
-                const ackMsg = ackMessages[type] || `✅ ${state.currentPlayer} hat die Aufgabe erledigt!`;
-                try {
-                    if (fromPlayer) await api('POST', '/player-events', { target: fromPlayer, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
-                    await api('DELETE', `/player-events/${id}`);
-                    showToast('Aufgabe erledigt!', 'success');
-                    playSound('coin');
-                    renderNotifPanel();
-                } catch (e) { console.error(e); }
-            });
-        });
-
-        // Rob-Bestätigung
+        // Dismiss (rob/pickpocket)
         panel.querySelectorAll('.notif-dismiss').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const id = btn.dataset.id;
-                const evId = btn.dataset.evId;
-                try { await api('DELETE', `/player-events/${evId}`); } catch {}
-                removeNotification(id);
+                try { await api('DELETE', `/player-events/${btn.dataset.evId}`); } catch {}
+                removeNotification(btn.dataset.id);
             });
         });
 
-        // Duel notification items click to navigate
-        panel.querySelectorAll('.notif-panel-item').forEach(item => {
-            if (!item.classList.contains('notif-activity-done') && item.dataset.type !== 'rob') {
-                item.addEventListener('click', () => {
-                    const id = item.dataset.id;
-                    if (id.startsWith('tc_')) {
-                        challengeActiveTab = 'team';
-                        focusChallengeId = id.slice(3);
-                    } else if (id.startsWith('tcw_')) {
-                        challengeActiveTab = 'team';
-                        focusChallengeId = id.slice(4);
-                        removeNotification(id);
-                    } else {
-                        focusChallengeId = id;
-                    }
-                    notifPanelOpen = false;
-                    panel.classList.remove('open');
-                    navigateTo('challenges');
-                });
-            }
+        // Done (shop tasks / penalties)
+        panel.querySelectorAll('.notif-task-done').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const fromPlayer = btn.dataset.from;
+                const type = btn.dataset.type;
+                const ackMsg = { drink_order: `🍺 ${state.currentPlayer} hat getrunken!`, force_play: `🎮 ${state.currentPlayer} spielt mit!` }[type]
+                              || `✅ ${state.currentPlayer} hat die Aufgabe erledigt!`;
+                try {
+                    if (fromPlayer) await api('POST', '/player-events', { target: fromPlayer, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
+                    await api('DELETE', `/player-events/${btn.dataset.id}`);
+                    showToast('Aufgabe erledigt!', 'success');
+                    playSound('coin');
+                    renderNotifPanel();
+                } catch {}
+            });
+        });
+
+        // Click to navigate (duels, team duels, admin review)
+        panel.querySelectorAll('.notif-item[data-navigate]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.notif-item-actions')) return;
+                const id  = item.dataset.id;
+                const nav = item.dataset.navigate;
+                if (nav === 'team') {
+                    challengeActiveTab = 'team';
+                    if (id.startsWith('tc_'))       focusChallengeId = id.slice(3);
+                    else if (id.startsWith('tcw_')) { focusChallengeId = id.slice(4); removeNotification(id); }
+                } else {
+                    focusChallengeId = id;
+                }
+                notifPanelOpen = false;
+                panel.classList.remove('open');
+                navigateTo('challenges');
+            });
         });
     }
 
