@@ -2935,7 +2935,7 @@
                 } else if (c.status === 'completed' && admin) {
                     actionsHTML = `
                         <div class="proposal-actions">
-                            <button class="btn-approve ch-payout" data-id="${c.id}">${t('btn_payout_pot')}</button>
+                            <button class="btn-approve ch-payout" data-id="${c.id}" data-stake-coins="${c.stakeCoins}">${t('btn_payout_pot')}</button>
                         </div>`;
                 }
 
@@ -3136,11 +3136,10 @@
                 <span>${t('notif_panel_title')}</span>
                 <button class="notif-panel-close" id="notif-panel-close">✕</button>
             </div>
-            ${duelCount > 0 ? `<div style="border-bottom:1px solid var(--border);padding:0.5rem 0.75rem;font-size:0.75rem;color:var(--text-secondary);font-weight:600">⚔️ DUELS</div>` : ''}
             ${pendingNotifications.map(n => `
                 <div class="notif-panel-item" data-id="${n.id}">
                     <div class="notif-panel-body">
-                        <div class="notif-panel-title">${n.challenger} ${t('notif_challenge_from', n.challenger)}</div>
+                        <div class="notif-panel-title">${t('notif_challenge_from', n.challenger)}</div>
                         <div class="notif-panel-sub">${n.game} · ${n.stakeStr}</div>
                     </div>
                     <div class="notif-panel-actions">

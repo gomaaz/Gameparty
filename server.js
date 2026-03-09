@@ -864,6 +864,12 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     const opponentBusy = getActiveSessionForPlayer(c.opponent);
     if (opponentBusy) return res.status(400).json({ error: `${c.opponent} ist bereits in einer laufenden Session: ${opponentBusy}` });
 
+    // Deduct stake from both players immediately
+    if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.challenger);
+    if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.challenger);
+    if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.opponent);
+    if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.opponent);
+
     db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
 
     // Direkt eine laufende Duell-Session fuer beide Spieler erstellen
@@ -877,6 +883,7 @@ app.put('/api/challenges/:id/accept', (req, res) => {
         console.error('Duel session creation failed:', e);
     }
 
+    broadcast({ type: 'update' });
     res.json({ success: true, sessionId: sid });
 });
 
@@ -918,16 +925,14 @@ app.put('/api/challenges/:id/payout', (req, res) => {
     const now = Date.now();
 
     const payout = db.transaction(() => {
-        // Coins: Loser pays, Winner receives double
+        // Coins: Both players already paid at acceptance; winner gets both stakes back
         if (c.stakeCoins > 0) {
-            db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, loser);
             db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(c.stakeCoins * 2, c.winner);
             db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(loser, -c.stakeCoins, `Duell verloren vs ${c.winner} (${c.game})`, now);
             db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(c.winner, c.stakeCoins * 2, `Duell gewonnen vs ${loser} (${c.game})`, now);
         }
-        // Stars: same logic
+        // Stars: same logic; both players already paid at acceptance
         if (c.stakeStars > 0) {
-            db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, loser);
             db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(c.stakeStars * 2, c.winner);
         }
         db.prepare('UPDATE challenges SET status = ?, resolvedAt = ? WHERE id = ?').run('paid', now, req.params.id);

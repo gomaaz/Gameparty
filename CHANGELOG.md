@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1 (2026-03-09)
+- fix: deduct duel stakes at acceptance not payout
+
 ## v.1.1.1.1.1 (2026-03-09)
 - chore: add missing i18n keys, remove unused keys
 
