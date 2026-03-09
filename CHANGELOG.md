@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
+- feat: add team duel feature to challenges view
+
 ## v.1.1.1.1.1.1.1.1.1 (2026-03-09)
 - feat: add team challenges backend API
 

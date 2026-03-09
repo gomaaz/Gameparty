@@ -2892,8 +2892,9 @@
         }
 
         try {
-            const [challenges, coinsData, starsData] = await Promise.all([
+            const [challenges, teamChallenges, coinsData, starsData] = await Promise.all([
                 api('GET', '/challenges'),
+                api('GET', '/team-challenges'),
                 api('GET', '/coins'),
                 api('GET', '/stars')
             ]);
@@ -2960,11 +2961,122 @@
                     </div>`;
             }
 
+            function renderTeamCard(tc) {
+                const teamA = JSON.parse(tc.teamA);
+                const teamB = JSON.parse(tc.teamB);
+                const admin = isAdmin();
+                const inTeamA = teamA.includes(state.currentPlayer);
+                const inTeamB = teamB.includes(state.currentPlayer);
+                const totalPlayers = teamA.length + teamB.length;
+                const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
+
+                const potParts = [];
+                if (tc.stakeCoinsPerPerson > 0) potParts.push(`${tc.stakeCoinsPerPerson} Coins/Person · ${t('total_pot_preview', totalPot + ' Coins')}`);
+                if (tc.stakeStarsPerPerson > 0) potParts.push(`${tc.stakeStarsPerPerson} 🎮/Person`);
+                const potStr = potParts.length ? potParts.join(' · ') : t('no_stake');
+
+                const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
+                const highlightClass = (inTeamA || inTeamB) ? ' highlight' : '';
+
+                let actionsHTML = '';
+                if (tc.status === 'pending' && inTeamB) {
+                    actionsHTML = `
+                        <div class="proposal-actions">
+                            <button class="btn-join tc-accept" data-id="${tc.id}">${t('notif_accept')}</button>
+                            <button class="btn-leave tc-reject" data-id="${tc.id}">${t('notif_reject')}</button>
+                        </div>`;
+                } else if (tc.status === 'accepted' && inTeamA) {
+                    actionsHTML = `
+                        <div class="proposal-actions">
+                            <select class="tc-winner-select" data-id="${tc.id}" style="background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem 0.5rem;font-size:0.85rem;">
+                                <option value="">${t('select_winning_team')}</option>
+                                <option value="A">${t('team_a_wins')}</option>
+                                <option value="B">${t('team_b_wins')}</option>
+                            </select>
+                            <button class="btn-approve tc-complete" data-id="${tc.id}">${t('btn_confirm_winner')}</button>
+                        </div>`;
+                } else if (tc.status === 'completed' && admin) {
+                    actionsHTML = `
+                        <div class="proposal-actions">
+                            <button class="btn-approve tc-payout" data-id="${tc.id}" data-total="${totalPot}">${t('btn_payout_pot')}</button>
+                        </div>`;
+                }
+                if (admin && tc.status !== 'paid') {
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave tc-delete" data-id="${tc.id}">${t('btn_delete_duel')}</button></div>`;
+                }
+
+                return `
+                    <div class="proposal-card${highlightClass}" data-id="${tc.id}">
+                        <div class="proposal-card-header">
+                            <span style="font-weight:700;">👥 ${teamA.join(', ')} vs ${teamB.join(', ')}</span>
+                            <span class="status-badge ${tc.status}">${statusLabels[tc.status] || tc.status}</span>
+                        </div>
+                        <div class="game-meta">${tc.game}</div>
+                        <div class="game-meta">${potStr}</div>
+                        ${winnerLabel ? `<div class="game-meta" style="margin-top:0.3rem;">🏆 ${winnerLabel}</div>` : ''}
+                        ${actionsHTML}
+                    </div>`;
+            }
+
+            const tabToggleHTML = `
+                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+                    <button class="ch-tab-btn" data-tab="1v1" style="flex:1;padding:0.5rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:${challengeActiveTab === '1v1' ? 'var(--accent-purple)' : 'var(--bg-input)'};color:${challengeActiveTab === '1v1' ? '#fff' : 'var(--text-secondary)'};cursor:pointer;font-weight:${challengeActiveTab === '1v1' ? '700' : '400'};">⚔️ ${t('tab_1v1')}</button>
+                    <button class="ch-tab-btn" data-tab="team" style="flex:1;padding:0.5rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:${challengeActiveTab === 'team' ? 'var(--accent-purple)' : 'var(--bg-input)'};color:${challengeActiveTab === 'team' ? '#fff' : 'var(--text-secondary)'};cursor:pointer;font-weight:${challengeActiveTab === 'team' ? '700' : '400'};">👥 ${t('tab_team')}</button>
+                </div>`;
+
+            const allPlayers = state.players;
+
+            const teamFormHTML = challengeActiveTab === 'team' ? `
+                <div class="proposal-form">
+                    <div class="card-title" style="margin-bottom:0.75rem;">${t('new_team_duel')}</div>
+                    <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:0.75rem;">
+                        <div style="flex:1;">
+                            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.4rem;font-weight:600;">${t('team_a')}</div>
+                            ${allPlayers.map(p => `
+                                <label style="display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;cursor:pointer;">
+                                    <input type="checkbox" class="tc-team-a-check" value="${p}" ${p === state.currentPlayer ? 'checked' : ''}
+                                        style="accent-color:var(--accent-purple);width:14px;height:14px;">
+                                    <span style="font-size:0.9rem;">${p}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.4rem;font-weight:600;">${t('team_b')}</div>
+                            ${allPlayers.map(p => `
+                                <label style="display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;cursor:pointer;">
+                                    <input type="checkbox" class="tc-team-b-check" value="${p}"
+                                        style="accent-color:var(--accent-blue);width:14px;height:14px;">
+                                    <span style="font-size:0.9rem;">${p}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="proposal-row">
+                        <select id="tc-game" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
+                            <option value="">${t('select_game')}</option>
+                            ${state.games.filter(g => g.status === 'approved').sort((a, b) => a.name.localeCompare(b.name)).map(g => `<option value="${g.name}">${g.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="proposal-row">
+                        <input id="tc-coins" type="number" min="0" max="${myCoins}" placeholder="${t('stake_per_person')} Coins (max ${myCoins})"
+                            style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
+                        <input id="tc-stars" type="number" min="0" max="${myStars}" placeholder="${t('stake_per_person')} 🎮 (max ${myStars})"
+                            style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
+                    </div>
+                    <div id="tc-pot-preview" style="font-size:0.85rem;color:var(--accent-gold);margin-top:0.25rem;min-height:1.2rem;"></div>
+                    <button class="btn-propose" id="tc-create">${t('btn_challenge')}</button>
+                </div>
+            ` : '';
+
             const cardsHTML = challenges.length
                 ? challenges.map(renderCard).join('')
                 : `<div class="empty-state"><div class="empty-state-text">${t('no_duels')}</div></div>`;
 
-            container.innerHTML = `
+            const teamCardsHTML = teamChallenges.length
+                ? teamChallenges.map(renderTeamCard).join('')
+                : `<div class="empty-state"><div class="empty-state-text">${t('no_team_duels')}</div></div>`;
+
+            const oneVOneContentHTML = challengeActiveTab === '1v1' ? `
                 <div class="proposal-form">
                     <div class="card-title" style="margin-bottom:0.75rem;">${t('new_duel')}</div>
                     <div class="proposal-row">
@@ -2986,108 +3098,248 @@
                     <button class="btn-propose" id="ch-create">${t('btn_challenge')}</button>
                 </div>
                 ${cardsHTML}
-            `;
+            ` : '';
 
-            // Event: Create challenge
-            $('#ch-create').addEventListener('click', async () => {
-                const opponent = $('#ch-opponent').value;
-                const game = $('#ch-game').value;
-                const stakeCoins = parseInt($('#ch-coins').value) || 0;
-                const stakeStars = parseInt($('#ch-stars').value) || 0;
-                if (!opponent) { showToast(t('select_opponent_error'), 'error'); playSound('error'); return; }
-                if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
-                if (stakeCoins === 0 && stakeStars === 0) { showToast(t('select_stake_error'), 'error'); playSound('error'); return; }
-                try {
-                    await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars });
-                    showToast(t('duel_created', opponent), 'success');
-                    playSound('coin');
+            container.innerHTML = tabToggleHTML + (challengeActiveTab === '1v1' ? oneVOneContentHTML : teamFormHTML + teamCardsHTML);
+
+            // Wire tab buttons
+            container.querySelectorAll('.ch-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    challengeActiveTab = btn.dataset.tab;
                     renderChallenges();
-                } catch (e) {
-                    showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
-                    playSound('error');
+                });
+            });
+
+            if (challengeActiveTab === '1v1') {
+                // Event: Create challenge
+                $('#ch-create').addEventListener('click', async () => {
+                    const opponent = $('#ch-opponent').value;
+                    const game = $('#ch-game').value;
+                    const stakeCoins = parseInt($('#ch-coins').value) || 0;
+                    const stakeStars = parseInt($('#ch-stars').value) || 0;
+                    if (!opponent) { showToast(t('select_opponent_error'), 'error'); playSound('error'); return; }
+                    if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
+                    if (stakeCoins === 0 && stakeStars === 0) { showToast(t('select_stake_error'), 'error'); playSound('error'); return; }
+                    try {
+                        await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars });
+                        showToast(t('duel_created', opponent), 'success');
+                        playSound('coin');
+                        renderChallenges();
+                    } catch (e) {
+                        showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                        playSound('error');
+                    }
+                });
+
+                // Event: Accept
+                container.querySelectorAll('.ch-accept').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
+                            showToast(t('duel_accepted'), 'success');
+                            playSound('coin');
+                            navigateTo('dashboard');
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Event: Reject
+                container.querySelectorAll('.ch-reject').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/challenges/${btn.dataset.id}/reject`, { player: state.currentPlayer });
+                            showToast(t('duel_rejected'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Event: Complete (set winner)
+                container.querySelectorAll('.ch-complete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const select = container.querySelector(`.ch-winner-select[data-id="${btn.dataset.id}"]`);
+                        const winner = select ? select.value : '';
+                        if (!winner) { showToast(t('select_winner_error'), 'error'); playSound('error'); return; }
+                        try {
+                            await api('PUT', `/challenges/${btn.dataset.id}/complete`, { player: state.currentPlayer, winner });
+                            showToast(t('winner_set', winner), 'success');
+                            playSound('coin');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Event: Payout (admin)
+                container.querySelectorAll('.ch-payout').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const result = await api('PUT', `/challenges/${btn.dataset.id}/payout`);
+                            showToast(t('duel_payout', result.winner), 'success');
+                            playSound('coin');
+                            const wonCoins = parseInt(btn.dataset.stakeCoins || 0) * 2;
+                            if (wonCoins > 0) showCoinAnimation(wonCoins);
+                            const coinsData = await api('GET', '/coins');
+                            state.coins = coinsData;
+                            updateHeaderCoins();
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Event: Delete (admin)
+                container.querySelectorAll('.ch-delete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('DELETE', `/challenges/${btn.dataset.id}`);
+                            showToast(t('duel_deleted'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast(t('duel_delete_error'), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+            }
+
+            if (challengeActiveTab === 'team') {
+                // Live pot preview
+                function updateTcPotPreview() {
+                    const checkedA = container.querySelectorAll('.tc-team-a-check:checked').length;
+                    const checkedB = container.querySelectorAll('.tc-team-b-check:checked').length;
+                    const coinsVal = parseInt(container.querySelector('#tc-coins')?.value) || 0;
+                    const preview = container.querySelector('#tc-pot-preview');
+                    if (!preview) return;
+                    if (coinsVal > 0 && (checkedA + checkedB) > 0) {
+                        preview.textContent = t('total_pot_preview', `${coinsVal * (checkedA + checkedB)} Coins`);
+                    } else {
+                        preview.textContent = '';
+                    }
                 }
-            });
+                container.querySelectorAll('.tc-team-a-check, .tc-team-b-check').forEach(cb => cb.addEventListener('change', updateTcPotPreview));
+                const tcCoins = container.querySelector('#tc-coins');
+                if (tcCoins) tcCoins.addEventListener('input', updateTcPotPreview);
 
-            // Event: Accept
-            container.querySelectorAll('.ch-accept').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    try {
-                        await api('PUT', `/challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
-                        showToast(t('duel_accepted'), 'success');
-                        playSound('coin');
-                        navigateTo('dashboard');
-                    } catch (e) {
-                        showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
-                        playSound('error');
-                    }
-                });
-            });
+                // Create
+                const tcCreateBtn = container.querySelector('#tc-create');
+                if (tcCreateBtn) {
+                    tcCreateBtn.addEventListener('click', async () => {
+                        const teamA = [...container.querySelectorAll('.tc-team-a-check:checked')].map(cb => cb.value);
+                        const teamB = [...container.querySelectorAll('.tc-team-b-check:checked')].map(cb => cb.value);
+                        const game = container.querySelector('#tc-game')?.value;
+                        const stakeCoinsPerPerson = parseInt(container.querySelector('#tc-coins')?.value) || 0;
+                        const stakeStarsPerPerson = parseInt(container.querySelector('#tc-stars')?.value) || 0;
+                        if (teamA.length < 2 || teamB.length < 2) { showToast(t('team_select_teams_error'), 'error'); playSound('error'); return; }
+                        const overlap = teamA.filter(p => teamB.includes(p));
+                        if (overlap.length > 0) { showToast(t('team_overlap_error'), 'error'); playSound('error'); return; }
+                        if (!teamA.includes(state.currentPlayer) && !teamB.includes(state.currentPlayer)) { showToast(t('team_creator_not_in_team_error'), 'error'); playSound('error'); return; }
+                        if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
+                        if (stakeCoinsPerPerson === 0 && stakeStarsPerPerson === 0) { showToast(t('team_stake_error'), 'error'); playSound('error'); return; }
+                        try {
+                            await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB });
+                            showToast(t('team_duel_created'), 'success');
+                            playSound('coin');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                }
 
-            // Event: Reject
-            container.querySelectorAll('.ch-reject').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    try {
-                        await api('PUT', `/challenges/${btn.dataset.id}/reject`, { player: state.currentPlayer });
-                        showToast(t('duel_rejected'), 'success');
-                        renderChallenges();
-                    } catch (e) {
-                        showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
-                        playSound('error');
-                    }
+                // Accept
+                container.querySelectorAll('.tc-accept').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/team-challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
+                            showToast(t('team_duel_accepted'), 'success');
+                            playSound('coin');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
                 });
-            });
 
-            // Event: Complete (set winner)
-            container.querySelectorAll('.ch-complete').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const select = container.querySelector(`.ch-winner-select[data-id="${btn.dataset.id}"]`);
-                    const winner = select ? select.value : '';
-                    if (!winner) { showToast(t('select_winner_error'), 'error'); playSound('error'); return; }
-                    try {
-                        await api('PUT', `/challenges/${btn.dataset.id}/complete`, { player: state.currentPlayer, winner });
-                        showToast(t('winner_set', winner), 'success');
-                        playSound('coin');
-                        renderChallenges();
-                    } catch (e) {
-                        showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
-                        playSound('error');
-                    }
+                // Reject
+                container.querySelectorAll('.tc-reject').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/team-challenges/${btn.dataset.id}/reject`, { player: state.currentPlayer });
+                            showToast(t('team_duel_rejected'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
                 });
-            });
 
-            // Event: Payout (admin)
-            container.querySelectorAll('.ch-payout').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    try {
-                        const result = await api('PUT', `/challenges/${btn.dataset.id}/payout`);
-                        showToast(t('duel_payout', result.winner), 'success');
-                        playSound('coin');
-                        const wonCoins = parseInt(btn.dataset.stakeCoins || 0) * 2;
-                        if (wonCoins > 0) showCoinAnimation(wonCoins);
-                        const coinsData = await api('GET', '/coins');
-                        state.coins = coinsData;
-                        updateHeaderCoins();
-                        renderChallenges();
-                    } catch (e) {
-                        showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
-                        playSound('error');
-                    }
+                // Complete (set winner team)
+                container.querySelectorAll('.tc-complete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const select = container.querySelector(`.tc-winner-select[data-id="${btn.dataset.id}"]`);
+                        const winnerTeam = select ? select.value : '';
+                        if (!winnerTeam) { showToast(t('select_winner_error'), 'error'); playSound('error'); return; }
+                        try {
+                            await api('PUT', `/team-challenges/${btn.dataset.id}/complete`, { player: state.currentPlayer, winnerTeam });
+                            showToast(t('team_winner_set', winnerTeam === 'A' ? t('team_a_wins') : t('team_b_wins')), 'success');
+                            playSound('coin');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
                 });
-            });
 
-            // Event: Delete (admin)
-            container.querySelectorAll('.ch-delete').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    try {
-                        await api('DELETE', `/challenges/${btn.dataset.id}`);
-                        showToast(t('duel_deleted'), 'success');
-                        renderChallenges();
-                    } catch (e) {
-                        showToast(t('duel_delete_error'), 'error');
-                        playSound('error');
-                    }
+                // Payout (admin)
+                container.querySelectorAll('.tc-payout').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const result = await api('PUT', `/team-challenges/${btn.dataset.id}/payout`);
+                            const label = result.winnerTeam === 'A' ? t('team_a_wins') : t('team_b_wins');
+                            showToast(t('team_duel_payout', label), 'success');
+                            playSound('coin');
+                            const wonCoins = parseInt(btn.dataset.total || 0);
+                            if (wonCoins > 0) showCoinAnimation(wonCoins);
+                            const coinsData = await api('GET', '/coins');
+                            state.coins = coinsData;
+                            updateHeaderCoins();
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
                 });
-            });
+
+                // Delete (admin)
+                container.querySelectorAll('.tc-delete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('DELETE', `/team-challenges/${btn.dataset.id}`);
+                            showToast(t('duel_deleted'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast(t('duel_delete_error'), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+            }
 
             updateHeaderCoins();
 
@@ -3178,11 +3430,19 @@
                 e.stopPropagation();
                 const id = btn.dataset.id;
                 try {
-                    await api('PUT', `/challenges/${id}/accept`, { player: state.currentPlayer });
-                    removeNotification(id);
-                    showToast(t('duel_accepted'), 'success');
-                    playSound('coin');
-                    navigateTo('dashboard');
+                    if (id.startsWith('tc_')) {
+                        await api('PUT', `/team-challenges/${id.slice(3)}/accept`, { player: state.currentPlayer });
+                        removeNotification(id);
+                        showToast(t('team_duel_accepted'), 'success');
+                        playSound('coin');
+                        if ($('#view-challenges').classList.contains('active')) renderChallenges();
+                    } else {
+                        await api('PUT', `/challenges/${id}/accept`, { player: state.currentPlayer });
+                        removeNotification(id);
+                        showToast(t('duel_accepted'), 'success');
+                        playSound('coin');
+                        navigateTo('dashboard');
+                    }
                 } catch { showToast('Fehler beim Annehmen', 'error'); }
             });
         });
@@ -3192,9 +3452,15 @@
                 e.stopPropagation();
                 const id = btn.dataset.id;
                 try {
-                    await api('PUT', `/challenges/${id}/reject`, { player: state.currentPlayer });
-                    removeNotification(id);
-                    showToast('Duell abgelehnt.', 'error');
+                    if (id.startsWith('tc_')) {
+                        await api('PUT', `/team-challenges/${id.slice(3)}/reject`, { player: state.currentPlayer });
+                        removeNotification(id);
+                        showToast(t('team_duel_rejected'), 'success');
+                    } else {
+                        await api('PUT', `/challenges/${id}/reject`, { player: state.currentPlayer });
+                        removeNotification(id);
+                        showToast('Duell abgelehnt.', 'error');
+                    }
                     if ($('#view-challenges').classList.contains('active')) renderChallenges();
                 } catch { showToast('Fehler beim Ablehnen', 'error'); }
             });
@@ -3288,6 +3554,28 @@
                 if (getNotifPref('sound')) {
                     playSound('challenge');
                 }
+            }
+        } catch (e) { /* Polling-Fehler ignorieren */ }
+        try {
+            const teamChallenges = await api('GET', '/team-challenges');
+            const newTeamOnes = teamChallenges.filter(tc => {
+                const teamB = JSON.parse(tc.teamB);
+                return tc.status === 'pending' &&
+                       teamB.includes(state.currentPlayer) &&
+                       !notifiedChallengeIds.has('tc_' + tc.id);
+            });
+            for (const tc of newTeamOnes) {
+                notifiedChallengeIds.add('tc_' + tc.id);
+                const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} Coins/Person` : t('no_stake');
+                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr });
+                notifPanelOpen = true;
+                renderNotifPanel();
+                if (getNotifPref('visual') && Notification.permission === 'granted') {
+                    new Notification('👥 Team Duel!', {
+                        body: t('notif_team_challenge', tc.createdBy) + '\n' + tc.game
+                    });
+                }
+                if (getNotifPref('sound')) playSound('challenge');
             }
         } catch (e) { /* Polling-Fehler ignorieren */ }
     }
