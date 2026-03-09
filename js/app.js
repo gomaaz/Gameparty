@@ -2011,16 +2011,15 @@
                 </div>`;
         }
 
-        const coinsPerMin = parseFloat(settingsData?.coins_per_minute || '1');
         const maxMultiplier = parseInt(settingsData?.max_multiplier || '10');
         const playerMultipliersMap = (() => { try { return JSON.parse(settingsData?.player_multipliers || '{}'); } catch { return {}; } })();
 
         function buildMultipliersTable(maxMult, currentMap) {
             let rows = '';
-            for (let i = 1; i <= maxMult; i++) {
-                const val = currentMap[String(i)] !== undefined ? currentMap[String(i)] : i;
+            for (let i = 2; i <= maxMult; i++) {
+                const val = currentMap[String(i)] !== undefined ? currentMap[String(i)] : 1.0;
                 rows += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.1rem 0">
-                    <span style="font-size:0.82rem;color:var(--text-secondary);width:8rem">${i}${i === maxMult ? '+' : ''} Spieler:</span>
+                    <span style="font-size:0.82rem;color:var(--text-secondary);width:10rem">Coinrate ${i}${i === maxMult ? '+' : ''} Spieler:</span>
                     <input type="number" class="player-multiplier-input" data-count="${i}" value="${val}" min="0" max="999" step="0.1" style="width:5rem;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center;font-size:0.85rem">
                 </div>`;
             }
@@ -2095,15 +2094,11 @@
                     <div class="card-title">⚙️ Session-Coins</div>
                     <div style="display:flex;flex-direction:column;gap:0.5rem">
                         <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Coins pro Minute:</span>
-                            <input type="number" id="coins-per-minute-input" value="${coinsPerMin}" min="0.1" max="100" step="0.1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
-                        </div>
-                        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
                             <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Max. Spieler-Limit:</span>
-                            <input type="number" id="max-multiplier-input" value="${maxMultiplier}" min="1" max="100" step="1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
+                            <input type="number" id="max-multiplier-input" value="${maxMultiplier}" min="2" max="100" step="1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
                         </div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">Formel: Minuten × C/min × Multiplikator(Spieler)</div>
-                        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.2rem">Multiplikator pro Spieleranzahl:</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">Formel: Minuten × Coinrate(Spieler)</div>
+                        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.2rem">Coinrate pro Spieleranzahl (Coins/min):</div>
                         <div id="player-multipliers-table">${buildMultipliersTable(maxMultiplier, playerMultipliersMap)}</div>
                     </div>
                 </div>
@@ -2147,18 +2142,10 @@
             });
         });
 
-        // Live-save: Coins pro Minute
-        panel.querySelector('#coins-per-minute-input')?.addEventListener('change', async (e) => {
-            const val = parseFloat(e.target.value);
-            if (isNaN(val) || val < 0) return;
-            try { await api('PUT', '/settings/coins_per_minute', { value: val }); showToast('C/min gespeichert', 'success'); }
-            catch { showToast('Fehler', 'error'); }
-        });
-
-        // Live-save: Max-Multiplikator + Tabelle neu aufbauen
+        // Live-save: Max-Spieler-Limit + Tabelle neu aufbauen
         panel.querySelector('#max-multiplier-input')?.addEventListener('change', async (e) => {
             const val = parseInt(e.target.value);
-            if (isNaN(val) || val < 1) return;
+            if (isNaN(val) || val < 2) return;
             try {
                 await api('PUT', '/settings/max_multiplier', { value: val });
                 showToast('Limit gespeichert', 'success');

@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.74 (2026-03-09)
+- feat: direct coin rate per player count, remove coins_per_minute multiplier
+
 ## v.1.1.1.1 (2026-03-09)
 - feat: use player_multipliers map for coin multiplier calc
 
