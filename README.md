@@ -39,18 +39,21 @@ It's not about winning. It's about getting everyone off their corner of the couc
 ## Features
 
 ### Coin System
-Players earn Coins by completing gaming sessions together:
-- **1 Coin** – Session with at least 3 players
-- **2 Coins** – Session with 4+ players
-- **3 Coins** – Session with all present players
+Players earn Coins for every minute they spend in a group session. The rate scales with the number of participants and is fully configurable by the admin:
 
-The more people join, the more everyone earns. Simple incentive, big effect.
+- Each player count (2, 3, 4, … players) has its own **Coins per minute** rate
+- A **max player limit** caps the rate (e.g., sessions with more than 7 players still earn at the 7-player rate)
+- **Formula:** `Coins = ceil(minutes) × rate[playerCount]`
+- All rates are set individually in the admin panel and saved instantly on change
+
+Session cards show the **expected rate** while waiting in the lobby, and a **live coin counter** ticks up in real time once the session is running.
 
 ### Shop
 Spend Coins on actions that shake up the session:
+
 | Item | Cost | Description |
 |---|---|---|
-| Controller Point 🎮 | 20 Coins | Permanent victory point on the leaderboard |
+| Controller Point | 20 Coins | Permanent victory point on the leaderboard |
 | Choose Next Game | 3 Coins | You decide which game is played next |
 | Skip Token | 2 Coins | Skip a game you don't want to play |
 | Force Play | 5 Coins | Force one other player to participate |
@@ -60,16 +63,22 @@ Spend Coins on actions that shake up the session:
 Players can challenge each other 1-on-1, with Coins or Controller Points as stakes. Accept a challenge and a live duel session starts immediately.
 
 ### Game Library
-- Large game library with genre filtering
+- Large game library with genre filtering and LAN ratings
 - Players can mark their interest in games
-- Game Matcher shows which game has the most interested players right now
-- Admin can propose, approve, or edit games
+- **Game Matcher** shows which game has the most interested players right now
+- Game titles are clickable — opens a **YouTube preview** for quick orientation
+- Admin can add per-game **shop links** (Steam, Epic Games, etc.) for easy purchase access
+- Admin can add, approve, or edit games
 
-### Sessions & Proposals
-- Players can propose sessions (immediately or scheduled)
-- Admin approves and starts sessions
-- Live session lobby with join functionality
-- Automatic Coin distribution on session completion
+### Sessions
+Two session types, same unified interface:
+
+- **Spontaneous sessions** — start immediately, players join the lobby
+- **Planned sessions** — scheduled for a specific date/time, visible to all players
+- The group leader (GL) is always shown first in the player list, others sorted alphabetically
+- Admin can end any session and trigger Coin payout
+- Players see the **live coin accumulator** ticking up second by second in running sessions
+- Both session types use the same approval and payout flow
 
 ### Leaderboard
 Sorted by Controller Points, then by Coins. Controller Points are permanent victory points — they can't be spent, only earned.
@@ -139,7 +148,7 @@ The server runs on `http://localhost:3000`.
 
 ## Internationalization
 
-The UI supports **English** (default) and **German**. Switch languages using the flag button (🇩🇪 / 🇬🇧) in the header. The selection is stored in `localStorage`.
+The UI supports **English** (default) and **German**. Switch languages using the flag button in the header. The selection is stored in `localStorage`.
 
 To add another language, extend `js/i18n.js` with a new locale object.
 
@@ -157,24 +166,32 @@ gameparty/
 │   └── i18n.js      # Translations (EN/DE) + t() helper
 ├── css/
 │   └── style.css    # Dark gaming theme
+├── svg/             # SVG icons (coins, controller, platform logos)
 ├── Dockerfile       # Multi-stage Docker build
-├── docker-compose.yml
-└── VERSION          # Current version number
+└── docker-compose.yml
 ```
 
 ## Roles
 
 | Role | Permissions |
 |---|---|
-| `player` | Earn Coins, use Shop, create duels, mark interest |
-| `admin` | + Start/complete sessions, manage players, adjust Coins |
+| `player` | Earn Coins, use Shop, create duels, mark game interest, join sessions |
+| `admin` | + Start/end sessions, manage players, adjust Coins, configure coin rates |
 
-Login via PIN (configurable in `js/data.js`).
+---
+
+## Admin Settings
+
+The admin panel includes a **Session Coins** configuration card:
+
+- **Coinrate per player count** — set individual Coins/min rates for 2, 3, 4, … players
+- **Max player limit** — sessions with more players than the limit use the cap's rate
+- All settings save automatically on input change (no save button needed)
 
 ---
 
 ## Versioning & Changelog
 
-Every change is committed with a version tag (`v2.3.1`, `v2.3.2`, …).
+Every change is committed with a version tag (`v2.3.x`).
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 All releases are available under [Releases](https://github.com/gomaaz/Gameparty/releases).
