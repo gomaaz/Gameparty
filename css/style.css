@@ -2350,6 +2350,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-session-end { background:none; border:1px solid var(--border-bright); color:var(--text-secondary); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .session-leader-badge { font-size:0.62rem; color:var(--accent-gold); border:1px solid var(--accent-gold-dim); border-radius:4px; padding:1px 5px; margin-right:0.3rem; vertical-align:middle; }
 .pending-approval-badge { font-size:0.75rem; color:#ff9800; padding:0.2rem 0; display:block; margin-top:0.3rem; }
+.session-coin-rate { font-size:0.78rem; color:var(--accent-gold); margin-bottom:0.35rem; }
+.session-coin-accumulator { font-size:0.85rem; color:var(--accent-gold); font-weight:600; }
 
 /* Freigabe-Section im Session-Tab */
 .freigabe-section { margin-bottom: 1rem; }

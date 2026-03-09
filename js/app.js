@@ -16,7 +16,8 @@
         stars: {},
         soundEnabled: false,
         version: '',
-        allUsers: []
+        allUsers: [],
+        settings: {}
     };
 
     // ---- Medium Options ----
@@ -38,11 +39,49 @@
     let viewRefreshInterval = null;
     let sseSource = null;
     let activeTaskTimer = null; // Globaler Timer fuer showTaskModal – verhindert doppelte Timer
+    let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
     const notifiedChallengeIds = new Set();
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
     let notifPanelOpen = false;
     let focusChallengeId = null;
+
+    // ---- Coin Rate Helper ----
+    function getPlayerRate(playerCount) {
+        const settings = state.settings || {};
+        const maxMult = parseInt(settings.max_multiplier || '10');
+        const map = (() => { try { return JSON.parse(settings.player_multipliers || '{}'); } catch { return {}; } })();
+        const capped = Math.min(playerCount, maxMult);
+        for (let c = capped; c >= 2; c--) {
+            if (map[String(c)] !== undefined) return parseFloat(map[String(c)]);
+        }
+        return 0;
+    }
+
+    function coinSvgIcon() {
+        return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins" style="width:0.9rem;height:0.9rem;vertical-align:middle">`;
+    }
+
+    function startCoinAccumulatorInterval() {
+        if (coinAccumulatorInterval) clearInterval(coinAccumulatorInterval);
+        coinAccumulatorInterval = setInterval(() => {
+            document.querySelectorAll('.session-coin-accumulator').forEach(el => {
+                const startedAt = parseInt(el.dataset.startedAt || '0');
+                const rate = parseFloat(el.dataset.rate || '0');
+                if (!startedAt || !rate) return;
+                const minutes = (Date.now() - startedAt) / 60000;
+                const coins = Math.ceil(minutes * rate);
+                const mins = Math.floor(minutes);
+                const secs = Math.floor((minutes * 60) % 60);
+                const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
+                el.innerHTML = `~${coins} ${coinSvgIcon()} <span style="color:var(--text-secondary);font-size:0.78rem">(${timeStr} min)</span>`;
+            });
+            if (!document.querySelector('.session-coin-accumulator')) {
+                clearInterval(coinAccumulatorInterval);
+                coinAccumulatorInterval = null;
+            }
+        }, 1000);
+    }
 
     // ---- Session Storage (only auth + sound stay in localStorage) ----
     const LOCAL_KEYS = {
@@ -377,16 +416,18 @@
         const container = $('#view-dashboard');
 
         try {
-            const [coinsData, starsData, proposalsData, liveSessionsData, usersData] = await Promise.all([
+            const [coinsData, starsData, proposalsData, liveSessionsData, usersData, settingsData] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
                 api('GET', '/proposals'),
                 api('GET', '/live-sessions'),
-                api('GET', '/users')
+                api('GET', '/users'),
+                api('GET', '/settings')
             ]);
             const userIpMap = Object.fromEntries((usersData || []).map(u => [u.name, u.ip || '']));
             state.coins = coinsData;
             state.stars = starsData;
+            if (settingsData && typeof settingsData === 'object') state.settings = settingsData;
             const allProposals = proposalsData;
 
             const topGame = getTopMatchGame();
@@ -464,9 +505,16 @@
 
                     let statusBadge = '';
                     let actionsHTML = '';
+                    let coinInfoHTML = '';
+
+                    const playerCount = s.players.length;
+                    const rate = getPlayerRate(playerCount);
 
                     if (s.status === 'lobby') {
                         statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${t('session_lobby')}</span>`;
+                        if (rate > 0) {
+                            coinInfoHTML = `<div class="session-coin-rate">${rate} ${coinSvgIcon()} / min</div>`;
+                        }
                         if (!isInSession) {
                             actionsHTML += `<button class="btn-session-join" data-sid="${s.id}" data-action="join">${t('btn_join')}</button>`;
                         } else if (!isLeader) {
@@ -478,6 +526,14 @@
                         }
                     } else if (s.status === 'running') {
                         statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('session_running')}${duration ? ` · ${duration}` : ''}</span>`;
+                        if (rate > 0 && s.startedAt) {
+                            const initialMinutes = (Date.now() - s.startedAt) / 60000;
+                            const initialCoins = Math.ceil(initialMinutes * rate);
+                            const mins = Math.floor(initialMinutes);
+                            const secs = Math.floor((initialMinutes * 60) % 60);
+                            const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
+                            coinInfoHTML = `<div><span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()} <span style="color:var(--text-secondary);font-size:0.78rem">(${timeStr} min)</span></span></div>`;
+                        }
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
                         }
@@ -496,6 +552,7 @@
                                 <span class="live-session-game">${renderLeaderIcons(s.leader, s.medium, s.medium_account)}${s.game}</span>
                                 ${statusBadge}
                             </div>
+                            ${coinInfoHTML}
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>`;
@@ -571,6 +628,11 @@
 
             // Update header coins
             updateHeaderCoins();
+
+            // Start live coin accumulator for running sessions
+            if (document.querySelector('.session-coin-accumulator')) {
+                startCoinAccumulatorInterval();
+            }
         } catch (e) {
             console.error('Dashboard error:', e);
         }
@@ -1218,6 +1280,21 @@
             coinStatusHTML = `<div class="live-session-meta" style="color:var(--accent-green)">✓ ${p.pendingCoins || 0} C ${t('coins_paid_out') || 'paid out'}</div>`;
         }
 
+        // Coin rate / accumulator based on player count
+        let coinRateHTML = '';
+        const proposalPlayerCount = p.players.length;
+        const proposalRate = getPlayerRate(proposalPlayerCount);
+        if (['pending', 'approved'].includes(p.status) && proposalRate > 0) {
+            coinRateHTML = `<div class="session-coin-rate">${proposalRate} ${coinSvgIcon()} / min</div>`;
+        } else if (p.status === 'active' && proposalRate > 0 && p.startedAt) {
+            const initialMinutes = (Date.now() - p.startedAt) / 60000;
+            const initialCoins = Math.ceil(initialMinutes * proposalRate);
+            const mins = Math.floor(initialMinutes);
+            const secs = Math.floor((initialMinutes * 60) % 60);
+            const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
+            coinRateHTML = `<div><span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${initialCoins} ${coinSvgIcon()} <span style="color:var(--text-secondary);font-size:0.78rem">(${timeStr} min)</span></span></div>`;
+        }
+
         let scheduleHTML = '';
         if ((p.scheduledDay || p.scheduledTime) && p.status !== 'active') {
             scheduleHTML = `<div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
@@ -1281,6 +1358,7 @@
                 ${messageHTML}
                 ${scheduleHTML}
                 ${coinStatusHTML}
+                ${coinRateHTML}
                 ${leaderEditHTML}
                 <div>${[p.leader, ...p.players.filter(n => n !== p.leader).sort()].map(n => `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? '<span class="session-leader-badge">GL</span>' : ''}${n}</span>`).join('')}</div>
                 ${actionsHTML}
