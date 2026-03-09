@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.44 (2026-03-09)
+- style: game list grid, name link, shop link badges
+
 ## v2.3.43 (2026-03-09)
 - feat: add shop links to game list and edit modal
 

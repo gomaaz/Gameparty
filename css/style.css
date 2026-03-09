@@ -455,9 +455,9 @@ body {
     border-left-color: var(--accent-green-dim);
 }
 
-/* Admin: Checkbox + Info + Room + Like + Coins + Edit/Delete */
+/* Admin: Checkbox + Info + Room + Like + Edit/Delete */
 .game-item.admin-row {
-    grid-template-columns: 1.2rem 1fr 2.2rem 2.2rem 3rem auto;
+    grid-template-columns: 1.2rem 1fr 2.2rem 2.2rem auto;
 }
 
 /* ---- Game Table Header ---- */
@@ -480,7 +480,7 @@ body {
 }
 
 .game-table-header.admin-header {
-    grid-template-columns: 1.2rem 1fr 2.2rem 2.2rem 3rem auto;
+    grid-template-columns: 1.2rem 1fr 2.2rem 2.2rem auto;
 }
 
 .gth-nr { text-align: center; }
@@ -537,6 +537,14 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.game-name-link {
+    cursor: pointer;
+    transition: color 0.15s;
+}
+.game-name-link:hover {
+    color: var(--accent-blue);
 }
 
 .game-name .game-coins-tag {
@@ -2371,6 +2379,43 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .preview-btn:hover {
     background: rgba(255,68,68,0.15);
     border-color: var(--accent-red);
+}
+
+/* Shop-Link Badges in game list */
+.game-shop-link {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    background: rgba(102, 153, 255, 0.15);
+    color: var(--accent-blue);
+    border: 1px solid rgba(102, 153, 255, 0.3);
+    text-decoration: none;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+.game-shop-link:hover {
+    background: rgba(102, 153, 255, 0.3);
+}
+
+/* Shop-Link row in edit modal */
+.shop-link-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.shop-link-url {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
 }
 
 /* Video Container */
