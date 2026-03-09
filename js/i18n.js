@@ -166,6 +166,11 @@ const TRANSLATIONS = {
         on: 'On',
         off: 'Off',
         settings_title: '⚙️ Settings',
+        session_coins_title: 'Session Coins',
+        label_max_player_limit: 'Max. Player Limit:',
+        session_coins_formula: 'Formula: Minutes × Coinrate(Players)',
+        session_coins_rate_label: 'Coinrate per player count (Coins/min):',
+        session_coins_rate_row: 'Coinrate {0}{1} players:',
 
         // --- Session (Admin) ---
         session_admin_only: 'Only admins can start sessions.',
@@ -527,6 +532,11 @@ const TRANSLATIONS = {
         on: 'An',
         off: 'Aus',
         settings_title: '⚙️ Einstellungen',
+        session_coins_title: 'Session-Coins',
+        label_max_player_limit: 'Max. Spieler-Limit:',
+        session_coins_formula: 'Formel: Minuten × Coinrate(Spieler)',
+        session_coins_rate_label: 'Coinrate pro Spieleranzahl (Coins/min):',
+        session_coins_rate_row: 'Coinrate {0}{1} Spieler:',
 
         // --- Session (Admin) ---
         session_admin_only: 'Nur die Turnierleitung kann Sessions starten.',

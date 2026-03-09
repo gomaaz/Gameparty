@@ -1226,6 +1226,9 @@
 
             const checkbox = admin ? `<input type="checkbox" class="game-checkbox" data-game="${g.name}" ${selectedGames.has(g.name) ? 'checked' : ''}>` : '';
 
+            const matchPlayerNames = state.attendees.filter(p => g.players && g.players[p]);
+            const likesTooltip = matchPlayerNames.length ? matchPlayerNames.join(', ') : '';
+
             return `
                 <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}">
                     ${checkbox}
@@ -1236,7 +1239,7 @@
                         <div class="game-meta">
                             <span>${g.genre || '?'}</span>
                             <span>Max ${g.maxPlayers}</span>
-                            <span>${g.matchCount} Likes</span>
+                            <span class="game-likes-count"${likesTooltip ? ` data-tooltip="${likesTooltip}"` : ''}>${g.matchCount} Likes</span>
                         </div>
                         <div class="game-players-row">${playerDots}</div>
                     </div>
@@ -2097,7 +2100,7 @@
             for (let i = 2; i <= maxMult; i++) {
                 const val = currentMap[String(i)] !== undefined ? currentMap[String(i)] : 1.0;
                 rows += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.1rem 0">
-                    <span style="font-size:0.82rem;color:var(--text-secondary);width:10rem">Coinrate ${i}${i === maxMult ? '+' : ''} Spieler:</span>
+                    <span style="font-size:0.82rem;color:var(--text-secondary);width:10rem">${t('session_coins_rate_row', i, i === maxMult ? '+' : '')}</span>
                     <input type="number" class="player-multiplier-input" data-count="${i}" value="${val}" min="0" max="999" step="0.1" style="width:5rem;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center;font-size:0.85rem">
                 </div>`;
             }
@@ -2169,14 +2172,14 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-title">⚙️ Session-Coins</div>
+                    <div class="card-title">⚙️ ${t('session_coins_title')}</div>
                     <div style="display:flex;flex-direction:column;gap:0.5rem">
                         <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">Max. Spieler-Limit:</span>
+                            <span style="font-size:0.85rem;color:var(--text-secondary);min-width:12rem">${t('label_max_player_limit')}</span>
                             <input type="number" id="max-multiplier-input" value="${maxMultiplier}" min="2" max="100" step="1" style="width:5rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:center">
                         </div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">Formel: Minuten × Coinrate(Spieler)</div>
-                        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.2rem">Coinrate pro Spieleranzahl (Coins/min):</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">${t('session_coins_formula')}</div>
+                        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.2rem">${t('session_coins_rate_label')}</div>
                         <div id="player-multipliers-table">${buildMultipliersTable(maxMultiplier, playerMultipliersMap)}</div>
                     </div>
                 </div>
