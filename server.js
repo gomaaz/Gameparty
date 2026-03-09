@@ -164,6 +164,19 @@ try { db.prepare("ALTER TABLE live_sessions ADD COLUMN pending_coins INT DEFAULT
 // ---- Migration: acceptances Feld in team_challenges ----
 try { db.prepare("ALTER TABLE team_challenges ADD COLUMN acceptances TEXT DEFAULT '[]'").run(); } catch {}
 
+// ---- Migration: challenge_id und challenge_type in live_sessions ----
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN challenge_id TEXT").run(); } catch {}
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN challenge_type TEXT").run(); } catch {}
+
+// ---- Tabelle: duel_votes ----
+db.exec(`CREATE TABLE IF NOT EXISTS duel_votes (
+    session_id TEXT,
+    player     TEXT,
+    voted_for  TEXT,
+    created_at INT,
+    PRIMARY KEY (session_id, player)
+)`);
+
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
     const result = db.prepare('DELETE FROM attendees WHERE player NOT IN (SELECT name FROM users)').run();
@@ -968,7 +981,7 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     const sid = 'ls_duel_' + Date.now();
     const now = Date.now();
     try {
-        db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt) VALUES (?, ?, ?, 'running', ?)").run(sid, c.game, c.challenger, now);
+        db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, '1v1')").run(sid, c.game, c.challenger, now, c.id);
         db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.challenger, now);
         db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.opponent, now);
     } catch (e) {
@@ -1141,7 +1154,7 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
             }
             db.prepare('UPDATE team_challenges SET status = ?, acceptances = ? WHERE id = ?').run('accepted', JSON.stringify(newAcceptances), req.params.id);
             // Create a live session for all participants
-            db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt) VALUES (?, ?, ?, 'running', ?)").run(sid, tc.game, tc.createdBy, now);
+            db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, 'team')").run(sid, tc.game, tc.createdBy, now, tc.id);
             for (const p of allPlayers) {
                 db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, p, now);
             }
@@ -1301,6 +1314,142 @@ app.delete('/api/team-challenges/:id', (req, res) => {
 
     db.prepare('DELETE FROM team_challenges WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+});
+
+// ---- Duel Voting ----
+
+function _duelPayout(session, winner, db) {
+    if (session.challenge_type === '1v1') {
+        const c = db.prepare('SELECT * FROM challenges WHERE id = ?').get(session.challenge_id);
+        if (!c) return;
+        const loser = winner === c.challenger ? c.opponent : c.challenger;
+        const now = Date.now();
+        const payout = db.transaction(() => {
+            if (c.stakeCoins > 0) {
+                db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(c.stakeCoins * 2, winner);
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(winner, c.stakeCoins * 2, `Duell gewonnen vs ${loser} (${c.game})`, now);
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(loser, -c.stakeCoins, `Duell verloren vs ${winner} (${c.game})`, now);
+            }
+            if (c.stakeStars > 0) {
+                db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(c.stakeStars * 2, winner);
+            }
+            db.prepare('UPDATE challenges SET status = ?, winner = ?, resolvedAt = ? WHERE id = ?').run('paid', winner, now, c.id);
+        });
+        payout();
+    } else {
+        const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(session.challenge_id);
+        if (!tc) return;
+        const winnerTeam = winner;
+        const teamA = JSON.parse(tc.teamA);
+        const teamB = JSON.parse(tc.teamB);
+        const winners = winnerTeam === 'A' ? teamA : teamB;
+        const losers  = winnerTeam === 'A' ? teamB : teamA;
+        const totalPlayers = teamA.length + teamB.length;
+        const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
+        const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
+        const baseCoins = Math.floor(totalPot / winners.length);
+        const remainder = totalPot - baseCoins * winners.length;
+        const baseStars = Math.floor(totalStarPot / winners.length);
+        const starRemainder = totalStarPot - baseStars * winners.length;
+        const winnerTeamLabel = winnerTeam === 'A' ? 'Team A' : 'Team B';
+        const loserTeamLabel  = winnerTeam === 'A' ? 'Team B' : 'Team A';
+        const now = Date.now();
+        const payout = db.transaction(() => {
+            winners.forEach((p, idx) => {
+                const coinAmount = baseCoins + (idx === 0 ? remainder : 0);
+                const starAmount = baseStars + (idx === 0 ? starRemainder : 0);
+                if (coinAmount > 0) {
+                    db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(coinAmount, p);
+                    db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(p, coinAmount, `Team-Duell gewonnen (${winnerTeamLabel}) – ${tc.game}`, now);
+                }
+                if (starAmount > 0) {
+                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(starAmount, p);
+                }
+            });
+            losers.forEach(p => {
+                if (tc.stakeCoinsPerPerson > 0) {
+                    db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(p, -tc.stakeCoinsPerPerson, `Team-Duell verloren (${loserTeamLabel}) – ${tc.game}`, now);
+                }
+            });
+            db.prepare('UPDATE team_challenges SET status = ?, winnerTeam = ?, resolvedAt = ? WHERE id = ?').run('paid', winnerTeam, now, tc.id);
+        });
+        payout();
+    }
+}
+
+// GET /api/duel-votes/:sessionId
+app.get('/api/duel-votes/:sessionId', (req, res) => {
+    const votes = db.prepare(
+        'SELECT player, voted_for FROM duel_votes WHERE session_id = ?'
+    ).all(req.params.sessionId);
+    res.json({ votes });
+});
+
+// POST /api/duel-votes/resolve  (must come BEFORE /api/duel-votes with param to avoid route conflict)
+app.post('/api/duel-votes/resolve', (req, res) => {
+    const { sessionId, winner, admin } = req.body;
+
+    const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(sessionId);
+    if (!session || !session.challenge_id) {
+        return res.status(400).json({ error: 'invalid session' });
+    }
+
+    _duelPayout(session, winner, db);
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
+// POST /api/duel-votes
+app.post('/api/duel-votes', (req, res) => {
+    const { sessionId, player, votedFor } = req.body;
+
+    const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(sessionId);
+    if (!session || session.status !== 'ended' || !session.challenge_id) {
+        return res.status(400).json({ error: 'invalid session' });
+    }
+
+    db.prepare(`INSERT OR REPLACE INTO duel_votes (session_id, player, voted_for, created_at)
+                VALUES (?, ?, ?, ?)`).run(sessionId, player, votedFor, Date.now());
+
+    const players = db.prepare(
+        'SELECT player FROM live_session_players WHERE session_id = ?'
+    ).all(sessionId).map(r => r.player);
+
+    const votes = db.prepare(
+        'SELECT player, voted_for FROM duel_votes WHERE session_id = ?'
+    ).all(sessionId);
+
+    const allVoted = votes.length >= players.length;
+
+    if (allVoted) {
+        const unique = [...new Set(votes.map(v => v.voted_for))];
+        const consensus = unique.length === 1;
+
+        if (consensus) {
+            _duelPayout(session, unique[0], db);
+        } else {
+            if (session.challenge_type === '1v1') {
+                db.prepare(`UPDATE challenges SET status = 'conflict' WHERE id = ?`)
+                    .run(session.challenge_id);
+            } else {
+                db.prepare(`UPDATE team_challenges SET status = 'conflict' WHERE id = ?`)
+                    .run(session.challenge_id);
+            }
+            const admins = db.prepare("SELECT name FROM users WHERE role = 'admin'").all();
+            const conflictPayload = JSON.stringify({ sessionId, challengeId: session.challenge_id });
+            const notifyNow = Date.now();
+            admins.forEach(a => {
+                db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+                    .run(a.name, 'duel_conflict', '', conflictPayload, notifyNow, 'active');
+            });
+        }
+
+        broadcast({ type: 'update' });
+        return res.json({ success: true, allVoted: true, consensus });
+    }
+
+    broadcast({ type: 'update' });
+    res.json({ success: true, allVoted: false });
 });
 
 // ---- Player Events ----

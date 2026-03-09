@@ -415,14 +415,31 @@ function getNowPlus10() {
         const container = $('#view-dashboard');
 
         try {
-            const [coinsData, starsData, proposalsData, liveSessionsData, usersData, settingsData] = await Promise.all([
+            const [coinsData, starsData, proposalsData, liveSessionsData, usersData, settingsData, challengesData, teamChallengesData] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
                 api('GET', '/proposals'),
                 api('GET', '/live-sessions'),
                 api('GET', '/users'),
-                api('GET', '/settings')
+                api('GET', '/settings'),
+                api('GET', '/challenges'),
+                api('GET', '/team-challenges')
             ]);
+
+            // Load votes for all ended duel sessions
+            const duelSessions = liveSessionsData.filter(s => s.status === 'ended' && s.challenge_id);
+            const duelVotesMap = {};
+            if (duelSessions.length > 0) {
+                const voteResults = await Promise.all(duelSessions.map(s => api('GET', `/duel-votes/${s.id}`)));
+                duelSessions.forEach((s, i) => {
+                    duelVotesMap[s.id] = voteResults[i].votes || [];
+                });
+            }
+
+            // Build challenge status lookup
+            const challengeStatusMap = {};
+            (challengesData || []).forEach(c => { challengeStatusMap[c.id] = c.status; });
+            (teamChallengesData || []).forEach(tc => { challengeStatusMap[tc.id] = tc.status; });
             const userIpMap = Object.fromEntries((usersData || []).map(u => [u.name, u.ip || '']));
             state.coins = coinsData;
             state.stars = starsData;
@@ -539,6 +556,49 @@ function getNowPlus10() {
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
                         }
+                    } else if (s.status === 'ended' && s.challenge_id) {
+                        // Duel session — show voting UI instead of admin approval
+                        const duelVotes = duelVotesMap[s.id] || [];
+                        const myVote = duelVotes.find(v => v.player === state.currentPlayer)?.voted_for;
+                        const challengeStatus = challengeStatusMap[s.challenge_id];
+                        const isConflict = challengeStatus === 'conflict';
+
+                        let options;
+                        if (s.challenge_type === '1v1') {
+                            options = s.players;
+                        } else {
+                            options = ['A', 'B'];
+                        }
+
+                        statusBadge = `<span class="pending-approval-badge">🗳️ ${t('duel_vote_header') || 'Wer hat gewonnen?'}</span>`;
+
+                        if (isConflict && isAdmin()) {
+                            const voteSummary = duelVotes.map(v => `${v.player} → ${v.voted_for}`).join(' | ');
+                            actionsHTML = `
+                                <div class="duel-vote-section">
+                                    <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
+                                    ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
+                                    ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
+                                </div>`;
+                        } else if (isConflict) {
+                            actionsHTML = `
+                                <div class="duel-vote-section">
+                                    <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
+                                    <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
+                                </div>`;
+                        } else if (myVote) {
+                            actionsHTML = `
+                                <div class="duel-vote-section">
+                                    <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf andere...'}</div>
+                                    ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${opt}</button>`).join('')}
+                                </div>`;
+                        } else {
+                            actionsHTML = `
+                                <div class="duel-vote-section">
+                                    <div class="vote-label">${t('duel_vote_label') || 'Stimme ab:'}</div>
+                                    ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
+                                </div>`;
+                        }
                     } else if (s.status === 'ended') {
                         statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
                         if (isAdmin()) {
@@ -621,6 +681,36 @@ function getNowPlus10() {
                                 await api('DELETE', `/live-sessions/${sid}`);
                             }
                         }
+                    } catch (e) {
+                        showToast(e.message || t('save_error'), 'error');
+                    }
+                    renderDashboard();
+                });
+            });
+
+            // Duel vote buttons
+            container.querySelectorAll('.duel-vote-btn:not(.admin-resolve-btn)').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const sid = btn.dataset.sid;
+                    const vote = btn.dataset.vote;
+                    if (!sid || !vote) return;
+                    try {
+                        await api('POST', '/duel-votes', { sessionId: sid, player: state.currentPlayer, votedFor: vote });
+                    } catch (e) {
+                        showToast(e.message || t('save_error'), 'error');
+                    }
+                    renderDashboard();
+                });
+            });
+
+            // Admin resolve conflict buttons
+            container.querySelectorAll('.admin-resolve-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const sid = btn.dataset.sid;
+                    const winner = btn.dataset.vote;
+                    if (!sid || !winner) return;
+                    try {
+                        await api('POST', '/duel-votes/resolve', { sessionId: sid, winner, admin: state.currentPlayer });
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
                     }
@@ -3040,10 +3130,9 @@ function getNowPlus10() {
             const myStars = getPlayerStars(state.currentPlayer);
             const opponents = state.attendees.filter(p => p !== state.currentPlayer);
 
-            const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected') };
+            const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt' };
 
             function renderCard(c) {
-                const isChallenger = c.challenger === state.currentPlayer;
                 const isOpponent = c.opponent === state.currentPlayer;
                 const admin = isAdmin();
                 const pot = [];
@@ -3058,21 +3147,6 @@ function getNowPlus10() {
                         <div class="proposal-actions">
                             <button class="btn-join ch-accept" data-id="${c.id}">${t('notif_accept')}</button>
                             <button class="btn-leave ch-reject" data-id="${c.id}">${t('notif_reject')}</button>
-                        </div>`;
-                } else if (c.status === 'accepted' && isChallenger) {
-                    actionsHTML = `
-                        <div class="proposal-actions">
-                            <select class="ch-winner-select" data-id="${c.id}" style="background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem 0.5rem;font-size:0.85rem;">
-                                <option value="">${t('select_winner')}</option>
-                                <option value="${c.challenger}">${c.challenger}</option>
-                                <option value="${c.opponent}">${c.opponent}</option>
-                            </select>
-                            <button class="btn-approve ch-complete" data-id="${c.id}">${t('btn_confirm_winner')}</button>
-                        </div>`;
-                } else if (c.status === 'completed' && admin) {
-                    actionsHTML = `
-                        <div class="proposal-actions">
-                            <button class="btn-approve ch-payout" data-id="${c.id}" data-stake-coins="${c.stakeCoins}">${t('btn_payout_pot')}</button>
                         </div>`;
                 }
 
@@ -3103,7 +3177,6 @@ function getNowPlus10() {
                 const inTeamA = teamA.includes(state.currentPlayer);
                 const inTeamB = teamB.includes(state.currentPlayer);
                 const inChallenge = inTeamA || inTeamB;
-                const isCreator = tc.createdBy === state.currentPlayer;
                 const totalPlayers = teamA.length + teamB.length;
                 const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
                 const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
@@ -3116,7 +3189,8 @@ function getNowPlus10() {
                     accepted: t('duel_status_accepted'),
                     completed: t('duel_status_completed'),
                     paid: t('duel_status_paid'),
-                    rejected: t('duel_status_rejected')
+                    rejected: t('duel_status_rejected'),
+                    conflict: t('duel_status_conflict') || 'Konflikt'
                 };
 
                 const potParts = [];
@@ -3147,21 +3221,6 @@ function getNowPlus10() {
                         <div class="proposal-actions">
                             <button class="btn-join tc-accept" data-id="${tc.id}">${t('notif_accept')}</button>
                             <button class="btn-leave tc-reject" data-id="${tc.id}">${t('notif_reject')}</button>
-                        </div>`;
-                } else if (tc.status === 'accepted' && isCreator) {
-                    actionsHTML = `
-                        <div class="proposal-actions">
-                            <select class="tc-winner-select" data-id="${tc.id}" style="background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem 0.5rem;font-size:0.85rem;">
-                                <option value="">${t('select_winning_team')}</option>
-                                <option value="A">${t('team_a_wins')}</option>
-                                <option value="B">${t('team_b_wins')}</option>
-                            </select>
-                            <button class="btn-approve tc-complete" data-id="${tc.id}">${t('btn_confirm_winner')}</button>
-                        </div>`;
-                } else if (tc.status === 'completed' && admin) {
-                    actionsHTML = `
-                        <div class="proposal-actions">
-                            <button class="btn-approve tc-payout" data-id="${tc.id}" data-total="${totalPot}">${t('btn_payout_pot')}</button>
                         </div>`;
                 }
                 if (admin && tc.status !== 'paid') {

@@ -2390,6 +2390,44 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-session-end { background:none; border:1px solid var(--border-bright); color:var(--text-secondary); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .session-leader-badge { font-size:0.62rem; color:var(--accent-gold); border:1px solid var(--accent-gold-dim); border-radius:4px; padding:1px 5px; margin-right:0.3rem; vertical-align:middle; }
 .pending-approval-badge { font-size:0.75rem; color:#ff9800; padding:0.2rem 0; display:block; margin-top:0.3rem; }
+
+.duel-vote-section {
+    margin-top: 0.5rem;
+    text-align: center;
+}
+.duel-vote-section .vote-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+}
+.duel-vote-section .conflict-label {
+    color: var(--accent-red, #ff4444);
+}
+.duel-vote-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 0.3rem 0.9rem;
+    margin: 0 0.2rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: border-color 0.15s, background 0.15s;
+}
+.duel-vote-btn.voted {
+    background: var(--accent-green);
+    color: #000;
+    border-color: var(--accent-green);
+    font-weight: 600;
+}
+.duel-vote-btn:hover:not(.voted):not(:disabled) {
+    border-color: var(--accent-gold);
+}
+.duel-vote-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .session-coin-rate { font-size:0.78rem; color:var(--accent-gold); margin-bottom:0.35rem; }
 .session-coin-accumulator { font-size:0.85rem; color:var(--accent-gold); font-weight:600; }
 
