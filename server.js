@@ -641,6 +641,7 @@ app.post('/api/proposals/:id/approve', (req, res) => {
 
     db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp) VALUES (?, ?, ?, ?)').run(proposal.game, JSON.stringify(players), coinsPerPlayer, Date.now());
     db.prepare('UPDATE proposals SET coinsApproved = 1 WHERE id = ?').run(req.params.id);
+    broadcast({ type: 'update' });
     res.json({ success: true });
 });
 
@@ -1121,10 +1122,20 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
     const players = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id).map(r => r.player);
     const now = Date.now();
+    const gameForGenres = db.prepare('SELECT genre FROM games WHERE name = ?').get(session.game);
+    const genres = gameForGenres && gameForGenres.genre ? gameForGenres.genre.split(',').map(g => g.trim()).filter(g => g) : [];
     const approve = db.transaction(() => {
         for (const player of players) {
             db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, coinsPerPlayer, coinsPerPlayer);
             db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsPerPlayer, `Session: ${session.game} (${players.length} Spieler)`, now);
+            for (const genre of genres) {
+                const existing = db.prepare('SELECT 1 FROM genres_played WHERE player = ? AND genre = ?').get(player, genre);
+                if (!existing) {
+                    db.prepare('INSERT INTO genres_played (player, genre) VALUES (?, ?)').run(player, genre);
+                    db.prepare('INSERT INTO coins (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
+                    db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, 1, ?, ?)').run(player, `Neues Genre: ${genre}`, now);
+                }
+            }
         }
         db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp, medium) VALUES (?, ?, ?, ?, ?)').run(session.game, JSON.stringify(players), coinsPerPlayer, now, session.medium);
         db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(req.params.id);

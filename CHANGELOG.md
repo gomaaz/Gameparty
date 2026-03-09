@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1 (2026-03-09)
+- feat: genre tracking in live-session approve, broadcast proposals
+
 ## v2.3.46 (2026-03-09)
 - feat: add coins_per_minute setting and pending_coins in admin
 
