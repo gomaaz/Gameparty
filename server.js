@@ -1172,6 +1172,28 @@ app.put('/api/team-challenges/:id/payout', (req, res) => {
         db.prepare('UPDATE team_challenges SET status = ?, resolvedAt = ? WHERE id = ?').run('paid', now, req.params.id);
     });
     payout();
+
+    // Payout-Benachrichtigung für alle Teilnehmer
+    const payoutPayload = {
+        game: tc.game,
+        winnerTeam: tc.winnerTeam,
+        teamA,
+        teamB,
+        stakeCoinsPerPerson: tc.stakeCoinsPerPerson,
+        stakeStarsPerPerson: tc.stakeStarsPerPerson,
+        totalPot,
+        totalStarPot,
+        baseCoins,
+        remainder,
+        baseStars,
+        starRemainder
+    };
+    const notifyNow = Date.now();
+    [...teamA, ...teamB].forEach(p => {
+        db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(p, 'tc_payout', '', JSON.stringify(payoutPayload), notifyNow, 'active');
+    });
+
     res.json({ success: true, winnerTeam: tc.winnerTeam, totalPot, baseCoins, remainder });
 });
 

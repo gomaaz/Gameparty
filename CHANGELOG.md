@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
+- feat: add payout notifications to team challenge payout
+
 ## v.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
 - feat: individual acceptance flow for team challenges
 

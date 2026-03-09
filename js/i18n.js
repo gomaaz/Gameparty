@@ -319,6 +319,12 @@ const TRANSLATIONS = {
         team_overlap_error: 'A player cannot be on both teams',
         team_creator_not_in_team_error: 'You must be on one of the teams',
         team_stake_error: 'Please set a stake per person',
+        tc_payout_won: '🏆 Congratulations, {0}!',
+        tc_payout_lost: 'Unlucky, {0}...',
+        tc_payout_won_sub: 'You won!',
+        tc_payout_lost_sub: 'You lost.',
+        tc_payout_breakdown: 'Statement',
+        tc_payout_stake: 'Stake per person',
 
         // --- Notifications Panel ---
         notif_panel_title: '⚔️ Challenges',
@@ -716,6 +722,12 @@ const TRANSLATIONS = {
         team_overlap_error: 'Spieler darf nicht in beiden Teams sein',
         team_creator_not_in_team_error: 'Du musst in einem Team sein',
         team_stake_error: 'Bitte Einsatz pro Person angeben',
+        tc_payout_won: '🏆 Glückwunsch, {0}!',
+        tc_payout_lost: 'Leider verloren, {0}...',
+        tc_payout_won_sub: 'Ihr habt gewonnen!',
+        tc_payout_lost_sub: 'Ihr habt verloren.',
+        tc_payout_breakdown: 'Abrechnung',
+        tc_payout_stake: 'Einsatz/Person',
 
         // --- Notifications Panel ---
         notif_panel_title: '⚔️ Herausforderungen',
