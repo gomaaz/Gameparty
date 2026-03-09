@@ -3061,7 +3061,8 @@
                         const result = await api('PUT', `/challenges/${btn.dataset.id}/payout`);
                         showToast(t('duel_payout', result.winner), 'success');
                         playSound('coin');
-                        showCoinAnimation(0);
+                        const wonCoins = parseInt(btn.dataset.stakeCoins || 0) * 2;
+                        if (wonCoins > 0) showCoinAnimation(wonCoins);
                         const coinsData = await api('GET', '/coins');
                         state.coins = coinsData;
                         updateHeaderCoins();

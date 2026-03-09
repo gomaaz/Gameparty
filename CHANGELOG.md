@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1 (2026-03-09)
+- fix: double name, duel subtitle, payout coin anim
+
 ## v.1.1.1.1.1.1 (2026-03-09)
 - fix: deduct duel stakes at acceptance not payout
 
