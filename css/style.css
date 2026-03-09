@@ -2392,6 +2392,17 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .session-coin-rate { font-size:0.78rem; color:var(--accent-gold); margin-bottom:0.35rem; }
 .session-coin-accumulator { font-size:0.85rem; color:var(--accent-gold); font-weight:600; }
 
+.session-runtime {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    animation: sessionRuntimePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes sessionRuntimePulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+}
+
 /* Freigabe-Section im Session-Tab */
 .freigabe-section { margin-bottom: 1rem; }
 .freigabe-item { background: rgba(255,152,0,0.07); border: 1px solid #aa6600; border-radius: var(--radius); padding: 0.8rem; margin-bottom: 0.5rem; }

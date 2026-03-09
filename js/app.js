@@ -73,12 +73,17 @@
                 if (!startedAt || !rate) return;
                 const minutes = (Date.now() - startedAt) / 60000;
                 const coins = Math.ceil(minutes * rate);
+                el.innerHTML = `~${coins} ${coinSvgIcon()}`;
+            });
+            document.querySelectorAll('.session-runtime').forEach(el => {
+                const startedAt = parseInt(el.dataset.startedAt || '0');
+                if (!startedAt) return;
+                const minutes = (Date.now() - startedAt) / 60000;
                 const mins = Math.floor(minutes);
                 const secs = Math.floor((minutes * 60) % 60);
-                const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
-                el.innerHTML = `~${coins} ${coinSvgIcon()} <span style="color:var(--text-secondary);font-size:0.78rem">(${timeStr} min)</span>`;
+                el.textContent = `⏱ ${mins}:${String(secs).padStart(2, '0')} Min.`;
             });
-            if (!document.querySelector('.session-coin-accumulator')) {
+            if (!document.querySelector('.session-coin-accumulator') && !document.querySelector('.session-runtime')) {
                 clearInterval(coinAccumulatorInterval);
                 coinAccumulatorInterval = null;
             }
@@ -534,7 +539,11 @@
                             const mins = Math.floor(initialMinutes);
                             const secs = Math.floor((initialMinutes * 60) % 60);
                             const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
-                            coinInfoHTML = `<div><span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()} <span style="color:var(--text-secondary);font-size:0.78rem">(${timeStr} min)</span></span></div>`;
+                            const startTimeStr = new Date(s.startedAt).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+                            coinInfoHTML = `
+    <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
+    <div><span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()}</span></div>
+    <div><span class="session-runtime" data-started-at="${s.startedAt}">⏱ ${timeStr} Min.</span></div>`;
                         }
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
@@ -1297,7 +1306,11 @@
             const mins = Math.floor(initialMinutes);
             const secs = Math.floor((initialMinutes * 60) % 60);
             const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
-            coinRateHTML = `<div><span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${initialCoins} ${coinSvgIcon()} <span style="color:var(--text-secondary);font-size:0.78rem">(${timeStr} min)</span></span></div>`;
+            const startTimeStr = new Date(p.startedAt).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+            coinRateHTML = `
+    <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
+    <div><span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${initialCoins} ${coinSvgIcon()}</span></div>
+    <div><span class="session-runtime" data-started-at="${p.startedAt}">⏱ ${timeStr} Min.</span></div>`;
         }
 
         let scheduleHTML = '';
