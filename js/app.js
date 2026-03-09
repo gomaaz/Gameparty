@@ -1204,7 +1204,7 @@
             const isInterested = player && g.players && g.players[player];
 
             const playerDots = state.attendees.map(p =>
-                `<div class="game-player-dot ${g.players && g.players[p] ? '' : 'empty'}">${p.charAt(0)}</div>`
+                `<div class="game-player-dot ${g.players && g.players[p] ? '' : 'empty'}" data-tooltip="${p}">${p.charAt(0)}</div>`
             ).join('');
 
             const interestBtn = player ? `

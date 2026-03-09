@@ -581,6 +581,25 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
+.game-player-dot[data-tooltip] { position: relative; }
+.game-player-dot[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-sm);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    color: var(--text-primary);
+    z-index: 20;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
 .game-players-row {
     display: flex;
     gap: 0.2rem;
