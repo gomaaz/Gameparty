@@ -88,7 +88,8 @@ db.exec(`
         leader TEXT NOT NULL,
         startedAt INT,
         endedAt INT,
-        status TEXT DEFAULT 'lobby'
+        status TEXT DEFAULT 'lobby',
+        pending_coins INT DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS live_session_players (
         session_id TEXT,
@@ -137,6 +138,9 @@ try {
 
 // ---- Migration: shop_links Feld in games ----
 try { db.prepare("ALTER TABLE games ADD COLUMN shop_links TEXT DEFAULT '[]'").run(); } catch {}
+
+// ---- Migration: pending_coins Feld in live_sessions ----
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN pending_coins INT DEFAULT 0").run(); } catch {}
 
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
@@ -986,6 +990,23 @@ function getActiveSessionForPlayer(player) {
 }
 
 
+// GET /api/settings
+app.get('/api/settings', (req, res) => {
+    const rows = db.prepare('SELECT key, value FROM settings').all();
+    const result = {};
+    rows.forEach(r => result[r.key] = r.value);
+    res.json(result);
+});
+
+// PUT /api/settings/:key
+app.put('/api/settings/:key', (req, res) => {
+    const { value } = req.body;
+    if (value === undefined) return res.status(400).json({ error: 'value required' });
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?').run(req.params.key, String(value), String(value));
+    res.json({ success: true });
+    broadcast({ type: 'update' });
+});
+
 // GET /api/live-sessions
 app.get('/api/live-sessions', (req, res) => {
     const sessions = db.prepare('SELECT * FROM live_sessions ORDER BY startedAt DESC').all();
@@ -1076,7 +1097,13 @@ app.put('/api/live-sessions/:id/end', (req, res) => {
         }
     }
 
-    db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ? WHERE id = ?").run(Date.now(), req.params.id);
+    const endedAt = Date.now();
+    const sessionData = db.prepare('SELECT startedAt FROM live_sessions WHERE id = ?').get(req.params.id);
+    const coinsPerMinSetting = db.prepare("SELECT value FROM settings WHERE key = 'coins_per_minute'").get();
+    const coinsPerMin = parseFloat(coinsPerMinSetting?.value || '1');
+    const durationMin = sessionData?.startedAt ? Math.ceil((endedAt - sessionData.startedAt) / 60000) : 0;
+    const pendingCoins = Math.round(durationMin * coinsPerMin);
+    db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ?, pending_coins = ? WHERE id = ?").run(endedAt, pendingCoins, req.params.id);
     res.json({ success: true });
 });
 

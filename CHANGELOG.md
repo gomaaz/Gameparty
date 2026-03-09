@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.45 (2026-03-09)
+- feat: time-based pending_coins for live sessions
+
 ## v2.3.44 (2026-03-09)
 - style: game list grid, name link, shop link badges
 
