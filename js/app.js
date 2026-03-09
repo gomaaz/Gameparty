@@ -658,7 +658,6 @@
                     <span class="gth-name">${t('col_game_genre_max')}</span>
                     <span></span>
                     <span class="gth-like">👍</span>
-                    ${admin ? `<span class="gth-coins">${t('col_coins')}</span>` : ''}
                     ${admin ? `<span class="gth-actions">${t('col_edit')}</span>` : ''}
                 </div>
                 <div class="game-list" id="game-list"></div>
@@ -834,6 +833,13 @@
                 return;
             }
 
+            const nameLink = e.target.closest('.game-name-link');
+            if (nameLink && nameLink.dataset.preview && !e.target.closest('a')) {
+                e.stopPropagation();
+                showPreviewModal(nameLink.dataset.preview);
+                return;
+            }
+
             const interestBtn = e.target.closest('.game-interest-btn');
             if (interestBtn) {
                 e.stopPropagation();
@@ -879,16 +885,6 @@
                     }
                 });
                 return;
-            }
-        });
-
-        list.addEventListener('change', async (e) => {
-            const coinsInput = e.target.closest('.game-coins-input');
-            if (coinsInput) {
-                try {
-                    await api('PUT', `/games/${encodeURIComponent(coinsInput.dataset.game)}`, { sessionCoins: parseInt(coinsInput.value) || 0 });
-                    showToast(t('coins_updated'), 'gold');
-                } catch (err) { console.error(err); }
             }
         });
 
@@ -963,6 +959,27 @@
     function showEditGameModal(game) {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
+        const shopLinks = [...(game.shopLinks || [])];
+
+        function renderShopLinkRows() {
+            const list = modal.querySelector('#shop-links-list');
+            if (!list) return;
+            list.innerHTML = shopLinks.length
+                ? shopLinks.map((l, i) => `
+                    <div class="shop-link-row">
+                        <span class="game-shop-link">${l.platform}</span>
+                        <span class="shop-link-url">${l.url}</span>
+                        <button class="game-action-btn delete shop-link-remove" data-index="${i}">✕</button>
+                    </div>`).join('')
+                : `<span style="font-size:0.75rem;color:var(--text-muted)">${t('no_shop_links') || 'Keine Shop-Links'}</span>`;
+            list.querySelectorAll('.shop-link-remove').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    shopLinks.splice(parseInt(btn.dataset.index), 1);
+                    renderShopLinkRows();
+                });
+            });
+        }
+
         modal.innerHTML = `
             <div class="modal-title">${t('modal_edit_game_title')}</div>
             <div class="proposal-form">
@@ -980,6 +997,13 @@
                         <input type="url" id="edit-game-previewurl" value="${game.previewUrl || ''}" placeholder="https://www.youtube.com/watch?v=...">
                     </div>
                 </div>
+                <label style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.5rem;display:block">Shop-Links</label>
+                <div id="shop-links-list"></div>
+                <div class="proposal-row" style="margin-top:0.4rem;align-items:center">
+                    <input type="text" id="new-shop-platform" placeholder="Plattform (Steam, Epic ...)" style="flex:1">
+                    <input type="url" id="new-shop-url" placeholder="https://store.steampowered.com/..." style="flex:2">
+                    <button class="game-action-btn edit" id="add-shop-link" style="width:auto;padding:0 0.6rem;font-size:0.9rem">+</button>
+                </div>
                 <div class="proposal-row" style="margin-top:0.75rem">
                     <button class="btn-propose" id="edit-game-save">${t('btn_save')}</button>
                     <button class="btn-leave" id="edit-game-cancel">${t('btn_cancel')}</button>
@@ -987,16 +1011,29 @@
             </div>
         `;
         overlay.classList.add('show');
+        renderShopLinkRows();
 
-        $('#edit-game-save').addEventListener('click', async () => {
-            const newName = $('#edit-game-name').value.trim();
+        modal.querySelector('#add-shop-link').addEventListener('click', () => {
+            const platform = modal.querySelector('#new-shop-platform').value.trim();
+            const url = modal.querySelector('#new-shop-url').value.trim();
+            if (platform && url) {
+                shopLinks.push({ platform, url });
+                renderShopLinkRows();
+                modal.querySelector('#new-shop-platform').value = '';
+                modal.querySelector('#new-shop-url').value = '';
+            }
+        });
+
+        modal.querySelector('#edit-game-save').addEventListener('click', async () => {
+            const newName = modal.querySelector('#edit-game-name').value.trim();
             if (!newName) return;
             try {
                 await api('PUT', `/games/${encodeURIComponent(game.name)}`, {
                     newName,
-                    genre: $('#edit-game-genre').value.trim(),
-                    maxPlayers: parseInt($('#edit-game-maxplayers').value) || game.maxPlayers,
-                    previewUrl: $('#edit-game-previewurl').value.trim()
+                    genre: modal.querySelector('#edit-game-genre').value.trim(),
+                    maxPlayers: parseInt(modal.querySelector('#edit-game-maxplayers').value) || game.maxPlayers,
+                    previewUrl: modal.querySelector('#edit-game-previewurl').value.trim(),
+                    shopLinks
                 });
                 overlay.classList.remove('show');
                 showToast(t('game_updated'), 'success');
@@ -1006,7 +1043,7 @@
             }
         });
 
-        $('#edit-game-cancel').addEventListener('click', () => {
+        modal.querySelector('#edit-game-cancel').addEventListener('click', () => {
             overlay.classList.remove('show');
         });
     }
@@ -1114,9 +1151,6 @@
                     👍
                 </button>` : '<span></span>';
 
-            const adminCoins = admin ? `
-                <input type="number" class="game-coins-input" data-game="${g.name}" value="${g.sessionCoins || 0}" min="0" max="10" title="Coins/Session">` : '';
-
             const adminBtns = admin ? `
                 <div class="game-admin-controls">
                     <button class="game-action-btn edit game-edit-btn" data-game="${g.name}" title="Bearbeiten">&#x270E;</button>
@@ -1125,7 +1159,9 @@
 
             const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '<span></span>';
 
-            const coinsTag = g.sessionCoins ? `<span class="game-coins-tag">🪙${g.sessionCoins}</span>` : '';
+            const shopLinksHTML = (g.shopLinks && g.shopLinks.length)
+                ? g.shopLinks.map(l => `<a class="game-shop-link" href="${l.url}" target="_blank" rel="noopener" title="${l.platform}">${l.platform}</a>`).join('')
+                : '';
 
             const checkbox = admin ? `<input type="checkbox" class="game-checkbox" data-game="${g.name}" ${selectedGames.has(g.name) ? 'checked' : ''}>` : '';
 
@@ -1133,9 +1169,8 @@
                 <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}">
                     ${checkbox}
                     <div class="game-info">
-                        <div class="game-name">
-                            ${g.name}${coinsTag}
-                            ${g.previewUrl ? `<button class="preview-btn" data-url="${g.previewUrl}" title="Vorschau">▶</button>` : ''}
+                        <div class="game-name ${g.previewUrl ? 'game-name-link' : ''}" ${g.previewUrl ? `data-preview="${g.previewUrl}"` : ''}>
+                            ${g.name}${shopLinksHTML}
                         </div>
                         <div class="game-meta">
                             <span>${g.genre || '?'}</span>
@@ -1146,17 +1181,10 @@
                     </div>
                     ${createRoomBtn}
                     ${interestBtn}
-                    ${adminCoins}
                     ${adminBtns}
                 </div>`;
         }).join('');
 
-        container.querySelectorAll('.preview-btn').forEach(btn => {
-            btn.addEventListener('click', e => {
-                e.stopPropagation();
-                showPreviewModal(btn.dataset.url);
-            });
-        });
     }
 
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## v2.3.43 (2026-03-09)
+- feat: add shop links to game list and edit modal
+
 ## v2.3.42 (2026-03-09)
 - feat: add shop_links support to games feature
 
