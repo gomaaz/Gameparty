@@ -1212,9 +1212,24 @@ body {
     pointer-events: auto;
 }
 
-.toast.success { border-left: 3px solid var(--accent-green); }
-.toast.gold { border-left: 3px solid var(--accent-gold); }
-.toast.error { border-left: 3px solid var(--accent-red); }
+.toast.success {
+    background: var(--accent-green);
+    color: #000;
+    border: none;
+    font-weight: 700;
+}
+.toast.gold {
+    background: var(--accent-gold);
+    color: #000;
+    border: none;
+    font-weight: 700;
+}
+.toast.error {
+    background: var(--accent-red);
+    color: #fff;
+    border: none;
+    font-weight: 700;
+}
 
 @keyframes toastIn {
     from { opacity: 0; transform: translateY(12px); }
