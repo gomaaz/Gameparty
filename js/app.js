@@ -190,8 +190,14 @@
         toast.className = `toast ${type || 'success'}`;
         toast.textContent = message;
         container.prepend(toast);
+        // Einblenden: zwei rAF sichern Reflow vor Transition
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => { toast.classList.add('visible'); });
+        });
+        // Nach 6s ausblenden und entfernen
         setTimeout(() => {
-            toast.style.animation = 'toastOut 0.4s ease forwards';
+            toast.classList.remove('visible');
+            toast.classList.add('hiding');
             setTimeout(() => toast.remove(), 400);
         }, 6000);
     }
