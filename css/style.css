@@ -353,11 +353,11 @@ body {
 }
 .coin-svg-icon {
     width: 1.3rem;
-    height: 1.3rem;
+    height: 1.0rem;
     flex-shrink: 0;
     display: inline-block;
     vertical-align: middle;
-    margin-bottom: -0.4em;
+    margin-bottom: -0.3em;
 }
 .controller-svg-icon {
     width: 1.3rem;
