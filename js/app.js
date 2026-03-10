@@ -189,7 +189,7 @@
         const toast = document.createElement('div');
         toast.className = `toast ${type || 'success'}`;
         toast.textContent = message;
-        container.appendChild(toast);
+        container.prepend(toast);
         setTimeout(() => {
             toast.style.animation = 'toastOut 0.4s ease forwards';
             setTimeout(() => toast.remove(), 400);
