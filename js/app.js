@@ -539,17 +539,16 @@ function getNowPlus10() {
             let leaderboardHTML = '';
             leaderboard.forEach((p, i) => {
                 const isCurrent = p.name === state.currentPlayer;
-                const starsHTML = p.stars > 0
-                    ? `<span class="leaderboard-stars">${p.stars > 5 ? `${p.stars} x ` : ''}${'<img src="svg/console-controller.svg" class="controller-svg-icon">'.repeat(Math.min(p.stars, 5))}</span>`
-                    : '';
+                const starsBlock = p.stars > 0
+                    ? `<span class="lb-stat lb-stat-stars">${p.stars} <img src="svg/console-controller.svg" class="lb-icon"></span>`
+                    : `<span class="lb-stat lb-stat-stars" style="visibility:hidden">0 <img src="svg/console-controller.svg" class="lb-icon"></span>`;
                 leaderboardHTML += `
                     <div class="leaderboard-item ${isCurrent ? 'current-player' : ''}">
                         <div class="leaderboard-rank">#${i + 1}</div>
                         <div class="leaderboard-name player-name-clickable" data-player-info="${p.name}">${p.name}</div>
-                        <div class="leaderboard-coins">
-                            <span>${p.coins}</span>
-                            <img src="svg/coins.svg" class="coin-svg-icon">
-                            ${starsHTML}
+                        <div class="leaderboard-stats">
+                            <span class="lb-stat">${p.coins} <img src="svg/coins.svg" class="lb-icon"></span>
+                            ${starsBlock}
                         </div>
                     </div>`;
             });

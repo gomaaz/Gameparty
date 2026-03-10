@@ -320,6 +320,37 @@ body {
     line-height: 1;
     color: var(--accent-gold);
 }
+
+.leaderboard-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.lb-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    white-space: nowrap;
+    min-width: 5rem;
+    justify-content: flex-end;
+}
+
+.lb-stat-stars {
+    color: var(--text-secondary);
+    min-width: 3.5rem;
+}
+
+.lb-icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
 .coin-svg-icon {
     width: 1.1rem;
     height: 1.1rem;
