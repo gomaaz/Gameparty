@@ -74,7 +74,7 @@
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
         popup.style.cssText = 'background:var(--danger,#ff4444);color:#fff';
-        popup.textContent = `-${amount} ${t('coins_label') || 'Coins'}`;
+        popup.innerHTML = `-${amount} ${coinSvgIcon()}`;
         document.body.appendChild(popup);
         playSound('error');
         setTimeout(() => popup.remove(), 1500);
