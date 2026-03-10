@@ -1,10 +1,14 @@
 # Changelog
 
-## v.1.1 (2026-03-10)
-- feat: duel badge, pot display, payout modal, coin icon in cards
-
-## v.1 (2026-03-10)
-- feat: send player_events on duel and team payout
+## v2.3.127 (2026-03-10)
+- feat: ⚔️ Duel badge on lobby/running session cards with challenge_id
+- feat: pot displayed under live coin counter in running duel sessions
+- feat: pot shown right-aligned with coin icon in 1v1 challenge card (Duelle tab)
+- feat: duel payout modal for winner (+coins animation) and loser after auto-payout
+- feat: duel_payout and tc_payout player_events sent after _duelPayout
+- fix: remove double ⚠️ in vote conflict label (emoji moved to template only)
+- fix: "Warte auf andere..." → "Warte auf Gamemaster..."
+- fix: "Admin entscheidet..." → "Gamemaster entscheidet..."
 
 ## v2.3.126 (2026-03-10)
 - feat: duel session card shows pot (coins/stars) in voting section
