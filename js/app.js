@@ -42,6 +42,7 @@
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
     const notifiedChallengeIds = new Set(JSON.parse(localStorage.getItem('gameparty_notified_challenge_ids') || '[]'));
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
+    const shownDuelStartSessions = new Set(); // Duel-Start Modals die bereits gezeigt wurden
     const dismissedRobIds = new Set(); // Rob-Benachrichtigungen die bereits bestätigt wurden
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
     const shownNotifToastIds = new Set(JSON.parse(localStorage.getItem('gameparty_shown_notif_toast_ids') || '[]'));
@@ -768,6 +769,31 @@ function getNowPlus10() {
 
             const activeProposalsHTML = activeProposals.map(renderProposalCard).join('');
             const hasAnything = liveSessionsData.length > 0 || activeProposals.length > 0;
+
+            // Detect new running duel sessions and show start modal
+            liveSessionsData.filter(s =>
+                s.status === 'running' &&
+                s.challenge_id &&
+                s.players && s.players.includes(state.currentPlayer) &&
+                !shownDuelStartSessions.has(s.id)
+            ).forEach(s => {
+                shownDuelStartSessions.add(s.id);
+                const ch = challengeMap[s.challenge_id];
+                if (!ch) return;
+                const payload = s.challenge_type !== '1v1' ? {
+                    type: 'team', game: s.game,
+                    teamA: ch.teamA, teamB: ch.teamB, createdBy: ch.createdBy,
+                    stakeCoinsPerPerson: ch.stakeCoinsPerPerson,
+                    stakeStarsPerPerson: ch.stakeStarsPerPerson,
+                    sessionId: s.id
+                } : {
+                    type: '1v1', game: s.game,
+                    challenger: ch.challenger, opponent: ch.opponent,
+                    stakeCoins: ch.stakeCoins, stakeStars: ch.stakeStars,
+                    sessionId: s.id
+                };
+                showDuelStartModal(payload);
+            });
 
             container.innerHTML = `
                 <div class="card" id="live-sessions-container">
@@ -4388,7 +4414,10 @@ function getNowPlus10() {
                 if (ev.type === 'duel_start') {
                     try {
                         const data = JSON.parse(ev.message);
-                        showDuelStartModal(data);
+                        if (data.sessionId && !shownDuelStartSessions.has(data.sessionId)) {
+                            shownDuelStartSessions.add(data.sessionId);
+                            showDuelStartModal(data);
+                        }
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                     continue;
