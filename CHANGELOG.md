@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1 (2026-03-10)
+- feat: send player_events on duel and team payout
+
 ## v2.3.126 (2026-03-10)
 - feat: duel session card shows pot (coins/stars) in voting section
 - feat: isPaid state — after auto-payout card shows winner + "Session schließen" for admin

@@ -1352,6 +1352,18 @@ function _duelPayout(session, winnerOverride, db) {
             db.prepare('UPDATE challenges SET status = ?, winner = ?, resolvedAt = ? WHERE id = ?').run('paid', winner, now, c.id);
         });
         payout();
+        const duelPayload = {
+            game: c.game,
+            winner,
+            loser,
+            stakeCoins: c.stakeCoins,
+            stakeStars: c.stakeStars
+        };
+        const notifyNow = Date.now();
+        db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(winner, 'duel_payout', '', JSON.stringify({ ...duelPayload, isWinner: true }), notifyNow, 'active');
+        db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(loser, 'duel_payout', '', JSON.stringify({ ...duelPayload, isWinner: false }), notifyNow, 'active');
     } else {
         const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(session.challenge_id);
         if (!tc) return;
@@ -1391,6 +1403,25 @@ function _duelPayout(session, winnerOverride, db) {
             db.prepare('UPDATE team_challenges SET status = ?, winnerTeam = ?, resolvedAt = ? WHERE id = ?').run('paid', winnerTeam, now, tc.id);
         });
         payout();
+        const payoutPayload = {
+            game: tc.game,
+            winnerTeam,
+            teamA,
+            teamB,
+            stakeCoinsPerPerson: tc.stakeCoinsPerPerson,
+            stakeStarsPerPerson: tc.stakeStarsPerPerson,
+            totalPot,
+            totalStarPot,
+            baseCoins,
+            remainder,
+            baseStars,
+            starRemainder
+        };
+        const notifyNow = Date.now();
+        [...winners, ...losers].forEach(p => {
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+                .run(p, 'tc_payout', '', JSON.stringify(payoutPayload), notifyNow, 'active');
+        });
     }
 }
 
@@ -1458,13 +1489,15 @@ app.post('/api/duel-votes', (req, res) => {
         const consensus = unique.length === 1;
 
         if (consensus) {
+            // KONSENS: Sofortige Auszahlung ohne Admin-Freigabe
             if (session.challenge_type === '1v1') {
-                db.prepare(`UPDATE challenges SET status = 'voted', winner = ? WHERE id = ?`)
+                db.prepare(`UPDATE challenges SET winner = ? WHERE id = ?`)
                     .run(unique[0], session.challenge_id);
             } else {
-                db.prepare(`UPDATE team_challenges SET status = 'voted', winnerTeam = ? WHERE id = ?`)
+                db.prepare(`UPDATE team_challenges SET winnerTeam = ? WHERE id = ?`)
                     .run(unique[0], session.challenge_id);
             }
+            _duelPayout(session, unique[0], db);
         } else {
             if (session.challenge_type === '1v1') {
                 db.prepare(`UPDATE challenges SET status = 'conflict' WHERE id = ?`)
