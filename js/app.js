@@ -613,7 +613,7 @@ function getNowPlus10() {
                             const startTimeStr = `${sd.toLocaleDateString('de-DE')} ${sd.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
                             coinInfoHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
+        <div class="live-session-meta"><span class="datetime-label">${t('start_time_label')}</span> ${startTimeStr}</div>
         <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()}</span>
     </div>`;
                         }
@@ -629,7 +629,7 @@ function getNowPlus10() {
                                 if (chRun?.stakeStarsPerPerson > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStarsPerPerson * tp} ${controllerSvgIcon()}`;
                             }
                             if (potRunStr) {
-                                coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">Pott: ${potRunStr}</div>`;
+                                coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">${t('pot_label')} ${potRunStr}</div>`;
                             }
                         }
                         if (isLeader || isAdmin()) {
@@ -686,28 +686,28 @@ function getNowPlus10() {
                             if (ch?.stakeCoinsPerPerson > 0) potStr += `${ch.stakeCoinsPerPerson * tp} ${coinSvgIcon()}`;
                             if (ch?.stakeStarsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStarsPerPerson * tp} ${controllerSvgIcon()}`;
                         }
-                        const potDisplay = potStr ? `<div class="vote-pot-display">Pott: ${potStr}</div>` : '';
+                        const potDisplay = potStr ? `<div class="vote-pot-display">${t('pot_label')} ${potStr}</div>` : '';
 
                         if (isPaid) {
                             const winner = s.challenge_type === '1v1' ? ch?.winner : (ch?.winnerTeam === 'A' ? 'Team A' : 'Team B');
-                            statusBadge = `<span class="pending-approval-badge" style="background:var(--accent-green);color:#000">✅ ${winner} gewonnen</span>`;
+                            statusBadge = `<span class="pending-approval-badge" style="background:var(--accent-green);color:#000">${t('duel_won_badge', winner)}</span>`;
                             const sessionCoins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
                             const sessionCoinsDisplay = sessionCoins > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem"><span class="vote-label" style="margin:0">Session-Coins:</span><span style="font-weight:600;color:var(--text-primary)">${sessionCoins} ${coinSvgIcon()}</span></div>` : '';
                             if (isAdmin()) {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
-                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pott wurde ausgeschüttet</div>
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 ${t('duel_pot_paid_out')}</div>
                                         ${sessionCoinsDisplay}
-                                        <button class="btn-approve duel-close-btn" data-sid="${s.id}" data-coins="${sessionCoins}" style="margin-top:0.4rem">Session schließen</button>
+                                        <button class="btn-approve duel-close-btn" data-sid="${s.id}" data-coins="${sessionCoins}" style="margin-top:0.4rem">${t('btn_close_session')}</button>
                                     </div>`;
                             } else {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
-                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pott wurde ausgeschüttet</div>
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 ${t('duel_pot_paid_out')}</div>
                                         ${sessionCoinsDisplay}
-                                        <div class="vote-label" style="color:var(--text-secondary)">Gamemaster schließt die Session</div>
+                                        <div class="vote-label" style="color:var(--text-secondary)">${t('duel_gm_closing')}</div>
                                     </div>`;
                             }
                         } else {
@@ -736,7 +736,7 @@ function getNowPlus10() {
                                     <div class="duel-vote-section">
                                         ${potDisplay}
                                         <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
-                                            🏆 Einigkeit: <strong>${winner}</strong>
+                                            🏆 ${t('duel_consensus')} <strong>${winner}</strong>
                                         </div>
                                         <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve') || 'Freigeben'}</button>
                                         <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button>
@@ -745,7 +745,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
-                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Abstimmung abgeschlossen</div>
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 ${t('duel_voting_complete')}</div>
                                         <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf Admin...'}</div>
                                     </div>`;
                             } else if (myVote) {
@@ -1634,14 +1634,14 @@ function getNowPlus10() {
             const startTimeStr = `${pd.toLocaleDateString('de-DE')} ${pd.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
             coinRateHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
+        <div class="live-session-meta"><span class="datetime-label">${t('start_time_label')}</span> ${startTimeStr}</div>
         <span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${initialCoins} ${coinSvgIcon()}</span>
     </div>`;
         }
 
         let scheduleHTML = '';
         if ((p.scheduledDay || p.scheduledTime) && p.status !== 'active') {
-            scheduleHTML = `<div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
+            scheduleHTML = `<div class="live-session-meta"><span class="datetime-label">${t('start_time_label')}</span> ${formatScheduleDate(p.scheduledDay)} ${p.scheduledTime || ''}</div>`;
         }
 
         let messageHTML = '';
@@ -1654,7 +1654,7 @@ function getNowPlus10() {
             const minDate = getNowPlus10().date;
             leaderEditHTML = `
                 <div class="leader-edit-row">
-                    <span class="datetime-label">Startzeit:</span>
+                    <span class="datetime-label">${t('start_time_label')}</span>
                     <input type="date" class="leader-day datetime-input" data-id="${p.id}" value="${/^\d{4}-\d{2}-\d{2}$/.test(p.scheduledDay || '') ? p.scheduledDay : ''}" min="${minDate}" required style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem">
                     <input type="time" class="leader-time datetime-input" data-id="${p.id}" value="${p.scheduledTime || ''}" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem">
                 </div>`;
@@ -1820,7 +1820,7 @@ function getNowPlus10() {
                 const day = sel.value;
                 const time = timeInp?.value || '00:00';
                 if (day && new Date(`${day}T${time}`) < new Date(Date.now() + 9 * 60 * 1000)) {
-                    showToast('Startzeit muss mind. 10 Minuten in der Zukunft liegen', 'error');
+                    showToast(t('start_time_future_error'), 'error');
                     sel.value = getNowPlus10().date;
                     return;
                 }
@@ -1836,7 +1836,7 @@ function getNowPlus10() {
                 const day = dayInp?.value || getNowPlus10().date;
                 const time = inp.value;
                 if (time && new Date(`${day}T${time}`) < new Date(Date.now() + 9 * 60 * 1000)) {
-                    showToast('Startzeit muss mind. 10 Minuten in der Zukunft liegen', 'error');
+                    showToast(t('start_time_future_error'), 'error');
                     inp.value = getNowPlus10().time;
                     return;
                 }
@@ -3081,8 +3081,8 @@ function getNowPlus10() {
 
         const potParts = [];
         if (isTeam) {
-            if (data.stakeCoinsPerPerson > 0) potParts.push(`${data.stakeCoinsPerPerson} ${coinSvgIcon()} / Person`);
-            if (data.stakeStarsPerPerson > 0) potParts.push(`${data.stakeStarsPerPerson} ${controllerSvgIcon()} / Person`);
+            if (data.stakeCoinsPerPerson > 0) potParts.push(`${data.stakeCoinsPerPerson} ${coinSvgIcon()} ${t('per_person')}`);
+            if (data.stakeStarsPerPerson > 0) potParts.push(`${data.stakeStarsPerPerson} ${controllerSvgIcon()} ${t('per_person')}`);
         } else {
             if (data.stakeCoins > 0) potParts.push(`${data.stakeCoins * 2} ${coinSvgIcon()}`);
             if (data.stakeStars > 0) potParts.push(`${data.stakeStars * 2} ${controllerSvgIcon()}`);
@@ -3091,16 +3091,16 @@ function getNowPlus10() {
 
         overlay.innerHTML = `
             <div style="background:var(--bg-card);border:1px solid var(--accent-gold);border-radius:var(--radius);padding:2rem 1.5rem;max-width:380px;width:90%;text-align:center;box-shadow:0 0 40px rgba(255,215,0,0.25);">
-                <div style="font-size:1rem;font-weight:700;color:var(--accent-gold);letter-spacing:0.05em;margin-bottom:0.25rem;">⚔️ Die Herausforderung beginnt!</div>
+                <div style="font-size:1rem;font-weight:700;color:var(--accent-gold);letter-spacing:0.05em;margin-bottom:0.25rem;">⚔️ ${t('duel_start_title')}</div>
                 <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1.2rem;">${data.game}</div>
                 <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1rem;">
                     <div style="flex:1;text-align:right;font-weight:700;font-size:1rem;color:var(--accent-purple);">${leftLabel}</div>
                     <div style="font-size:1.4rem;font-weight:900;color:var(--accent-gold);flex-shrink:0;">vs</div>
                     <div style="flex:1;text-align:left;font-weight:700;font-size:1rem;color:var(--accent-blue);">${rightLabel}</div>
                 </div>
-                ${potStr ? `<div style="font-size:0.85rem;color:var(--accent-gold);margin-bottom:1rem;">Pott: ${potStr}</div>` : ''}
-                <div style="font-size:2rem;font-weight:900;letter-spacing:0.1em;color:var(--accent-green);text-shadow:0 0 20px rgba(0,230,118,0.6);margin-bottom:1.5rem;">Fight!</div>
-                <button class="duel-start-goto-btn" style="background:var(--accent-gold);color:#000;border:none;border-radius:var(--radius-sm);padding:0.6rem 1.5rem;font-weight:700;font-size:0.95rem;cursor:pointer;">zur Session</button>
+                ${potStr ? `<div style="font-size:0.85rem;color:var(--accent-gold);margin-bottom:1rem;">${t('pot_label')} ${potStr}</div>` : ''}
+                <div style="font-size:2rem;font-weight:900;letter-spacing:0.1em;color:var(--accent-green);text-shadow:0 0 20px rgba(0,230,118,0.6);margin-bottom:1.5rem;">${t('duel_fight')}</div>
+                <button class="duel-start-goto-btn" style="background:var(--accent-gold);color:#000;border:none;border-radius:var(--radius-sm);padding:0.6rem 1.5rem;font-weight:700;font-size:0.95rem;cursor:pointer;">${t('btn_to_session')}</button>
             </div>`;
 
         overlay.querySelector('.duel-start-goto-btn').addEventListener('click', () => {
@@ -3372,7 +3372,7 @@ function getNowPlus10() {
                 ${sortedGames.map(g => `<div class="game-select-item" data-game="${g.name}">${g.name}</div>`).join('')}
             </div>
             <div class="leader-edit-row" style="margin-top:0.75rem">
-                <span class="datetime-label">Startzeit:</span>
+                <span class="datetime-label">${t('start_time_label')}</span>
                 <input type="date" id="ps-day" class="datetime-input" value="${defaultDate}" min="${defaultDate}" required style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
                 <input type="time" id="ps-time" class="datetime-input" value="${defaultTime}" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
             </div>
@@ -3404,7 +3404,7 @@ function getNowPlus10() {
             if (!day) { showToast('Datum ist ein Pflichtfeld', 'error'); return; }
             const selectedDT = new Date(`${day}T${time || '00:00'}`);
             if (selectedDT < new Date(Date.now() + 9 * 60 * 1000)) {
-                showToast('Startzeit muss mind. 10 Minuten in der Zukunft liegen', 'error');
+                showToast(t('start_time_future_error'), 'error');
                 return;
             }
             overlay.classList.remove('show');
@@ -3525,7 +3525,7 @@ function getNowPlus10() {
                         </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div class="game-meta">${c.game}</div>
-                            <div class="vote-pot-display" style="margin:0">Pott: ${potStr}</div>
+                            <div class="vote-pot-display" style="margin:0">${t('pot_label')} ${potStr}</div>
                         </div>
                         ${winnerInfo}
                         ${actionsHTML}
@@ -4510,7 +4510,7 @@ function getNowPlus10() {
                 const stakeStr = [
                     c.stakeCoins > 0 ? `${c.stakeCoins} ${coinSvgIcon()}` : '',
                     c.stakeStars > 0 ? `${c.stakeStars} ${controllerSvgIcon()}` : ''
-                ].filter(Boolean).join(' + ') || 'Kein Einsatz';
+                ].filter(Boolean).join(' + ') || t('no_stake');
                 pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: c.createdAt });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                 updateBadge();
