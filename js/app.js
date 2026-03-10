@@ -191,9 +191,9 @@
         toast.textContent = message;
         container.appendChild(toast);
         setTimeout(() => {
-            toast.style.animation = 'toastOut 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-        }, 7000);
+            toast.style.animation = 'toastOut 0.4s ease forwards';
+            setTimeout(() => toast.remove(), 400);
+        }, 6000);
     }
 
     function showCoinAnimation(amount) {

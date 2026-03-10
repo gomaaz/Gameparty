@@ -1184,12 +1184,15 @@ body {
 /* ---- Notification Toast ---- */
 .toast-container {
     position: fixed;
-    top: 4.5rem;
-    right: 1rem;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 250;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.5rem;
+    pointer-events: none;
 }
 
 .toast {
@@ -1204,7 +1207,9 @@ body {
     gap: 0.5rem;
     animation: toastIn 0.3s ease forwards;
     box-shadow: var(--shadow);
-    max-width: 300px;
+    max-width: 320px;
+    width: max-content;
+    pointer-events: auto;
 }
 
 .toast.success { border-left: 3px solid var(--accent-green); }
@@ -1212,13 +1217,13 @@ body {
 .toast.error { border-left: 3px solid var(--accent-red); }
 
 @keyframes toastIn {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes toastOut {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(20px); }
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(12px); }
 }
 
 /* ---- Search Input ---- */
