@@ -37,6 +37,7 @@
 
     let challengePollInterval = null;
     let viewRefreshInterval = null;
+    let sseDropViewInterval = null;
     let sseSource = null;
     let activeTaskTimer = null; // Globaler Timer fuer showTaskModal – verhindert doppelte Timer
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
@@ -4712,17 +4713,24 @@ function getNowPlus10() {
     function startChallengePoll() {
         stopChallengePoll();
         pollChallenges(); // sofort laden
-        // Fallback-Polling falls SSE abbricht
-        challengePollInterval = setInterval(pollChallenges, 10000);
-        viewRefreshInterval = setInterval(refreshActiveView, 10000);
-        // SSE fuer sofortige Live-Updates (Fallback: Polling laeuft parallel)
+        // Fallback-Polling falls SSE abbricht (30s reicht – SSE übernimmt im Normalfall)
+        challengePollInterval = setInterval(pollChallenges, 30000);
+        // SSE als primärer Live-Update-Mechanismus
         if (typeof EventSource !== 'undefined') {
             setTimeout(() => {
                 sseSource = new EventSource('/api/events');
                 sseSource.addEventListener('update', () => {
+                    // SSE aktiv: View-Fallback-Timer stoppen
+                    if (sseDropViewInterval) { clearInterval(sseDropViewInterval); sseDropViewInterval = null; }
                     refreshActiveView();
                     pollChallenges();
                 });
+                sseSource.onerror = () => {
+                    // SSE unterbrochen: View alle 30s refreshen bis SSE zurückkommt
+                    if (!sseDropViewInterval) {
+                        sseDropViewInterval = setInterval(refreshActiveView, 30000);
+                    }
+                };
             }, 1000);
         }
     }
@@ -4730,6 +4738,7 @@ function getNowPlus10() {
     function stopChallengePoll() {
         if (challengePollInterval) { clearInterval(challengePollInterval); challengePollInterval = null; }
         if (viewRefreshInterval) { clearInterval(viewRefreshInterval); viewRefreshInterval = null; }
+        if (sseDropViewInterval) { clearInterval(sseDropViewInterval); sseDropViewInterval = null; }
         if (sseSource) { sseSource.close(); sseSource = null; }
         if (activeTaskTimer) { clearInterval(activeTaskTimer); activeTaskTimer = null; }
     }
