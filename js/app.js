@@ -670,14 +670,12 @@ function getNowPlus10() {
                                     const tA = Array.isArray(chRun2.teamA) ? chRun2.teamA : JSON.parse(chRun2.teamA || '[]');
                                     const tB = Array.isArray(chRun2.teamB) ? chRun2.teamB : JSON.parse(chRun2.teamB || '[]');
                                     const glName = chRun2.createdBy;
-                                    const sortGL = arr => [...arr].sort((a, b) => a === glName ? -1 : b === glName ? 1 : 0);
                                     const renderTName = name => name === glName ? `<span class="session-leader-badge">GL</span>${name}` : name;
-                                    const tANames = sortGL(tA).map(renderTName).join(', ');
-                                    const tBNames = sortGL(tB).map(renderTName).join(', ');
-                                    playersHTML = `<div style="font-size:0.9rem;font-weight:600;text-align:center;margin:0.3rem 0;line-height:1.8">
-                                        <div style="color:var(--accent-purple)">${t('team_a')}: ${tANames}</div>
-                                        <div style="color:var(--accent-gold);font-size:0.85rem;font-weight:900">vs</div>
-                                        <div style="color:var(--accent-blue)">${t('team_b')}: ${tBNames}</div>
+                                    const sortGL = arr => [...arr].sort((a, b) => a === glName ? -1 : b === glName ? 1 : 0);
+                                    playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0;flex-wrap:wrap">
+                                        <div style="text-align:right;color:var(--accent-purple);font-weight:600;font-size:0.9rem">${sortGL(tA).map(renderTName).join('<br>')}</div>
+                                        <div style="color:var(--accent-gold);font-weight:900;font-size:1.1rem">vs</div>
+                                        <div style="text-align:left;color:var(--accent-blue);font-weight:600;font-size:0.9rem">${sortGL(tB).map(renderTName).join('<br>')}</div>
                                     </div>`;
                                 } else {
                                     playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0">
