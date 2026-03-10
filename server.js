@@ -191,6 +191,13 @@ db.exec(`CREATE TABLE IF NOT EXISTS duel_votes (
     PRIMARY KEY (session_id, player)
 )`);
 
+// Indexes für häufige WHERE-Spalten
+try { db.prepare("CREATE INDEX IF NOT EXISTS idx_player_events_target ON player_events(target)").run(); } catch {}
+try { db.prepare("CREATE INDEX IF NOT EXISTS idx_live_sessions_status ON live_sessions(status)").run(); } catch {}
+try { db.prepare("CREATE INDEX IF NOT EXISTS idx_challenges_status ON challenges(status)").run(); } catch {}
+try { db.prepare("CREATE INDEX IF NOT EXISTS idx_team_challenges_status ON team_challenges(status)").run(); } catch {}
+try { db.prepare("CREATE INDEX IF NOT EXISTS idx_history_player ON history(player)").run(); } catch {}
+
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
     const result = db.prepare('DELETE FROM attendees WHERE player NOT IN (SELECT name FROM users)').run();
@@ -457,8 +464,10 @@ app.put('/api/games/:name/approve', (req, res) => {
 app.delete('/api/games/:name', (req, res) => {
     const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
-    db.prepare('DELETE FROM game_players WHERE game_id = ?').run(game.id);
-    db.prepare('DELETE FROM games WHERE id = ?').run(game.id);
+    db.transaction(() => {
+        db.prepare('DELETE FROM game_players WHERE game_id = ?').run(game.id);
+        db.prepare('DELETE FROM games WHERE id = ?').run(game.id);
+    })();
     res.json({ success: true });
 });
 
@@ -729,8 +738,10 @@ app.put('/api/proposals/:id', (req, res) => {
 
 // DELETE /api/proposals/:id
 app.delete('/api/proposals/:id', (req, res) => {
-    db.prepare('DELETE FROM proposal_players WHERE proposal_id = ?').run(req.params.id);
-    db.prepare('DELETE FROM proposals WHERE id = ?').run(req.params.id);
+    db.transaction(() => {
+        db.prepare('DELETE FROM proposal_players WHERE proposal_id = ?').run(req.params.id);
+        db.prepare('DELETE FROM proposals WHERE id = ?').run(req.params.id);
+    })();
     res.json({ success: true });
 });
 
@@ -911,6 +922,9 @@ app.post('/api/genres-played', (req, res) => {
 
 // DELETE /api/reset
 app.delete('/api/reset', (req, res) => {
+    const { requestedBy } = req.body;
+    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
+    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
     db.exec(`
         DELETE FROM users; DELETE FROM games; DELETE FROM game_players;
         DELETE FROM coins; DELETE FROM stars; DELETE FROM history; DELETE FROM sessions;
@@ -924,18 +938,27 @@ app.delete('/api/reset', (req, res) => {
 });
 
 app.delete('/api/reset/coins', (req, res) => {
+    const { requestedBy } = req.body;
+    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
+    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
     db.prepare('UPDATE coins SET amount = 0').run();
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
 
 app.delete('/api/reset/stars', (req, res) => {
+    const { requestedBy } = req.body;
+    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
+    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
     db.prepare('UPDATE stars SET amount = 0').run();
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
 
 app.delete('/api/reset/challenges', (req, res) => {
+    const { requestedBy } = req.body;
+    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
+    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
     db.prepare('DELETE FROM challenges').run();
     broadcast({ type: 'update' });
     res.json({ success: true });

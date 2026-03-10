@@ -261,6 +261,20 @@
         }, 6000);
     }
 
+    function showConfirm(message, onConfirm) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        modal.innerHTML = `
+            <div class="modal-title" style="margin-bottom:1rem">${message}</div>
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+                <button class="btn-secondary" id="confirm-no" style="padding:0.5rem 1rem">${t('btn_cancel')}</button>
+                <button class="btn-danger" id="confirm-yes" style="padding:0.5rem 1rem">${t('btn_confirm') || 'Ja'}</button>
+            </div>`;
+        overlay.classList.add('show');
+        modal.querySelector('#confirm-yes').onclick = () => { overlay.classList.remove('show'); onConfirm(); };
+        modal.querySelector('#confirm-no').onclick = () => overlay.classList.remove('show');
+    }
+
     function showCoinAnimation(coins, stars) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
@@ -877,9 +891,9 @@ function getNowPlus10() {
                             const coinsPerPlayer = parseInt(btn.dataset.coins || 0);
                             await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer, player: state.currentPlayer });
                         } else if (action === 'cancel') {
-                            if (confirm(t('confirm_cancel_room'))) {
+                            showConfirm(t('confirm_cancel_room'), async () => {
                                 await api('DELETE', `/live-sessions/${sid}`);
-                            }
+                            });
                         }
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
@@ -1171,7 +1185,7 @@ function getNowPlus10() {
 
         container.querySelectorAll('#suggested-game-list .btn-reject').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if (confirm(t('confirm_reject_game', btn.dataset.game))) {
+                showConfirm(t('confirm_reject_game', btn.dataset.game), async () => {
                     try {
                         await api('DELETE', `/games/${encodeURIComponent(btn.dataset.game)}`);
                         showToast(t('proposal_rejected'), 'error');
