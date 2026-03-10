@@ -29,6 +29,7 @@ COPY index.html ./
 COPY js/ ./js/
 COPY css/ ./css/
 COPY svg/ ./svg/
+COPY sounds/ ./sounds/
 
 # Daten-Verzeichnis fuer SQLite-Datenbank
 RUN mkdir -p /data
