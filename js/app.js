@@ -17,7 +17,8 @@
         soundEnabled: false,
         version: '',
         allUsers: [],
-        settings: {}
+        settings: {},
+        shopCooldowns: {}
     };
 
     // ---- Medium Options ----
@@ -199,15 +200,15 @@
 
     // ---- Cooldown ----
     function getCooldownRemaining(itemId) {
-        if (!state.currentPlayer || !COOLDOWN_MS[itemId]) return 0;
-        const stored = parseInt(localStorage.getItem(`gameparty_cd_${itemId}_${state.currentPlayer}`) || '0');
+        if (!COOLDOWN_MS[itemId]) return 0;
+        const stored = state.shopCooldowns[itemId] || 0;
         if (!stored) return 0;
         return Math.max(0, COOLDOWN_MS[itemId] - (Date.now() - stored));
     }
 
     function startItemCooldown(itemId) {
-        if (!state.currentPlayer || !COOLDOWN_MS[itemId]) return;
-        localStorage.setItem(`gameparty_cd_${itemId}_${state.currentPlayer}`, String(Date.now()));
+        if (!COOLDOWN_MS[itemId]) return;
+        state.shopCooldowns[itemId] = Date.now();
     }
 
     function startCooldownTick() {
@@ -2534,11 +2535,25 @@ function getNowPlus10() {
                     <div class="admin-coins-form">
                         <select id="ap-coin-player">
                             <option value="">${t('placeholder_select_player')}</option>
+                            <option value="alle">alle</option>
                             ${state.players.map(p => `<option value="${p}">${p}</option>`).join('')}
                         </select>
                         <input type="number" id="ap-coin-amount" placeholder="${t('placeholder_coin_amount')}" inputmode="numeric">
                         <input type="text" id="ap-coin-reason" placeholder="${t('placeholder_coin_reason')}">
                         <button class="btn-admin-coins" id="ap-btn-coins" disabled>${t('btn_assign_coins')}</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">${t('manual_stars')}</div>
+                    <div class="admin-coins-form">
+                        <select id="ap-star-player">
+                            <option value="">${t('placeholder_select_player')}</option>
+                            <option value="alle">alle</option>
+                            ${state.players.map(p => `<option value="${p}">${p}</option>`).join('')}
+                        </select>
+                        <input type="number" id="ap-star-amount" placeholder="${t('placeholder_star_amount')}" inputmode="numeric">
+                        <button class="btn-admin-coins" id="ap-btn-stars" disabled>${t('btn_assign_stars')}</button>
                     </div>
                 </div>
 
@@ -2697,11 +2712,41 @@ function getNowPlus10() {
             if (!player || !amount) return;
             try {
                 await api('POST', '/coins/add', { player, amount, reason });
-                if (amount > 0) { showCoinAnimation(amount); showToast(t('coins_given', fmt(amount), player), 'success'); }
-                else { showToast(t('coins_deducted', fmt(amount), player), 'error'); playSound('spend'); }
-                coinPlayer.value = ''; coinAmount.value = ''; coinReason.value = '';
+                if (player === 'alle') {
+                    showToast(amount > 0 ? t('coins_given_alle', fmt(amount)) : t('coins_deducted_alle', fmt(Math.abs(amount))), amount > 0 ? 'success' : 'error');
+                    if (amount > 0) showCoinAnimation(amount);
+                } else {
+                    if (amount > 0) { showCoinAnimation(amount); showToast(t('coins_given', fmt(amount), player), 'success'); }
+                    else { showToast(t('coins_deducted', fmt(amount), player), 'error'); playSound('spend'); }
+                }
+                coinAmount.value = ''; coinReason.value = '';
                 coinBtn.disabled = true;
             } catch (e) { console.error(e); }
+        });
+
+        // Assign stars (controller points)
+        const starPlayer = $('#ap-star-player');
+        const starAmount = $('#ap-star-amount');
+        const starBtn = $('#ap-btn-stars');
+        const updateStarBtn = () => {
+            starBtn.disabled = !(starPlayer.value && starAmount.value && parseInt(starAmount.value) !== 0);
+        };
+        starPlayer.addEventListener('change', updateStarBtn);
+        starAmount.addEventListener('input', updateStarBtn);
+        starBtn.addEventListener('click', async () => {
+            const player = starPlayer.value, amount = parseInt(starAmount.value);
+            if (!player || !amount) return;
+            try {
+                await api('POST', '/stars/add', { player, amount, requestedBy: state.currentPlayer });
+                if (player === 'alle') {
+                    showToast(amount > 0 ? t('stars_given_alle', fmt(amount)) : t('stars_deducted_alle', fmt(Math.abs(amount))), amount > 0 ? 'success' : 'error');
+                } else {
+                    if (amount > 0) { showToast(t('stars_given', fmt(amount), player), 'success'); }
+                    else { showToast(t('stars_deducted', fmt(Math.abs(amount)), player), 'error'); }
+                }
+                starAmount.value = '';
+                starBtn.disabled = true;
+            } catch (e) { showToast(t('error_loading'), 'error'); console.error(e); }
         });
 
         // Danger zone
@@ -2795,8 +2840,12 @@ function getNowPlus10() {
         }
 
         try {
-            const coinsData = await api('GET', '/coins');
+            const [coinsData, cooldownData] = await Promise.all([
+                api('GET', '/coins'),
+                api('GET', '/shop/cooldowns')
+            ]);
             state.coins = coinsData;
+            state.shopCooldowns = cooldownData || {};
             const player = state.currentPlayer;
             const coins = coinsData[player] || 0;
 
@@ -2967,10 +3016,10 @@ function getNowPlus10() {
                 const target = btn.dataset.target;
                 overlay.classList.remove('show');
                 playSound('buy');
-                if (isController) startItemCooldown('rob_controller');
                 try {
                     if (isController) {
                         const result = await api('POST', '/shop/rob-controller', { thief: state.currentPlayer, target, cost });
+                        startItemCooldown('rob_controller');
                         if (result.success) {
                             showToast(t('rob_controller_success', target), 'gold');
                             await api('POST', '/player-events', {
@@ -2999,8 +3048,13 @@ function getNowPlus10() {
                     updateHeader();
                     renderShop();
                 } catch (e) {
-                    showToast(t('not_enough_coins'), 'error');
+                    if (e.message === 'cooldown') {
+                        showToast('Noch nicht verfügbar – Cooldown läuft!', 'error');
+                    } else {
+                        showToast(t('not_enough_coins'), 'error');
+                    }
                     playSound('error');
+                    renderShop();
                 }
             });
         });
@@ -5117,6 +5171,7 @@ function getNowPlus10() {
             state.version = data.version || '';
             state.coins = data.coins;
             state.stars = data.stars || {};
+            state.shopCooldowns = data.shopCooldowns || {};
             state._usersCache = data.users;
 
             // Validate that current player still exists

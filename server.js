@@ -11,6 +11,10 @@ const { version } = require('./package.json');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Global shop cooldowns (in-memory, reset on server restart)
+const shopCooldownTs = {}; // { rob_controller: timestamp }
+const SHOP_COOLDOWN_MS = { rob_controller: 5 * 60 * 1000 };
+
 app.use(cors());
 app.use(express.json());
 
@@ -421,7 +425,7 @@ app.get('/api/init', (req, res) => {
     db.prepare('SELECT key, value FROM settings').all().forEach(r => { settings[r.key] = r.value; });
     const players = users.map(u => u.name);
 
-    res.json({ users, games, coins, stars, attendees, settings, players, version });
+    res.json({ users, games, coins, stars, attendees, settings, players, version, shopCooldowns: shopCooldownTs });
 });
 
 // POST /api/login
@@ -532,6 +536,19 @@ app.get('/api/coins', (req, res) => {
 // POST /api/coins/add
 app.post('/api/coins/add', (req, res) => {
     const { player, amount, reason } = req.body;
+    if (player === 'alle') {
+        const allPlayers = db.prepare('SELECT name FROM users').all();
+        const ts = Date.now();
+        const tx = db.transaction(() => {
+            allPlayers.forEach(u => {
+                db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(u.name, amount, amount);
+                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(u.name, amount, reason || '', ts);
+            });
+        });
+        tx();
+        broadcast({ type: 'update' });
+        return res.json({ affectedPlayers: allPlayers.length });
+    }
     db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, amount, amount);
     db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, amount, reason || '', Date.now());
     const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(player);
@@ -583,10 +600,18 @@ app.post('/api/shop/rob-coins', (req, res) => {
     res.json({ stolen: actualStolen });
 });
 
+// GET /api/shop/cooldowns
+app.get('/api/shop/cooldowns', (req, res) => res.json(shopCooldownTs));
+
 // POST /api/shop/rob-controller
 app.post('/api/shop/rob-controller', (req, res) => {
     const { thief, target, cost } = req.body;
     if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
+
+    // Global cooldown check
+    const lastPurchase = shopCooldownTs.rob_controller || 0;
+    const remainingMs = SHOP_COOLDOWN_MS.rob_controller - (Date.now() - lastPurchase);
+    if (remainingMs > 0) return res.status(429).json({ error: 'cooldown', remainingMs });
 
     const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
     if (!thiefRow || thiefRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });
@@ -607,6 +632,7 @@ app.post('/api/shop/rob-controller', (req, res) => {
     });
 
     tx();
+    shopCooldownTs.rob_controller = Date.now();
     broadcast({ type: 'update' });
     res.json({ success });
 });
@@ -641,8 +667,20 @@ app.post('/api/stars/add', (req, res) => {
     const _requester2 = requestedBy || player;
     const _isAdmin2 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(_requester2);
     if (!_isAdmin2) return res.status(403).json({ error: 'Nur Admins können Controller-Punkte vergeben' });
+    if (player === 'alle') {
+        const allPlayers = db.prepare('SELECT name FROM users').all();
+        const tx = db.transaction(() => {
+            allPlayers.forEach(u => {
+                db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(u.name, amount, amount);
+            });
+        });
+        tx();
+        broadcast({ type: 'update' });
+        return res.json({ affectedPlayers: allPlayers.length });
+    }
     db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, amount, amount);
     const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(player);
+    broadcast({ type: 'update' });
     res.json({ newStars: row ? row.amount : 0 });
 });
 

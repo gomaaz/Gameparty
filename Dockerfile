@@ -34,10 +34,14 @@ COPY sounds/ ./sounds/
 # Daten-Verzeichnis fuer SQLite-Datenbank
 RUN mkdir -p /data
 
+# Zeitzone
+RUN apk add --no-cache tzdata
+
 # Umgebungsvariablen
 ENV PORT=3000
 ENV DB_PATH=/data/gameparty.db
 ENV NODE_ENV=production
+ENV TZ=Europe/Berlin
 
 EXPOSE 3000
 
