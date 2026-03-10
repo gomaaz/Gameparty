@@ -91,11 +91,15 @@
         }
     }
 
-    function showNegativeCoinAnimation(amount) {
+    function showNegativeCoinAnimation(coins, stars) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
-        popup.style.background = 'var(--danger, #ff4444)';
-        popup.textContent = `-${amount} Coins`;
+        popup.style.color = 'var(--danger, #ff4444)';
+        popup.style.textShadow = '0 0 40px rgba(255,68,68,0.6)';
+        const parts = [];
+        if (coins > 0) parts.push(`-${coins} ${coinSvgIcon('1.2em')}`);
+        if (stars > 0) parts.push(`-${stars} ${controllerSvgIcon('1.2em')}`);
+        popup.innerHTML = parts.join(' ');
         document.body.appendChild(popup);
 
         for (let i = 0; i < 6; i++) {
@@ -251,10 +255,13 @@
         }, 6000);
     }
 
-    function showCoinAnimation(amount) {
+    function showCoinAnimation(coins, stars) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
-        popup.textContent = t('coins_anim', amount);
+        const parts = [];
+        if (coins > 0) parts.push(`+${coins} ${coinSvgIcon('1.2em')}`);
+        if (stars > 0) parts.push(`+${stars} ${controllerSvgIcon('1.2em')}`);
+        popup.innerHTML = parts.join(' ');
         document.body.appendChild(popup);
 
         for (let i = 0; i < 6; i++) {
@@ -3034,9 +3041,9 @@ function getNowPlus10() {
             closeBtn.addEventListener('click', () => {
                 overlay.classList.remove('show');
                 if (isWinner) {
-                    if (wonCoins > 0) showCoinAnimation(wonCoins);
+                    if (wonCoins > 0 || wonStars > 0) showCoinAnimation(wonCoins, wonStars);
                 } else {
-                    if (stakeCoins > 0) showNegativeCoinAnimation(stakeCoins);
+                    if (stakeCoins > 0 || stakeStars > 0) showNegativeCoinAnimation(stakeCoins, stakeStars);
                 }
             });
         }
