@@ -1191,7 +1191,7 @@ function getNowPlus10() {
                         showToast(t('proposal_rejected'), 'error');
                         renderMatcher();
                     } catch (e) { console.error(e); }
-                }
+                });
             });
         });
 
@@ -1274,13 +1274,13 @@ function getNowPlus10() {
             const deleteBtn = e.target.closest('.game-delete-btn');
             if (deleteBtn) {
                 e.stopPropagation();
-                if (confirm(t('confirm_delete_game', deleteBtn.dataset.game))) {
+                showConfirm(t('confirm_delete_game', deleteBtn.dataset.game), async () => {
                     try {
                         await api('DELETE', `/games/${encodeURIComponent(deleteBtn.dataset.game)}`);
                         showToast(t('game_deleted'), 'error');
                         renderMatcher();
                     } catch (e2) { console.error(e2); }
-                }
+                });
                 return;
             }
 
@@ -1803,13 +1803,13 @@ function getNowPlus10() {
             btn.addEventListener('click', async () => {
                 const isAdminDelete = btn.dataset.adminDelete === 'true';
                 const label = isAdminDelete ? t('confirm_delete_proposal') : t('confirm_withdraw');
-                if (confirm(label)) {
+                showConfirm(label, async () => {
                     try {
                         await api('DELETE', `/proposals/${btn.dataset.id}`);
                         showToast(t('proposal_removed'), 'error');
                         renderProposals();
                     } catch (e) { console.error(e); }
-                }
+                });
             });
         });
 
@@ -1826,13 +1826,13 @@ function getNowPlus10() {
 
         container.querySelectorAll('.btn-reject').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if (confirm(t('confirm_reject_proposal'))) {
+                showConfirm(t('confirm_reject_proposal'), async () => {
                     try {
                         await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'rejected' });
                         showToast(t('proposal_rejected'), 'error');
                         renderProposals();
                     } catch (e) { console.error(e); }
-                }
+                });
             });
         });
 
@@ -2074,14 +2074,14 @@ function getNowPlus10() {
                 btn.addEventListener('click', async () => {
                     const type = btn.dataset.type;
                     const names = { skip_token: t('token_names_skip'), force_play: t('token_names_force'), choose_next: t('token_names_choose') };
-                    if (confirm(t('token_redeem_confirm', names[type]))) {
+                    showConfirm(t('token_redeem_confirm', names[type]), async () => {
                         try {
                             await api('DELETE', `/tokens/${encodeURIComponent(player)}/${type}`);
                             showToast(t('token_redeemed', names[type]), 'gold');
                             playSound('spend');
                             renderProfile();
                         } catch (e) { console.error(e); }
-                    }
+                    });
                 });
             });
 
@@ -2331,10 +2331,10 @@ function getNowPlus10() {
             });
             container.querySelectorAll('.freigabe-cancel-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    if (confirm(t('discard_confirm'))) {
+                    showConfirm(t('discard_confirm'), async () => {
                         await api('DELETE', `/live-sessions/${btn.dataset.sid}`);
                         renderSession();
-                    }
+                    });
                 });
             });
 
@@ -2642,14 +2642,14 @@ function getNowPlus10() {
         panel.querySelectorAll('#ap-player-mgmt-list .player-mgmt-btn.delete').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const name = btn.dataset.name;
-                if (confirm(t('delete_player_confirm', name))) {
+                showConfirm(t('delete_player_confirm', name), async () => {
                     try {
                         await api('DELETE', `/users/${encodeURIComponent(name)}`);
                         showToast(t('player_deleted', name), 'error');
                         await refreshPlayers();
                         renderAdminPanel();
                     } catch (e) { console.error(e); }
-                }
+                });
             });
         });
 
@@ -2697,29 +2697,29 @@ function getNowPlus10() {
         });
 
         // Danger zone
-        $('#ap-btn-reset-coins').addEventListener('click', async () => {
-            if (confirm(t('confirm_reset_coins'))) {
-                try { await api('DELETE', '/reset/coins'); showToast(t('reset_coins_done'), 'error'); }
+        $('#ap-btn-reset-coins').addEventListener('click', () => {
+            showConfirm(t('confirm_reset_coins'), async () => {
+                try { await api('DELETE', '/reset/coins', { requestedBy: state.currentPlayer }); showToast(t('reset_coins_done'), 'error'); }
                 catch (e) { console.error(e); }
-            }
+            });
         });
-        $('#ap-btn-reset-stars').addEventListener('click', async () => {
-            if (confirm(t('confirm_reset_stars'))) {
-                try { await api('DELETE', '/reset/stars'); showToast(t('reset_stars_done'), 'error'); }
+        $('#ap-btn-reset-stars').addEventListener('click', () => {
+            showConfirm(t('confirm_reset_stars'), async () => {
+                try { await api('DELETE', '/reset/stars', { requestedBy: state.currentPlayer }); showToast(t('reset_stars_done'), 'error'); }
                 catch (e) { console.error(e); }
-            }
+            });
         });
-        $('#ap-btn-reset-challenges').addEventListener('click', async () => {
-            if (confirm(t('confirm_reset_challenges'))) {
-                try { await api('DELETE', '/reset/challenges'); showToast(t('reset_challenges_done'), 'error'); }
+        $('#ap-btn-reset-challenges').addEventListener('click', () => {
+            showConfirm(t('confirm_reset_challenges'), async () => {
+                try { await api('DELETE', '/reset/challenges', { requestedBy: state.currentPlayer }); showToast(t('reset_challenges_done'), 'error'); }
                 catch (e) { console.error(e); }
-            }
+            });
         });
-        $('#ap-btn-reset-all').addEventListener('click', async () => {
-            if (confirm(t('reset_confirm_1'))) {
-                if (confirm(t('reset_confirm_2'))) {
+        $('#ap-btn-reset-all').addEventListener('click', () => {
+            showConfirm(t('reset_confirm_1'), () => {
+                showConfirm(t('reset_confirm_2'), async () => {
                     try {
-                        await api('DELETE', '/reset');
+                        await api('DELETE', '/reset', { requestedBy: state.currentPlayer });
                         state.currentPlayer = null;
                         state.role = null;
                         localStorage.removeItem(LOCAL_KEYS.PLAYER);
@@ -2730,8 +2730,8 @@ function getNowPlus10() {
                         updateHeader();
                         navigateTo('dashboard');
                     } catch (e) { console.error(e); }
-                }
-            }
+                });
+            });
         });
     }
 
@@ -2857,7 +2857,7 @@ function getNowPlus10() {
         } else if (itemId === 'rob_controller') {
             showRobModal('rob_controller', cost);
         } else {
-            if (confirm(t('buy_item_confirm', item.name, cost))) {
+            showConfirm(t('buy_item_confirm', item.name, cost), async () => {
                 try {
                     await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${item.name}` });
                     await api('POST', '/tokens', { player, type: itemId });
@@ -2868,7 +2868,7 @@ function getNowPlus10() {
                     showToast(t('not_enough_coins'), 'error');
                     playSound('error');
                 }
-            }
+            });
         }
     }
 
