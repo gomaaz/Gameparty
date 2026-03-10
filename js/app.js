@@ -4219,7 +4219,7 @@ function getNowPlus10() {
                 notifiedChallengeIds.add(c.id);
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = [
-                    c.stakeCoins > 0 ? `${c.stakeCoins} Coins` : '',
+                    c.stakeCoins > 0 ? `${c.stakeCoins} ${coinSvgIcon()}` : '',
                     c.stakeStars > 0 ? `${c.stakeStars} ${controllerSvgIcon()}` : ''
                 ].filter(Boolean).join(' + ') || 'Kein Einsatz';
                 pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: c.createdAt });
@@ -4250,7 +4250,7 @@ function getNowPlus10() {
             for (const tc of newTeamOnes) {
                 notifiedChallengeIds.add('tc_' + tc.id);
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
-                const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} Coins/Person` : t('no_stake');
+                const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} ${coinSvgIcon()}/Person` : t('no_stake');
                 pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true, ts: tc.createdAt });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                 updateBadge();
