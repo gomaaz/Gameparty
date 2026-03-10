@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1 (2026-03-10)
+- fix: add anti-cheat auth checks to 6 endpoints
+
 ## v.1.1.1 (2026-03-10)
 - feat: pass currentPlayer to all approve API calls
 
