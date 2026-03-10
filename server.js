@@ -606,6 +606,22 @@ app.get('/api/stars', (req, res) => {
     res.json(stars);
 });
 
+// POST /api/shop/buy-star — Spieler kauft 1 Controller-Punkt für Coins (kein Admin nötig)
+app.post('/api/shop/buy-star', (req, res) => {
+    const { player, cost } = req.body;
+    if (!player || cost == null) return res.status(400).json({ error: 'player und cost erforderlich' });
+    const coinRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(player);
+    if (!coinRow || coinRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });
+    const tx = db.transaction(() => {
+        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(cost, player);
+        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, -cost, 'Shop: Controller-Punkt kaufen', Date.now());
+        db.prepare('INSERT INTO stars (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
+    });
+    tx();
+    const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(player);
+    res.json({ newStars: row ? row.amount : 1 });
+});
+
 // POST /api/stars/add
 app.post('/api/stars/add', (req, res) => {
     const { player, amount, requestedBy } = req.body;
