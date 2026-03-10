@@ -94,9 +94,21 @@
     function showNegativeCoinAnimation(amount) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
-        popup.style.cssText = 'background:var(--danger,#ff4444);color:#fff';
-        popup.innerHTML = `-${amount} ${coinSvgIcon()}`;
+        popup.style.background = 'var(--danger, #ff4444)';
+        popup.textContent = `-${amount} Coins`;
         document.body.appendChild(popup);
+
+        for (let i = 0; i < 6; i++) {
+            const p = document.createElement('div');
+            p.className = 'coin-particle';
+            p.textContent = '\u26AA';
+            p.style.left = (50 + (Math.random() - 0.5) * 30) + '%';
+            p.style.top = (50 + (Math.random() - 0.5) * 20) + '%';
+            p.style.animationDelay = (Math.random() * 0.3) + 's';
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 1500);
+        }
+
         playSound('error');
         setTimeout(() => popup.remove(), 1500);
     }
