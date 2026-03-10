@@ -621,6 +621,10 @@ function getNowPlus10() {
                                     ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
                                 </div>`;
                         }
+                        // Admin kann Duel-Session jederzeit abbrechen (auch bei hängenden Abstimmungen)
+                        if (isAdmin() && !isVoted && !isConflict) {
+                            actionsHTML += `<div style="margin-top:0.3rem;text-align:center"><button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button></div>`;
+                        }
                     } else if (s.status === 'ended') {
                         statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
                         if (isAdmin()) {
