@@ -182,61 +182,17 @@
 
     // ---- Sound ----
     function playSound(type) {
-        if (!state.soundEnabled) return;
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            if (type === 'coin') {
-                osc.frequency.value = 880;
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.3);
-
-                const osc2 = ctx.createOscillator();
-                const gain2 = ctx.createGain();
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.frequency.value = 1320;
-                osc2.type = 'sine';
-                gain2.gain.setValueAtTime(0.15, ctx.currentTime + 0.1);
-                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-                osc2.start(ctx.currentTime + 0.1);
-                osc2.stop(ctx.currentTime + 0.5);
-            } else if (type === 'spend') {
-                osc.frequency.value = 440;
-                osc.type = 'triangle';
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.2);
-            } else if (type === 'error') {
-                osc.frequency.value = 200;
-                osc.type = 'square';
-                gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.15);
-            } else if (type === 'challenge') {
-                osc.frequency.value = 660; osc.type = 'sawtooth';
-                gain.gain.setValueAtTime(0.12, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
-                const osc2 = ctx.createOscillator(); const gain2 = ctx.createGain();
-                osc2.connect(gain2); gain2.connect(ctx.destination);
-                osc2.frequency.value = 440; osc2.type = 'sawtooth';
-                gain2.gain.setValueAtTime(0.12, ctx.currentTime + 0.2);
-                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-                osc2.start(ctx.currentTime + 0.2); osc2.stop(ctx.currentTime + 0.6);
-            }
-        } catch (e) {
-            // Audio not available
-        }
+        if (!getNotifPref('sound')) return;
+        const SOUNDS = {
+            coin:      'sounds/coin_popup_positive.mp3',
+            spend:     'sounds/Coin_popup_negative.mp3',
+            error:     'sounds/Coin_popup_negative.mp3',
+            challenge: 'sounds/notify.mp3',
+            buy:       'sounds/buyitem.wav',
+        };
+        const src = SOUNDS[type];
+        if (!src) return;
+        try { new Audio(src).play().catch(() => {}); } catch (e) {}
     }
 
     // ---- UI Helpers ----
@@ -2851,9 +2807,10 @@ function getNowPlus10() {
                 state.coins[player] = (state.coins[player] || 0) - cost;
                 state.stars[player] = result.newStars;
                 showToast(t('star_bought', fmt(state.stars[player])), 'success');
+                playSound('buy');
                 updateHeader();
                 renderShop();
-            } catch (e) { showToast(t('not_enough_coins'), 'error'); }
+            } catch (e) { showToast(t('not_enough_coins'), 'error'); playSound('error'); }
             return;
         }
 
@@ -2871,7 +2828,7 @@ function getNowPlus10() {
                     await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${item.name}` });
                     await api('POST', '/tokens', { player, type: itemId });
                     showToast(t('item_bought', item.name), 'gold');
-                    playSound('spend');
+                    playSound('buy');
                     renderShop();
                 } catch (e) {
                     showToast(t('not_enough_coins'), 'error');
@@ -2915,7 +2872,7 @@ function getNowPlus10() {
                         target, type: itemId, from_player: state.currentPlayer, message: msg,
                         ...(deadline ? { deadline } : {})
                     });
-                    playSound('spend');
+                    playSound('buy');
                     renderShop();
                 } catch (e) {
                     showToast('Nicht genug Coins!', 'error');
@@ -2955,7 +2912,7 @@ function getNowPlus10() {
                 try {
                     if (isController) {
                         const result = await api('POST', '/shop/rob-controller', { thief: state.currentPlayer, target, cost });
-                        playSound('spend');
+                        playSound('buy');
                         if (result.success) {
                             showToast(t('rob_controller_success', target), 'gold');
                             await api('POST', '/player-events', {
@@ -2971,7 +2928,7 @@ function getNowPlus10() {
                         }
                     } else {
                         const result = await api('POST', '/shop/rob-coins', { thief: state.currentPlayer, target, cost });
-                        playSound('spend');
+                        playSound('buy');
                         if (result.stolen > 0) {
                             showToast(t('rob_coins_success', fmt(result.stolen), target), 'gold');
                             await api('POST', '/player-events', {
