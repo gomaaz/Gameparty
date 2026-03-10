@@ -70,6 +70,27 @@
         return `<img src="svg/console-controller.svg" class="coin-svg-icon" alt="controller" style="width:${s};height:${s};vertical-align:middle">`;
     }
 
+    function buildTeamNotifTitle(teamA, teamB, createdBy, currentPlayer) {
+        const fmt = arr => {
+            if (arr.length === 0) return '';
+            if (arr.length === 1) return arr[0];
+            return arr.slice(0, -1).join(', ') + ' und ' + arr[arr.length - 1];
+        };
+        const inTeamA = teamA.includes(currentPlayer);
+        if (inTeamA) {
+            // Same team as creator → "X (+ others) möchte(n) mit dir gegen [B] spielen"
+            const senders = [createdBy, ...teamA.filter(p => p !== createdBy && p !== currentPlayer)];
+            const verb = senders.length > 1 ? 'möchten' : 'möchte';
+            return `${fmt(senders)} ${verb} mit dir gegen ${fmt(teamB)} spielen`;
+        } else {
+            // Opposing team → "[A] möchte(n) gegen dich (und [other B]) spielen"
+            const verb = teamA.length > 1 ? 'möchten' : 'möchte';
+            const otherB = teamB.filter(p => p !== currentPlayer);
+            const suffix = otherB.length > 0 ? ` und ${fmt(otherB)}` : '';
+            return `${fmt(teamA)} ${verb} gegen dich${suffix} spielen`;
+        }
+    }
+
     function showNegativeCoinAnimation(amount) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
@@ -3959,7 +3980,7 @@ function getNowPlus10() {
                 const icon   = isRob ? '🥷' : isReview ? '🏆' : isTeam ? '👥' : '⚔️';
                 const accent = isRob ? 'red' : isReview ? 'gold' : null;
                 const title  = (isRob || isReview) ? n.title
-                             : isTeam ? t('notif_team_challenge', n.challenger)
+                             : isTeam ? (n.title || t('notif_team_challenge', n.challenger))
                              : t('notif_challenge_from', n.challenger);
                 const sub    = (!isRob && !isReview && (n.game || n.stakeStr))
                              ? `${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}` : '';
@@ -4251,7 +4272,10 @@ function getNowPlus10() {
                 notifiedChallengeIds.add('tc_' + tc.id);
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} ${coinSvgIcon()}/Person` : t('no_stake');
-                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true, ts: tc.createdAt });
+                const teamA = JSON.parse(tc.teamA);
+                const teamB = JSON.parse(tc.teamB);
+                const notifTitle = buildTeamNotifTitle(teamA, teamB, tc.createdBy, state.currentPlayer);
+                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true, ts: tc.createdAt, title: notifTitle });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                 updateBadge();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
