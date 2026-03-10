@@ -346,23 +346,26 @@ body {
 }
 
 .lb-icon {
-    width: 1em;
-    height: 1em;
-    vertical-align: middle;
+    width: 1.3em;
+    height: 1.3em;
     flex-shrink: 0;
+    margin-bottom: -0.1em;
 }
 .coin-svg-icon {
-    width: 1.1rem;
-    height: 1.1rem;
+    width: 1.3rem;
+    height: 1.3rem;
     flex-shrink: 0;
     display: inline-block;
     vertical-align: middle;
+    margin-bottom: -0.1em;
 }
 .controller-svg-icon {
-    width: 1.1rem;
-    height: 1.1rem;
+    width: 1.3rem;
+    height: 1.3rem;
     flex-shrink: 0;
-    display: block;
+    display: inline-block;
+    vertical-align: middle;
+    margin-bottom: -0.1em;
 }
 
 /* ---- Game Suggestion ---- */
