@@ -3383,6 +3383,12 @@ function getNowPlus10() {
                         </div>`;
                 }
 
+                // GL (challenger) can cancel their own pending challenge
+                const isChallenger = c.challenger === state.currentPlayer;
+                if (c.status === 'pending' && isChallenger) {
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave ch-cancel-gl" data-id="${c.id}">${t('btn_cancel')}</button></div>`;
+                }
+
                 if (admin && c.status !== 'paid') {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave ch-delete" data-id="${c.id}">${t('btn_delete_duel')}</button></div>`;
                 }
@@ -3464,6 +3470,11 @@ function getNowPlus10() {
                             <button class="btn-leave tc-reject" data-id="${tc.id}">${t('notif_reject')}</button>
                         </div>`;
                 }
+                // GL (creator) can cancel their own pending team challenge
+                if (tc.status === 'pending' && tc.createdBy === state.currentPlayer) {
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave tc-cancel-gl" data-id="${tc.id}">${t('btn_cancel')}</button></div>`;
+                }
+
                 if (admin && tc.status !== 'paid') {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave tc-delete" data-id="${tc.id}">${t('btn_delete_duel')}</button></div>`;
                 }
@@ -3761,6 +3772,20 @@ function getNowPlus10() {
                         }
                     });
                 });
+
+                // Event: GL cancel own pending challenge
+                container.querySelectorAll('.ch-cancel-gl').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('DELETE', `/challenges/${btn.dataset.id}`);
+                            showToast(t('duel_deleted'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast(t('duel_delete_error'), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
             }
 
             if (challengeActiveTab === 'team') {
@@ -3954,6 +3979,20 @@ function getNowPlus10() {
 
                 // Delete (admin)
                 container.querySelectorAll('.tc-delete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('DELETE', `/team-challenges/${btn.dataset.id}`);
+                            showToast(t('duel_deleted'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast(t('duel_delete_error'), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // GL cancel own pending team challenge
+                container.querySelectorAll('.tc-cancel-gl').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         try {
                             await api('DELETE', `/team-challenges/${btn.dataset.id}`);
