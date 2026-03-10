@@ -3536,11 +3536,18 @@ function getNowPlus10() {
                             ${state.games.filter(g => g.status === 'approved').sort((a, b) => a.name.localeCompare(b.name)).map(g => `<option value="${g.name}">${g.name}</option>`).join('')}
                         </select>
                     </div>
+                    <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin:0.5rem 0 0.3rem;">${t('stake_label') || 'Einsatz'}</div>
                     <div class="proposal-row">
-                        <input id="tc-coins" type="number" min="0" max="${myCoins}" placeholder="${t('stake_per_person')} Coins (max ${myCoins})"
-                            style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
-                        <input id="tc-stars" type="number" min="0" max="${myStars}" placeholder="${t('stake_per_person')} 🎮 (max ${myStars})"
-                            style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
+                        <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
+                            ${coinSvgIcon()}
+                            <input id="tc-coins" type="number" min="0" max="${myCoins}" placeholder="max ${myCoins}"
+                                style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
+                            ${controllerSvgIcon()}
+                            <input id="tc-stars" type="number" min="0" max="${myStars}" placeholder="max ${myStars}"
+                                style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
+                        </div>
                     </div>
                     <div id="tc-pot-preview" style="font-size:0.85rem;color:var(--accent-gold);margin-top:0.25rem;min-height:1.2rem;"></div>
                     <div id="tc-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;"></div>
@@ -3571,9 +3578,18 @@ function getNowPlus10() {
                             ${state.games.filter(g => g.status === 'approved').sort((a, b) => a.name.localeCompare(b.name)).map(g => `<option value="${g.name}">${g.name}</option>`).join('')}
                         </select>
                     </div>
+                    <div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin:0.5rem 0 0.3rem;">${t('stake_label') || 'Einsatz'}</div>
                     <div class="proposal-row">
-                        <input id="ch-coins" type="number" min="0" max="${myCoins}" placeholder="Coins (max ${myCoins})" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
-                        <input id="ch-stars" type="number" min="0" max="${myStars}" placeholder="Controller-P. (max ${myStars})" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
+                        <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
+                            ${coinSvgIcon()}
+                            <input id="ch-coins" type="number" min="0" max="${myCoins}" placeholder="max ${myCoins}"
+                                style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
+                            ${controllerSvgIcon()}
+                            <input id="ch-stars" type="number" min="0" max="${myStars}" placeholder="max ${myStars}"
+                                style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
+                        </div>
                     </div>
                     <div id="ch-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;margin-bottom:0.25rem;"></div>
                     <button class="btn-propose" id="ch-create">${t('btn_challenge')}</button>
@@ -3764,22 +3780,20 @@ function getNowPlus10() {
                         const minStars = Math.min(...allChecked.map(p => getPlayerStars(p)));
                         if (tcCoinsInput) {
                             tcCoinsInput.max = minCoins;
-                            tcCoinsInput.placeholder = `${t('stake_per_person')} Coins (max ${minCoins})`;
-                            if (parseInt(tcCoinsInput.value) > minCoins) tcCoinsInput.value = minCoins;
+                            tcCoinsInput.placeholder = `max ${minCoins}`;
                         }
                         if (tcStarsInput) {
                             tcStarsInput.max = minStars;
-                            tcStarsInput.placeholder = `${t('stake_per_person')} 🎮 (max ${minStars})`;
-                            if (parseInt(tcStarsInput.value) > minStars) tcStarsInput.value = minStars;
+                            tcStarsInput.placeholder = `max ${minStars}`;
                         }
                     } else {
                         if (tcCoinsInput) {
                             tcCoinsInput.max = myCoins;
-                            tcCoinsInput.placeholder = `${t('stake_per_person')} Coins (max ${myCoins})`;
+                            tcCoinsInput.placeholder = `max ${myCoins}`;
                         }
                         if (tcStarsInput) {
                             tcStarsInput.max = myStars;
-                            tcStarsInput.placeholder = `${t('stake_per_person')} 🎮 (max ${myStars})`;
+                            tcStarsInput.placeholder = `max ${myStars}`;
                         }
                     }
 
