@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-10)
+- feat: defer duel payout to admin approve after vote consensus
+
 ## v.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-09)
 - feat: team challenge payout modal and card labels
 

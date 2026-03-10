@@ -1318,10 +1318,12 @@ app.delete('/api/team-challenges/:id', (req, res) => {
 
 // ---- Duel Voting ----
 
-function _duelPayout(session, winner, db) {
+function _duelPayout(session, winnerOverride, db) {
     if (session.challenge_type === '1v1') {
         const c = db.prepare('SELECT * FROM challenges WHERE id = ?').get(session.challenge_id);
         if (!c) return;
+        const winner = winnerOverride || c.winner;
+        if (!winner) return;
         const loser = winner === c.challenger ? c.opponent : c.challenger;
         const now = Date.now();
         const payout = db.transaction(() => {
@@ -1339,7 +1341,8 @@ function _duelPayout(session, winner, db) {
     } else {
         const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(session.challenge_id);
         if (!tc) return;
-        const winnerTeam = winner;
+        const winnerTeam = winnerOverride || tc.winnerTeam;
+        if (!winnerTeam) return;
         const teamA = JSON.parse(tc.teamA);
         const teamB = JSON.parse(tc.teamB);
         const winners = winnerTeam === 'A' ? teamA : teamB;
@@ -1394,7 +1397,22 @@ app.post('/api/duel-votes/resolve', (req, res) => {
         return res.status(400).json({ error: 'invalid session' });
     }
 
+    if (session.challenge_type === '1v1') {
+        db.prepare(`UPDATE challenges SET winner = ? WHERE id = ?`).run(winner, session.challenge_id);
+    } else {
+        db.prepare(`UPDATE team_challenges SET winnerTeam = ? WHERE id = ?`).run(winner, session.challenge_id);
+    }
     _duelPayout(session, winner, db);
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
+// POST /api/duel-votes/approve
+app.post('/api/duel-votes/approve', (req, res) => {
+    const { sessionId } = req.body;
+    const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(sessionId);
+    if (!session || !session.challenge_id) return res.status(400).json({ error: 'invalid session' });
+    _duelPayout(session, null, db);
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
@@ -1426,7 +1444,13 @@ app.post('/api/duel-votes', (req, res) => {
         const consensus = unique.length === 1;
 
         if (consensus) {
-            _duelPayout(session, unique[0], db);
+            if (session.challenge_type === '1v1') {
+                db.prepare(`UPDATE challenges SET status = 'voted', winner = ? WHERE id = ?`)
+                    .run(unique[0], session.challenge_id);
+            } else {
+                db.prepare(`UPDATE team_challenges SET status = 'voted', winnerTeam = ? WHERE id = ?`)
+                    .run(unique[0], session.challenge_id);
+            }
         } else {
             if (session.challenge_type === '1v1') {
                 db.prepare(`UPDATE challenges SET status = 'conflict' WHERE id = ?`)
