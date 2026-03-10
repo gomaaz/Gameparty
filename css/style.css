@@ -349,7 +349,7 @@ body {
     width: 1.3em;
     height: 1.3em;
     flex-shrink: 0;
-    margin-bottom: -0.1em;
+    margin-bottom: -0.5em;
 }
 .coin-svg-icon {
     width: 1.3rem;
@@ -357,7 +357,7 @@ body {
     flex-shrink: 0;
     display: inline-block;
     vertical-align: middle;
-    margin-bottom: -0.1em;
+    margin-bottom: -0.4em;
 }
 .controller-svg-icon {
     width: 1.3rem;
@@ -365,7 +365,7 @@ body {
     flex-shrink: 0;
     display: inline-block;
     vertical-align: middle;
-    margin-bottom: -0.1em;
+    margin-bottom: -0.4em;
 }
 
 /* ---- Game Suggestion ---- */
