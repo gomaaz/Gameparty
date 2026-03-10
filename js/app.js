@@ -605,7 +605,7 @@ function getNowPlus10() {
                         }
                     } else if (s.status === 'running') {
                         const initialMins0 = s.startedAt ? Math.floor((Date.now() - s.startedAt) / 60000) : 0;
-                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ Duell · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
+                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ ' + t('duel_label') + ' · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
                         if (rate > 0 && s.startedAt) {
                             const initialMinutes = (Date.now() - s.startedAt) / 60000;
                             const initialCoins = Math.ceil(initialMinutes * rate);
@@ -634,6 +634,9 @@ function getNowPlus10() {
                         }
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
+                        }
+                        if (s.challenge_id && (isLeader || isAdmin())) {
+                            actionsHTML += `<button class="btn-danger duel-running-cancel-btn" data-sid="${s.id}" style="font-size:0.8rem;padding:0.3rem 0.7rem">🗑️ ${t('btn_cancel')}</button>`;
                         }
                     } else if (s.status === 'ended' && s.challenge_id) {
                         // Duel session — show voting UI instead of admin approval
@@ -729,7 +732,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
-                                        <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf andere...'}</div>
+                                        <div class="vote-label">${t('duel_vote_waiting_others') || 'Warte auf Abstimmung...'}</div>
                                         ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${optionLabel(opt)}</button>`).join('')}
                                     </div>`;
                             } else {
@@ -900,7 +903,20 @@ function getNowPlus10() {
                 });
             });
 
-            // Admin: Duel-Session abbrechen
+            // GL/Admin: Laufende Duell-Session abbrechen (mit Einsatz-Rückerstattung)
+            container.querySelectorAll('.duel-running-cancel-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm(t('discard_confirm') || 'Duell wirklich abbrechen? Einsätze werden erstattet.')) return;
+                    try {
+                        await api('POST', `/live-sessions/${btn.dataset.sid}/duel-cancel`);
+                        showToast(t('duel_cancelled'), 'success');
+                    } catch (e) {
+                        showToast(e.message || t('save_error'), 'error');
+                    }
+                });
+            });
+
+            // Admin: Duel-Session abbrechen (Abstimmungsphase)
             container.querySelectorAll('.duel-cancel-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     if (!confirm(t('discard_confirm') || 'Session wirklich abbrechen?')) return;

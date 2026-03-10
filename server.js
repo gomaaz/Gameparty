@@ -1750,6 +1750,48 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
     res.json({ success: true });
 });
 
+// POST /api/live-sessions/:id/duel-cancel — Abbrechen mit Rückerstattung der Einsätze
+app.post('/api/live-sessions/:id/duel-cancel', (req, res) => {
+    const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
+    if (!session.challenge_id) return res.status(400).json({ error: 'Keine Duell-Session' });
+
+    const cancel = db.transaction(() => {
+        if (session.challenge_type === '1v1') {
+            const c = db.prepare('SELECT * FROM challenges WHERE id = ?').get(session.challenge_id);
+            if (c) {
+                if (c.stakeCoins > 0) {
+                    db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(c.stakeCoins, c.challenger);
+                    db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(c.stakeCoins, c.opponent);
+                }
+                if (c.stakeStars > 0) {
+                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(c.stakeStars, c.challenger);
+                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(c.stakeStars, c.opponent);
+                }
+                db.prepare("UPDATE challenges SET status = 'cancelled' WHERE id = ?").run(c.id);
+            }
+        } else {
+            const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(session.challenge_id);
+            if (tc) {
+                const teamA = JSON.parse(tc.teamA);
+                const teamB = JSON.parse(tc.teamB);
+                const allPlayers = [...teamA, ...teamB];
+                for (const p of allPlayers) {
+                    if (tc.stakeCoinsPerPerson > 0) db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
+                    if (tc.stakeStarsPerPerson > 0) db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+                }
+                db.prepare("UPDATE team_challenges SET status = 'cancelled' WHERE id = ?").run(tc.id);
+            }
+        }
+        db.prepare('DELETE FROM duel_votes WHERE session_id = ?').run(session.id);
+        db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(session.id);
+        db.prepare('DELETE FROM live_sessions WHERE id = ?').run(session.id);
+    });
+    cancel();
+    broadcast({ type: 'update' });
+    res.json({ success: true });
+});
+
 // DELETE /api/live-sessions/:id
 app.delete('/api/live-sessions/:id', (req, res) => {
     db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(req.params.id);

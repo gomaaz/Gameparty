@@ -269,6 +269,7 @@ const TRANSLATIONS = {
 
         // --- Challenges ---
         challenges_not_logged_in: 'Please log in to see duels.',
+        duel_label: 'Duel',
         new_duel: '⚔️ New Duel',
         select_opponent: 'Select opponent...',
         select_game: 'Select game...',
@@ -283,6 +284,7 @@ const TRANSLATIONS = {
         duel_vote_header: 'Who won?',
         duel_vote_label: 'Cast your vote:',
         duel_vote_waiting: 'Waiting for Gamemaster...',
+        duel_vote_waiting_others: 'Waiting for votes...',
         duel_conflict: 'Vote conflict',
         duel_conflict_waiting: 'Gamemaster is deciding...',
         stake_label: 'Stake',
@@ -301,6 +303,7 @@ const TRANSLATIONS = {
         duel_rejected: 'Duel rejected',
         duel_created: 'Duel against {0} created!',
         duel_payout: 'Pot paid out! {0} wins!',
+        duel_cancelled: 'Duel cancelled, stakes refunded',
         duel_deleted: 'Duel deleted',
         duel_load_error: 'Error loading duels.',
         duel_delete_error: 'Error deleting',
@@ -703,6 +706,7 @@ const TRANSLATIONS = {
 
         // --- Challenges ---
         challenges_not_logged_in: 'Bitte einloggen um Duelle zu sehen.',
+        duel_label: 'Duell',
         new_duel: '⚔️ Neues Duell',
         select_opponent: 'Gegner wählen…',
         select_game: 'Spiel wählen…',
@@ -717,6 +721,7 @@ const TRANSLATIONS = {
         duel_vote_header: 'Wer hat gewonnen?',
         duel_vote_label: 'Stimme ab:',
         duel_vote_waiting: 'Warte auf Gamemaster...',
+        duel_vote_waiting_others: 'Warte auf Abstimmung...',
         duel_conflict: 'Abstimmungskonflikt',
         duel_conflict_waiting: 'Gamemaster entscheidet...',
         stake_label: 'Einsatz',
@@ -735,6 +740,7 @@ const TRANSLATIONS = {
         duel_rejected: 'Duell abgelehnt',
         duel_created: 'Duell gegen {0} erstellt!',
         duel_payout: 'Pott ausgezahlt! {0} gewinnt!',
+        duel_cancelled: 'Duell abgebrochen, Einsätze erstattet',
         duel_deleted: 'Duell gelöscht',
         duel_load_error: 'Fehler beim Laden der Duelle.',
         duel_delete_error: 'Fehler beim Löschen',
