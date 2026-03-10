@@ -3932,9 +3932,9 @@ function getNowPlus10() {
                 });
             }
 
-            if (challengeActiveTab === 'team') {
-                // Live pot preview + stake cap based on selected players
-                function updateTcPotPreview() {
+            // Live pot preview + stake cap based on selected players
+            function updateTcPotPreview() {
+                if (challengeActiveTab !== 'team') return;
                     const checkedA = [...container.querySelectorAll('.tc-team-a-btn.active')].map(btn => btn.dataset.player);
                     const checkedB = [...container.querySelectorAll('.tc-team-b-btn.active')].map(btn => btn.dataset.player);
                     const allChecked = [...new Set([...checkedA, ...checkedB])];
@@ -3994,7 +3994,8 @@ function getNowPlus10() {
                     } else {
                         preview.textContent = '';
                     }
-                }
+            }
+            if (challengeActiveTab === 'team') {
                 // Mutual exclusion: a player cannot be on both teams simultaneously
                 container.querySelectorAll('.tc-team-a-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
