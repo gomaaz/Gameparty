@@ -188,7 +188,7 @@
             spend:     'sounds/Coin_popup_negative.mp3',
             error:     'sounds/Coin_popup_negative.mp3',
             challenge: 'sounds/notify.mp3',
-            buy:       'sounds/buyitem.wav',
+            buy:       'sounds/buyitem.mp3',
         };
         const src = SOUNDS[type];
         if (!src) return;
