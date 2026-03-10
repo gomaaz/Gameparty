@@ -40,10 +40,11 @@
     let sseSource = null;
     let activeTaskTimer = null; // Globaler Timer fuer showTaskModal – verhindert doppelte Timer
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
-    const notifiedChallengeIds = new Set();
+    const notifiedChallengeIds = new Set(JSON.parse(localStorage.getItem('gameparty_notified_challenge_ids') || '[]'));
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
     const dismissedRobIds = new Set(); // Rob-Benachrichtigungen die bereits bestätigt wurden
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
+    const shownNotifToastIds = new Set(JSON.parse(localStorage.getItem('gameparty_shown_notif_toast_ids') || '[]'));
     let notifPanelOpen = false;
     let focusChallengeId = null;
     let challengeActiveTab = '1v1'; // '1v1' | 'team'
@@ -3746,6 +3747,11 @@ function getNowPlus10() {
     }
 
     function showNotifToast(item) {
+        if (item.id && shownNotifToastIds.has(item.id)) return;
+        if (item.id) {
+            shownNotifToastIds.add(item.id);
+            localStorage.setItem('gameparty_shown_notif_toast_ids', JSON.stringify([...shownNotifToastIds]));
+        }
         const container = $('#notif-toast-container');
         if (!container) return;
         const toast = document.createElement('div');
@@ -3792,12 +3798,14 @@ function getNowPlus10() {
         const btnOk  = (cls, attrs) => `<button class="notif-btn notif-btn-ok ${cls}" ${attrs}>✓</button>`;
         const btnNo  = (cls, attrs) => `<button class="notif-btn notif-btn-no ${cls}" ${attrs}>✕</button>`;
 
-        function itemHtml({ id, icon, title, sub, actions, accent, navigate }) {
+        function itemHtml({ id, icon, title, sub, actions, accent, navigate, ts }) {
+            const timeStr = ts ? new Date(ts).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
             return `
                 <div class="notif-item${accent ? ' notif-accent-' + accent : ''}"
                      data-id="${id}"${navigate ? ` data-navigate="${navigate}"` : ''}>
                     <div class="notif-item-icon">${icon}</div>
                     <div class="notif-item-body">
+                        ${timeStr ? `<div class="notif-item-time">${timeStr}</div>` : ''}
                         <div class="notif-item-title">${title}</div>
                         ${sub ? `<div class="notif-item-sub">${sub}</div>` : ''}
                     </div>
@@ -3824,12 +3832,12 @@ function getNowPlus10() {
                 let actions = '';
                 if (isRob)         actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
                 else if (!isReview) actions = btnOk('notif-accept', `data-id="${n.id}"`) + btnNo('notif-reject', `data-id="${n.id}"`);
-                return itemHtml({ id: n.id, icon, title, sub, actions, accent, navigate });
+                return itemHtml({ id: n.id, icon, title, sub, actions, accent, navigate, ts: n.ts });
             }),
             ...incomingActivities.map(a => {
                 const icon    = TASK_ICONS[a.type] || '⚡';
                 const actions = btnOk('notif-task-done', `data-id="${a.id}" data-from="${a.from_player || ''}" data-type="${a.type}"`);
-                return itemHtml({ id: 'activity-' + a.id, icon, title: a.message, sub: a.from_player || '', actions, accent: null, navigate: null });
+                return itemHtml({ id: 'activity-' + a.id, icon, title: a.message, sub: a.from_player || '', actions, accent: null, navigate: null, ts: a.ts });
             })
         ].join('');
 
@@ -4065,6 +4073,7 @@ function getNowPlus10() {
             );
             for (const c of newOnes) {
                 notifiedChallengeIds.add(c.id);
+                localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = [
                     c.stakeCoins > 0 ? `${c.stakeCoins} Coins` : '',
                     c.stakeStars > 0 ? `${c.stakeStars} 🎮` : ''
@@ -4096,6 +4105,7 @@ function getNowPlus10() {
             });
             for (const tc of newTeamOnes) {
                 notifiedChallengeIds.add('tc_' + tc.id);
+                localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} Coins/Person` : t('no_stake');
                 pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true, ts: Date.now() });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
@@ -4206,6 +4216,7 @@ function getNowPlus10() {
 
     function startChallengePoll() {
         stopChallengePoll();
+        pollChallenges(); // sofort laden
         // Fallback-Polling falls SSE abbricht
         challengePollInterval = setInterval(pollChallenges, 10000);
         viewRefreshInterval = setInterval(refreshActiveView, 10000);
@@ -4244,6 +4255,9 @@ function getNowPlus10() {
         stopChallengePoll();
         closeAdminPanel();
         notifiedChallengeIds.clear();
+        localStorage.removeItem('gameparty_notified_challenge_ids');
+        shownNotifToastIds.clear();
+        localStorage.removeItem('gameparty_shown_notif_toast_ids');
         shownPenaltyIds.clear();
         dismissedRobIds.clear();
         pendingNotifications.length = 0;
@@ -4342,6 +4356,9 @@ function getNowPlus10() {
             localStorage.setItem(LOCAL_KEYS.PLAYER, JSON.stringify(state.currentPlayer));
             localStorage.setItem(LOCAL_KEYS.ROLE, JSON.stringify(state.role));
             notifiedChallengeIds.clear();
+            localStorage.removeItem('gameparty_notified_challenge_ids');
+            shownNotifToastIds.clear();
+            localStorage.removeItem('gameparty_shown_notif_toast_ids');
             shownPenaltyIds.clear();
             startChallengePoll();
 

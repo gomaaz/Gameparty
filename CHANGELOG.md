@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-10)
+- fix: persist notif badges and add timestamp to notif items
+
 ## v2.3.122 (2026-03-10)
 - fix: remove duplicate showToast function that was overriding the correct implementation
 

@@ -2699,6 +2699,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .notif-item[data-navigate]:hover { background: var(--bg-card-hover); }
 .notif-item-icon { font-size: 1.2rem; width: 1.6rem; text-align: center; flex-shrink: 0; line-height: 1; }
 .notif-item-body { flex: 1; min-width: 0; }
+.notif-item-time {
+    font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.1rem;
+}
 .notif-item-title {
     font-size: 0.85rem; font-weight: 600; color: var(--text-primary);
     white-space: normal; overflow-wrap: break-word; word-break: break-word;
