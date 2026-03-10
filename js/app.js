@@ -2999,6 +2999,58 @@ function getNowPlus10() {
         shownPenaltyIds.delete(ev.id);
     }
 
+    function showDuelStartModal(data) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+        const isTeam = data.type === 'team';
+        let leftLabel, rightLabel;
+        if (isTeam) {
+            const teamA = Array.isArray(data.teamA) ? data.teamA : JSON.parse(data.teamA || '[]');
+            const teamB = Array.isArray(data.teamB) ? data.teamB : JSON.parse(data.teamB || '[]');
+            leftLabel = teamA.join('<br>');
+            rightLabel = teamB.join('<br>');
+        } else {
+            leftLabel = data.challenger;
+            rightLabel = data.opponent;
+        }
+
+        const potParts = [];
+        if (isTeam) {
+            if (data.stakeCoinsPerPerson > 0) potParts.push(`${data.stakeCoinsPerPerson} ${coinSvgIcon()} / Person`);
+            if (data.stakeStarsPerPerson > 0) potParts.push(`${data.stakeStarsPerPerson} ${controllerSvgIcon()} / Person`);
+        } else {
+            if (data.stakeCoins > 0) potParts.push(`${data.stakeCoins * 2} ${coinSvgIcon()}`);
+            if (data.stakeStars > 0) potParts.push(`${data.stakeStars * 2} ${controllerSvgIcon()}`);
+        }
+        const potStr = potParts.length ? potParts.join(' + ') : '';
+
+        overlay.innerHTML = `
+            <div style="background:var(--bg-card);border:1px solid var(--accent-gold);border-radius:var(--radius);padding:2rem 1.5rem;max-width:380px;width:90%;text-align:center;box-shadow:0 0 40px rgba(255,215,0,0.25);">
+                <div style="font-size:1rem;font-weight:700;color:var(--accent-gold);letter-spacing:0.05em;margin-bottom:0.25rem;">⚔️ Die Herausforderung beginnt!</div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1.2rem;">${data.game}</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1rem;">
+                    <div style="flex:1;text-align:right;font-weight:700;font-size:1rem;color:var(--accent-purple);">${leftLabel}</div>
+                    <div style="font-size:1.4rem;font-weight:900;color:var(--accent-gold);flex-shrink:0;">vs</div>
+                    <div style="flex:1;text-align:left;font-weight:700;font-size:1rem;color:var(--accent-blue);">${rightLabel}</div>
+                </div>
+                ${potStr ? `<div style="font-size:0.85rem;color:var(--accent-gold);margin-bottom:1rem;">Pott: ${potStr}</div>` : ''}
+                <div style="font-size:2rem;font-weight:900;letter-spacing:0.1em;color:var(--accent-green);text-shadow:0 0 20px rgba(0,230,118,0.6);margin-bottom:1.5rem;">Fight!</div>
+                <button class="duel-start-goto-btn" style="background:var(--accent-gold);color:#000;border:none;border-radius:var(--radius-sm);padding:0.6rem 1.5rem;font-weight:700;font-size:0.95rem;cursor:pointer;">zur Session</button>
+            </div>`;
+
+        overlay.querySelector('.duel-start-goto-btn').addEventListener('click', () => {
+            overlay.remove();
+            // Navigate to dashboard (home tab)
+            const homeTab = document.querySelector('[data-tab="home"]') || document.querySelector('.nav-tab');
+            if (homeTab) homeTab.click();
+        });
+
+        document.body.appendChild(overlay);
+        if (getNotifPref('sound')) playSound('challenge');
+    }
+
     function showDuelPayoutModal(data) {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
@@ -4331,6 +4383,14 @@ function getNowPlus10() {
                         if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
+                }
+                if (ev.type === 'duel_start') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        showDuelStartModal(data);
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
                 }
                 if (ev.type === 'duel_conflict') {
                     // Kein Modal — Admin-Auflösung läuft über die Session-Karte

@@ -1002,6 +1002,11 @@ app.put('/api/challenges/:id/accept', (req, res) => {
         console.error('Duel session creation failed:', e);
     }
 
+    // Notify both players that the duel has started
+    const duelStartPayload = JSON.stringify({ game: c.game, challenger: c.challenger, opponent: c.opponent, stakeCoins: c.stakeCoins, stakeStars: c.stakeStars, sessionId: sid, type: '1v1' });
+    const duelStartNow = Date.now();
+    db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(c.challenger, 'duel_start', '', duelStartPayload, duelStartNow, 'active');
+    db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(c.opponent, 'duel_start', '', duelStartPayload, duelStartNow, 'active');
     broadcast({ type: 'update' });
     res.json({ success: true, sessionId: sid });
 });
@@ -1174,6 +1179,12 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
             }
         });
         finalizeAccept();
+        // Notify all participants that the duel has started
+        const tcStartPayload = JSON.stringify({ game: tc.game, teamA, teamB, createdBy: tc.createdBy, stakeCoinsPerPerson: tc.stakeCoinsPerPerson, stakeStarsPerPerson: tc.stakeStarsPerPerson, sessionId: sid, type: 'team' });
+        const tcStartNow = Date.now();
+        for (const p of allPlayers) {
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'duel_start', '', tcStartPayload, tcStartNow, 'active');
+        }
         broadcast({ type: 'update' });
         res.json({ success: true, allAccepted: true, sessionId: sid });
     } else {
