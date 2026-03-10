@@ -4004,7 +4004,7 @@ function getNowPlus10() {
                         const winnerLabel = data.winnerTeam === 'A' ? t('team_a_wins') : t('team_b_wins');
                         const notifId = 'tcw_' + data.tcId;
                         if (!pendingNotifications.find(n => n.id === notifId)) {
-                            pendingNotifications.push({ id: notifId, game: data.game, stakeStr: winnerLabel, isTeam: true, type: 'review', title: t('notif_tc_winner_review'), tcId: data.tcId, ts: Date.now() });
+                            pendingNotifications.push({ id: notifId, game: data.game, stakeStr: winnerLabel, isTeam: true, type: 'review', title: t('notif_tc_winner_review'), tcId: data.tcId, ts: ev.createdAt });
                             showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                             updateBadge();
                         }
@@ -4018,7 +4018,7 @@ function getNowPlus10() {
                         const data = JSON.parse(ev.message);
                         const notifId = 'rob_' + ev.id;
                         if (!dismissedRobIds.has(notifId) && !pendingNotifications.find(n => n.id === notifId)) {
-                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, data.stolen), ts: Date.now() });
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, data.stolen), ts: ev.createdAt });
                             showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                             updateBadge();
                             if (getNotifPref('sound')) playSound('error');
@@ -4032,7 +4032,7 @@ function getNowPlus10() {
                         const notifId = 'rob_' + ev.id;
                         if (!dismissedRobIds.has(notifId) && !pendingNotifications.find(n => n.id === notifId)) {
                             const title = data.success ? t('rob_controller_victim_success', data.thief) : t('rob_controller_victim_fail', data.thief);
-                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title, ts: Date.now() });
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title, ts: ev.createdAt });
                             showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                             updateBadge();
                             if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
@@ -4078,7 +4078,7 @@ function getNowPlus10() {
                     c.stakeCoins > 0 ? `${c.stakeCoins} Coins` : '',
                     c.stakeStars > 0 ? `${c.stakeStars} 🎮` : ''
                 ].filter(Boolean).join(' + ') || 'Kein Einsatz';
-                pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: Date.now() });
+                pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: c.createdAt });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                 updateBadge();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
@@ -4107,7 +4107,7 @@ function getNowPlus10() {
                 notifiedChallengeIds.add('tc_' + tc.id);
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} Coins/Person` : t('no_stake');
-                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true, ts: Date.now() });
+                pendingNotifications.push({ id: 'tc_' + tc.id, challenger: tc.createdBy, game: tc.game, stakeStr, isTeam: true, ts: tc.createdAt });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                 updateBadge();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
