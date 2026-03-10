@@ -41,6 +41,8 @@
     let sseSource = null;
     let activeTaskTimer = null; // Globaler Timer fuer showTaskModal – verhindert doppelte Timer
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
+    let cooldownTickInterval = null;
+    const COOLDOWN_MS = { rob_controller: 5 * 60 * 1000 };
     const notifiedChallengeIds = new Set(JSON.parse(localStorage.getItem('gameparty_notified_challenge_ids') || '[]'));
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
     const shownDuelStartSessions = new Set(); // Duel-Start Modals die bereits gezeigt wurden
@@ -193,6 +195,47 @@
         const src = SOUNDS[type];
         if (!src) return;
         try { new Audio(src).play().catch(() => {}); } catch (e) {}
+    }
+
+    // ---- Cooldown ----
+    function getCooldownRemaining(itemId) {
+        if (!state.currentPlayer || !COOLDOWN_MS[itemId]) return 0;
+        const stored = parseInt(localStorage.getItem(`gameparty_cd_${itemId}_${state.currentPlayer}`) || '0');
+        if (!stored) return 0;
+        return Math.max(0, COOLDOWN_MS[itemId] - (Date.now() - stored));
+    }
+
+    function startItemCooldown(itemId) {
+        if (!state.currentPlayer || !COOLDOWN_MS[itemId]) return;
+        localStorage.setItem(`gameparty_cd_${itemId}_${state.currentPlayer}`, String(Date.now()));
+    }
+
+    function startCooldownTick() {
+        if (cooldownTickInterval) clearInterval(cooldownTickInterval);
+        cooldownTickInterval = setInterval(() => {
+            let anyActive = false;
+            for (const [itemId, totalMs] of Object.entries(COOLDOWN_MS)) {
+                const rem = getCooldownRemaining(itemId);
+                if (rem <= 0) {
+                    const view = $('#view-shop');
+                    if (view && view.offsetParent !== null) renderShop();
+                    continue;
+                }
+                anyActive = true;
+                const timerEl = document.querySelector(`[data-cd-item="${itemId}"]`);
+                if (timerEl) {
+                    const m = Math.floor(rem / 60000);
+                    const s = String(Math.ceil((rem % 60000) / 1000)).padStart(2, '0');
+                    timerEl.textContent = `⏳ ${m}:${s}`;
+                }
+                const itemEl = document.querySelector(`.shop-item[data-item-id="${itemId}"]`);
+                if (itemEl) {
+                    const pct = Math.round(((totalMs - rem) / totalMs) * 100);
+                    itemEl.style.background = `linear-gradient(to right, rgba(140,100,255,0.18) ${pct}%, var(--bg-input) ${pct}%)`;
+                }
+            }
+            if (!anyActive) { clearInterval(cooldownTickInterval); cooldownTickInterval = null; }
+        }, 1000);
     }
 
     // ---- UI Helpers ----
@@ -2764,19 +2807,32 @@ function getNowPlus10() {
                     <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${fmt(coins)} Coins</div>
                 </div>
                 <div class="shop-grid">
-                    ${CONFIG.SHOP_ITEMS.map(item => `
-                        <div class="shop-item ${item.id === 'buy_star' ? 'star-item' : ''}${item.isPenalty ? ' penalty-item' : ''}">
+                    ${CONFIG.SHOP_ITEMS.map(item => {
+                        const cdRem = getCooldownRemaining(item.id);
+                        const onCooldown = cdRem > 0;
+                        const totalMs = COOLDOWN_MS[item.id] || 1;
+                        const cdPct = onCooldown ? Math.round(((totalMs - cdRem) / totalMs) * 100) : 0;
+                        const cdM = Math.floor(cdRem / 60000);
+                        const cdS = String(Math.ceil((cdRem % 60000) / 1000)).padStart(2, '0');
+                        const bgStyle = onCooldown
+                            ? `style="background:linear-gradient(to right,rgba(140,100,255,0.18) ${cdPct}%,var(--bg-input) ${cdPct}%)"`
+                            : '';
+                        return `
+                        <div class="shop-item ${item.id === 'buy_star' ? 'star-item' : ''}${item.isPenalty ? ' penalty-item' : ''}" ${bgStyle} data-item-id="${item.id}">
                             <div class="shop-icon">${item.icon}</div>
                             <div class="shop-info">
                                 <div class="shop-name">${t('item_' + item.id + '_name')}${item.isPenalty ? `<span class="penalty-badge">${t('penalty_badge')}</span>` : ''}</div>
                                 <div class="shop-desc">${t('item_' + item.id + '_desc', CONFIG.STAR_PRICE)}${item.isPenalty ? ` • ${t('penalty_timer')}` : ''}</div>
                             </div>
-                            <button class="shop-buy-btn" data-item="${item.id}" data-cost="${item.cost}"
-                                ${coins < item.cost ? 'disabled' : ''}>
-                                ${fmt(item.cost)} Coins
-                            </button>
-                        </div>
-                    `).join('')}
+                            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem">
+                                <button class="shop-buy-btn${onCooldown ? ' on-cooldown' : ''}" data-item="${item.id}" data-cost="${item.cost}"
+                                    ${(coins < item.cost || onCooldown) ? 'disabled' : ''}>
+                                    ${fmt(item.cost)} Coins
+                                </button>
+                                ${onCooldown ? `<span class="shop-cooldown-timer" data-cd-item="${item.id}">⏳ ${cdM}:${cdS}</span>` : ''}
+                            </div>
+                        </div>`;
+                    }).join('')}
                 </div>
             `;
 
@@ -2788,6 +2844,7 @@ function getNowPlus10() {
                 });
             });
 
+            if (CONFIG.SHOP_ITEMS.some(i => getCooldownRemaining(i.id) > 0)) startCooldownTick();
             updateHeaderCoins();
         } catch (e) {
             console.error('Shop error:', e);
@@ -2910,6 +2967,7 @@ function getNowPlus10() {
                 const target = btn.dataset.target;
                 overlay.classList.remove('show');
                 playSound('buy');
+                if (isController) startItemCooldown('rob_controller');
                 try {
                     if (isController) {
                         const result = await api('POST', '/shop/rob-controller', { thief: state.currentPlayer, target, cost });

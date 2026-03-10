@@ -1099,6 +1099,19 @@ body {
     box-shadow: none;
 }
 
+.shop-buy-btn.on-cooldown:disabled {
+    opacity: 0.4;
+    background: linear-gradient(135deg, #3a3a5a, #2a2a44);
+    color: var(--text-secondary);
+}
+
+.shop-cooldown-timer {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 /* ---- Player Selection Modal ---- */
 .modal-overlay {
     position: fixed;
