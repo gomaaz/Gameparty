@@ -583,7 +583,13 @@ function getNowPlus10() {
 
             // Geplante Sessions (pending + approved) und aktive Proposals (active)
             const activeProposals = allProposals.filter(p => p.status === 'active');
-            const plannedProposals = allProposals.filter(p => ['pending', 'approved'].includes(p.status) || (p.status === 'completed' && !p.coinsApproved));
+            const plannedProposals = allProposals
+                .filter(p => ['pending', 'approved'].includes(p.status) || (p.status === 'completed' && !p.coinsApproved))
+                .sort((a, b) => {
+                    const ka = (a.scheduledDay || '9999-99-99') + 'T' + (a.scheduledTime || '99:99');
+                    const kb = (b.scheduledDay || '9999-99-99') + 'T' + (b.scheduledTime || '99:99');
+                    return ka.localeCompare(kb);
+                });
             const plannedSessionsHTML = plannedProposals.map(renderProposalCard).join('') ||
                 `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_planned_sessions')}</div>`;
 
