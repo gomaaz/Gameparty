@@ -867,7 +867,7 @@ function getNowPlus10() {
                             await api('PUT', `/live-sessions/${sid}/end`);
                         } else if (action === 'approve') {
                             const coinsPerPlayer = parseInt(btn.dataset.coins || 0);
-                            await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer });
+                            await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer, player: state.currentPlayer });
                         } else if (action === 'cancel') {
                             if (confirm(t('confirm_cancel_room'))) {
                                 await api('DELETE', `/live-sessions/${sid}`);
@@ -916,7 +916,7 @@ function getNowPlus10() {
                     const sid = btn.dataset.sid;
                     if (!sid) return;
                     try {
-                        await api('POST', '/duel-votes/approve', { sessionId: sid });
+                        await api('POST', '/duel-votes/approve', { sessionId: sid, player: state.currentPlayer });
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
                     }
@@ -957,7 +957,7 @@ function getNowPlus10() {
                     if (!sid) return;
                     try {
                         const coinsPerPlayer = parseInt(btn.dataset.coins || 0);
-                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer });
+                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer, player: state.currentPlayer });
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
                     }
@@ -1769,7 +1769,7 @@ function getNowPlus10() {
                     const proposal = proposals.find(x => x.id === btn.dataset.id);
                     if (!proposal || proposal.coinsApproved) return;
                     const coinsPerPlayer = proposal.pendingCoins || 0;
-                    await api('POST', `/proposals/${btn.dataset.id}/approve`, { coins: coinsPerPlayer });
+                    await api('POST', `/proposals/${btn.dataset.id}/approve`, { coins: coinsPerPlayer, approvedBy: state.currentPlayer });
                     showCoinAnimation(coinsPerPlayer);
                     showToast(t('coins_released', coinsPerPlayer, proposal.players.length), 'success');
                     renderDashboard();
@@ -2300,7 +2300,7 @@ function getNowPlus10() {
                     const coinsInput = container.querySelector(`.freigabe-coins-input[data-sid="${sid}"]`);
                     const coinsPerPlayer = parseInt(coinsInput?.value ?? 0);
                     try {
-                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer });
+                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer, player: state.currentPlayer });
                         showCoinAnimation(coinsPerPlayer);
                         showToast(t('session_approved', coinsPerPlayer), 'success');
                         renderSession();
@@ -2550,7 +2550,7 @@ function getNowPlus10() {
                     const coinsInput = panel.querySelector(`.freigabe-coins-input[data-sid="${sid}"]`);
                     const coins = parseInt(coinsInput.value) || 0;
                     try {
-                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer: coins });
+                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer: coins, player: state.currentPlayer });
                         showToast('Session freigegeben', 'success');
                         renderAdminPanel();
                     } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
@@ -2559,7 +2559,7 @@ function getNowPlus10() {
                     const coinsInput = panel.querySelector(`.freigabe-coins-input[data-pid="${pid}"]`);
                     const coins = parseInt(coinsInput.value) || 0;
                     try {
-                        await api('POST', `/proposals/${pid}/approve`, { coins });
+                        await api('POST', `/proposals/${pid}/approve`, { coins, approvedBy: state.currentPlayer });
                         showToast('Geplante Session freigegeben', 'success');
                         renderAdminPanel();
                     } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }

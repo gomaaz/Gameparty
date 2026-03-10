@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1.1 (2026-03-10)
+- feat: pass currentPlayer to all approve API calls
+
 ## v2.3.128 (2026-03-10)
 - fix: "Duel" → "Duell" in session card badge (German spelling)
 - fix: "Pot" → "Pott" everywhere in German UI (badges, labels, i18n key)

@@ -608,8 +608,11 @@ app.get('/api/stars', (req, res) => {
 
 // POST /api/stars/add
 app.post('/api/stars/add', (req, res) => {
-    const { player, amount } = req.body;
+    const { player, amount, requestedBy } = req.body;
     if (!player || !amount) return res.status(400).json({ error: 'player und amount erforderlich' });
+    const _requester2 = requestedBy || player;
+    const _isAdmin2 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(_requester2);
+    if (!_isAdmin2) return res.status(403).json({ error: 'Nur Admins können Controller-Punkte vergeben' });
     db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, amount, amount);
     const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(player);
     res.json({ newStars: row ? row.amount : 0 });
@@ -736,7 +739,9 @@ app.post('/api/proposals/:id/leave', (req, res) => {
 
 // POST /api/proposals/:id/approve — Coins auszahlen und Proposal abschliessen
 app.post('/api/proposals/:id/approve', (req, res) => {
-    const { coins } = req.body;
+    const { coins, approvedBy } = req.body;
+    const _isAdmin5 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(approvedBy);
+    if (!_isAdmin5) return res.status(403).json({ error: 'Nur Admins können freigeben' });
     const coinsPerPlayer = parseInt(coins) || 0;
     const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id);
     if (!proposal) return res.status(404).json({ error: 'Proposal nicht gefunden' });
@@ -983,23 +988,23 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     const opponentBusy = getActiveSessionForPlayer(c.opponent);
     if (opponentBusy) return res.status(400).json({ error: `${c.opponent} ist bereits in einer laufenden Session: ${opponentBusy}` });
 
-    // Deduct stake from both players immediately
-    if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.challenger);
-    if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.challenger);
-    if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.opponent);
-    if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.opponent);
-
-    db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
-
-    // Direkt eine laufende Duell-Session fuer beide Spieler erstellen
     const sid = 'ls_duel_' + Date.now();
     const now = Date.now();
-    try {
+    const _acceptTx6 = db.transaction(() => {
+        if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.challenger);
+        if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.challenger);
+        if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.opponent);
+        if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.opponent);
+        db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
         db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, '1v1')").run(sid, c.game, c.challenger, now, c.id);
         db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.challenger, now);
         db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.opponent, now);
+    });
+    try {
+        _acceptTx6();
     } catch (e) {
         console.error('Duel session creation failed:', e);
+        return res.status(500).json({ error: 'Session konnte nicht erstellt werden' });
     }
 
     // Notify both players that the duel has started
@@ -1447,6 +1452,8 @@ app.get('/api/duel-votes/:sessionId', (req, res) => {
 // POST /api/duel-votes/resolve  (must come BEFORE /api/duel-votes with param to avoid route conflict)
 app.post('/api/duel-votes/resolve', (req, res) => {
     const { sessionId, winner, admin } = req.body;
+    const _isAdmin3 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(admin);
+    if (!_isAdmin3) return res.status(403).json({ error: 'Nur Admins können auflösen' });
 
     const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(sessionId);
     if (!session || !session.challenge_id) {
@@ -1482,6 +1489,8 @@ app.post('/api/duel-votes', (req, res) => {
         return res.status(400).json({ error: 'invalid session' });
     }
 
+    const _playerInSession4 = db.prepare('SELECT 1 FROM live_session_players WHERE session_id = ? AND player = ?').get(sessionId, player);
+    if (!_playerInSession4) return res.status(403).json({ error: 'Nicht Teilnehmer dieser Session' });
     db.prepare(`INSERT OR REPLACE INTO duel_votes (session_id, player, voted_for, created_at)
                 VALUES (?, ?, ?, ?)`).run(sessionId, player, votedFor, Date.now());
 
@@ -1732,9 +1741,13 @@ app.put('/api/live-sessions/:id/end', (req, res) => {
 
 // POST /api/live-sessions/:id/approve
 app.post('/api/live-sessions/:id/approve', (req, res) => {
-    const { coinsPerPlayer } = req.body;
+    const { coinsPerPlayer: bodyCoins, player } = req.body;
     const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(req.params.id);
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
+    const _isAdmin1 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(player);
+    const _isLeader1 = session.leader === player;
+    if (!_isAdmin1 && !_isLeader1) return res.status(403).json({ error: 'Nicht berechtigt' });
+    const coinsPerPlayer = session.pending_coins > 0 ? session.pending_coins : Math.max(0, parseInt(bodyCoins) || 0);
     const players = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id).map(r => r.player);
     const now = Date.now();
     const approve = db.transaction(() => {
