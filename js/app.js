@@ -3659,7 +3659,7 @@ function getNowPlus10() {
                 return `
                     <div class="proposal-card${highlightClass}" data-id="${c.id}">
                         <div class="proposal-card-header">
-                            <span><span style="${challengerStyle}">${c.challenger}</span> ⚔️ <span style="${opponentStyle}">${c.opponent}</span></span>
+                            <span><span class="session-leader-badge">GL</span><span style="${challengerStyle}">${c.challenger}</span> ⚔️ <span style="${opponentStyle}">${c.opponent}</span></span>
                             <span class="status-badge ${c.status}">${statusLabels[c.status] || c.status}</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;">
