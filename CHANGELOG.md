@@ -1,5 +1,8 @@
 # Changelog
 
+## v.1.1 (2026-03-10)
+- feat: duel badge, pot display, payout modal, coin icon in cards
+
 ## v.1 (2026-03-10)
 - feat: send player_events on duel and team payout
 

@@ -534,7 +534,7 @@ function getNowPlus10() {
                     const rate = getPlayerRate(playerCount);
 
                     if (s.status === 'lobby') {
-                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${t('session_lobby')}</span>`;
+                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${s.challenge_id ? '⚔️ Duel · ' : ''}${t('session_lobby')}</span>`;
                         if (rate > 0) {
                             coinInfoHTML = `<div class="session-coin-rate">${rate} ${coinSvgIcon()} / min</div>`;
                         }
@@ -549,7 +549,7 @@ function getNowPlus10() {
                         }
                     } else if (s.status === 'running') {
                         const initialMins0 = s.startedAt ? Math.floor((Date.now() - s.startedAt) / 60000) : 0;
-                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
+                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ Duel · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
                         if (rate > 0 && s.startedAt) {
                             const initialMinutes = (Date.now() - s.startedAt) / 60000;
                             const initialCoins = Math.ceil(initialMinutes * rate);
@@ -560,6 +560,21 @@ function getNowPlus10() {
         <div class="live-session-meta"><span class="datetime-label">Startzeit:</span> ${startTimeStr}</div>
         <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()}</span>
     </div>`;
+                        }
+                        if (s.challenge_id) {
+                            const chRun = challengeMap[s.challenge_id];
+                            let potRunStr = '';
+                            if (s.challenge_type === '1v1') {
+                                if (chRun?.stakeCoins > 0) potRunStr += `${chRun.stakeCoins * 2} ${coinSvgIcon()}`;
+                                if (chRun?.stakeStars > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStars * 2} ⭐`;
+                            } else {
+                                const tp = s.players?.length || 0;
+                                if (chRun?.stakeCoinsPerPerson > 0) potRunStr += `${chRun.stakeCoinsPerPerson * tp} ${coinSvgIcon()}`;
+                                if (chRun?.stakeStarsPerPerson > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStarsPerPerson * tp} ⭐`;
+                            }
+                            if (potRunStr) {
+                                coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">Pot: ${potRunStr}</div>`;
+                            }
                         }
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
@@ -2924,6 +2939,54 @@ function getNowPlus10() {
         shownPenaltyIds.delete(ev.id);
     }
 
+    function showDuelPayoutModal(data) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        const isWinner = data.isWinner;
+        const opponent = isWinner ? data.loser : data.winner;
+
+        const stakeCoins = data.stakeCoins || 0;
+        const stakeStars = data.stakeStars || 0;
+        const wonCoins = stakeCoins * 2;
+        const wonStars = stakeStars * 2;
+
+        const resultParts = [];
+        if (isWinner) {
+            if (wonCoins > 0) resultParts.push(`+${wonCoins} Coins`);
+            if (wonStars > 0) resultParts.push(`+${wonStars} ⭐`);
+        } else {
+            if (stakeCoins > 0) resultParts.push(`-${stakeCoins} Coins`);
+            if (stakeStars > 0) resultParts.push(`-${stakeStars} ⭐`);
+        }
+        const resultStr = resultParts.join(' + ') || '–';
+
+        modal.innerHTML = `
+            <div class="modal-title" style="color:${isWinner ? 'var(--accent-green, #00e676)' : 'var(--danger)'};">
+                ${isWinner ? t('duel_payout_title_won') : t('duel_payout_title_lost')}
+            </div>
+            <div style="text-align:center;font-size:1.1rem;font-weight:700;margin:0.75rem 0;color:${isWinner ? 'var(--accent-green)' : 'var(--danger)'};">
+                ${resultStr}
+            </div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.5rem;">
+                🎮 ${data.game}
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);">
+                ${isWinner ? data.winner : data.loser} ${t('duel_payout_vs')} ${opponent}
+            </div>
+            <button class="btn-propose" id="duel-payout-close" style="margin-top:1.25rem;">OK</button>
+        `;
+        overlay.classList.add('show');
+        const closeBtn = $('#duel-payout-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.classList.remove('show');
+                if (isWinner) {
+                    if (wonCoins > 0) showCoinAnimation(wonCoins);
+                }
+            });
+        }
+    }
+
     function showTcPayoutModal(data) {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
@@ -3244,8 +3307,8 @@ function getNowPlus10() {
                 const isOpponent = c.opponent === state.currentPlayer;
                 const admin = isAdmin();
                 const pot = [];
-                if (c.stakeCoins > 0) pot.push(`${c.stakeCoins * 2} Coins`);
-                if (c.stakeStars > 0) pot.push(`${c.stakeStars * 2} 🎮`);
+                if (c.stakeCoins > 0) pot.push(`${c.stakeCoins * 2} ${coinSvgIcon()}`);
+                if (c.stakeStars > 0) pot.push(`${c.stakeStars * 2} ⭐`);
                 const potStr = pot.length ? pot.join(' + ') : t('no_stake');
 
                 let actionsHTML = '';
@@ -3277,8 +3340,10 @@ function getNowPlus10() {
                             <span><span style="${challengerStyle}">${c.challenger}</span> ⚔️ <span style="${opponentStyle}">${c.opponent}</span></span>
                             <span class="status-badge ${c.status}">${statusLabels[c.status] || c.status}</span>
                         </div>
-                        <div class="game-meta">${c.game}</div>
-                        <div class="game-meta">${t('pot', potStr)}</div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div class="game-meta">${c.game}</div>
+                            <div class="vote-pot-display" style="margin:0">Pot: ${potStr}</div>
+                        </div>
                         ${winnerInfo}
                         ${actionsHTML}
                     </div>`;
@@ -4037,6 +4102,15 @@ function getNowPlus10() {
         try {
             const events = await api('GET', `/player-events/${encodeURIComponent(state.currentPlayer)}`);
             for (const ev of events) {
+                if (ev.type === 'duel_payout') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        showDuelPayoutModal(data);
+                        if (getNotifPref('sound')) playSound(data.isWinner ? 'coin' : 'error');
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
                 if (ev.type === 'tc_payout') {
                     try {
                         const data = JSON.parse(ev.message);
