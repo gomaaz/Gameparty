@@ -2111,13 +2111,14 @@ function getNowPlus10() {
             soundNotifBtn.addEventListener('click', () => {
                 const current = getNotifPref('sound');
                 setNotifPref('sound', !current);
-                if (!current) playSound('challenge'); // Vorschau
+                if (!current) playSound('buy'); // Vorschau
                 renderProfile();
             });
 
             const testBtn = container.querySelector('#notif-test-btn');
             if (testBtn) {
                 testBtn.addEventListener('click', () => {
+                    playSound('buy');
                     new Notification(t('notif_test_title'), {
                         body: t('notif_test_body', player)
                     });
@@ -2802,12 +2803,12 @@ function getNowPlus10() {
         if (!item) return;
 
         if (itemId === 'buy_star') {
+            playSound('buy');
             try {
                 const result = await api('POST', '/shop/buy-star', { player, cost });
                 state.coins[player] = (state.coins[player] || 0) - cost;
                 state.stars[player] = result.newStars;
                 showToast(t('star_bought', fmt(state.stars[player])), 'success');
-                playSound('buy');
                 updateHeader();
                 renderShop();
             } catch (e) { showToast(t('not_enough_coins'), 'error'); playSound('error'); }
@@ -2824,11 +2825,11 @@ function getNowPlus10() {
             showRobModal('rob_controller', cost);
         } else {
             showConfirm(t('buy_item_confirm', item.name, cost), async () => {
+                playSound('buy');
                 try {
                     await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${item.name}` });
                     await api('POST', '/tokens', { player, type: itemId });
                     showToast(t('item_bought', item.name), 'gold');
-                    playSound('buy');
                     renderShop();
                 } catch (e) {
                     showToast(t('not_enough_coins'), 'error');
@@ -2861,6 +2862,7 @@ function getNowPlus10() {
             btn.addEventListener('click', async () => {
                 const target = btn.dataset.target;
                 overlay.classList.remove('show');
+                playSound('buy');
                 try {
                     await api('POST', '/coins/spend', { player: state.currentPlayer, amount: cost, reason: `Shop: ${item.name} (Ziel: ${target})` });
                     await api('POST', '/tokens', { player: state.currentPlayer, type: itemId });
@@ -2872,7 +2874,6 @@ function getNowPlus10() {
                         target, type: itemId, from_player: state.currentPlayer, message: msg,
                         ...(deadline ? { deadline } : {})
                     });
-                    playSound('buy');
                     renderShop();
                 } catch (e) {
                     showToast('Nicht genug Coins!', 'error');
@@ -2909,10 +2910,10 @@ function getNowPlus10() {
             btn.addEventListener('click', async () => {
                 const target = btn.dataset.target;
                 overlay.classList.remove('show');
+                playSound('buy');
                 try {
                     if (isController) {
                         const result = await api('POST', '/shop/rob-controller', { thief: state.currentPlayer, target, cost });
-                        playSound('buy');
                         if (result.success) {
                             showToast(t('rob_controller_success', target), 'gold');
                             await api('POST', '/player-events', {
@@ -2928,7 +2929,6 @@ function getNowPlus10() {
                         }
                     } else {
                         const result = await api('POST', '/shop/rob-coins', { thief: state.currentPlayer, target, cost });
-                        playSound('buy');
                         if (result.stolen > 0) {
                             showToast(t('rob_coins_success', fmt(result.stolen), target), 'gold');
                             await api('POST', '/player-events', {
