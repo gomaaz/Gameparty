@@ -647,17 +647,17 @@ function getNowPlus10() {
                         }
                         if (s.challenge_id) {
                             const chRun = challengeMap[s.challenge_id];
-                            let potRunStr = '';
                             if (s.challenge_type === '1v1') {
+                                let potRunStr = '';
                                 if (chRun?.stakeCoins > 0) potRunStr += `${fmt(chRun.stakeCoins * 2)} ${coinSvgIcon()}`;
                                 if (chRun?.stakeStars > 0) potRunStr += (potRunStr ? ' + ' : '') + `${fmt(chRun.stakeStars * 2)} ${controllerSvgIcon()}`;
+                                if (potRunStr) coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">${t('pot_label')} ${potRunStr}</div>`;
                             } else {
                                 const tp = s.players?.length || 0;
-                                if (chRun?.stakeCoinsPerPerson > 0) potRunStr += `${fmt(chRun.stakeCoinsPerPerson * tp)} ${coinSvgIcon()}`;
-                                if (chRun?.stakeStarsPerPerson > 0) potRunStr += (potRunStr ? ' + ' : '') + `${fmt(chRun.stakeStarsPerPerson * tp)} ${controllerSvgIcon()}`;
-                            }
-                            if (potRunStr) {
-                                coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">${t('pot_label')} ${potRunStr}</div>`;
+                                const potLines = [];
+                                if (chRun?.stakeCoinsPerPerson > 0) potLines.push(`${coinSvgIcon()} ${fmt(chRun.stakeCoinsPerPerson)} Coins/Person · Gesamtpott: ${fmt(chRun.stakeCoinsPerPerson * tp)} Coins`);
+                                if (chRun?.stakeStarsPerPerson > 0) potLines.push(`${controllerSvgIcon()} ${fmt(chRun.stakeStarsPerPerson)} Controller/Person · Gesamtpott: ${fmt(chRun.stakeStarsPerPerson * tp)} Controller`);
+                                if (potLines.length) coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem;line-height:1.6">${potLines.join('<br>')}</div>`;
                             }
                         }
                         if (isLeader || isAdmin()) {
@@ -669,14 +669,19 @@ function getNowPlus10() {
                                 if (s.challenge_type !== '1v1') {
                                     const tA = Array.isArray(chRun2.teamA) ? chRun2.teamA : JSON.parse(chRun2.teamA || '[]');
                                     const tB = Array.isArray(chRun2.teamB) ? chRun2.teamB : JSON.parse(chRun2.teamB || '[]');
-                                    playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0;flex-wrap:wrap">
-                                        <div style="text-align:right;color:var(--accent-purple);font-weight:600;font-size:0.9rem">${tA.join('<br>')}</div>
-                                        <div style="color:var(--accent-gold);font-weight:900;font-size:1.1rem">vs</div>
-                                        <div style="text-align:left;color:var(--accent-blue);font-weight:600;font-size:0.9rem">${tB.join('<br>')}</div>
+                                    const glName = chRun2.createdBy;
+                                    const sortGL = arr => [...arr].sort((a, b) => a === glName ? -1 : b === glName ? 1 : 0);
+                                    const renderTName = name => name === glName ? `<span class="session-leader-badge">GL</span>${name}` : name;
+                                    const tANames = sortGL(tA).map(renderTName).join(', ');
+                                    const tBNames = sortGL(tB).map(renderTName).join(', ');
+                                    playersHTML = `<div style="font-size:0.9rem;font-weight:600;text-align:center;margin:0.3rem 0;line-height:1.8">
+                                        <div style="color:var(--accent-purple)">${t('team_a')}: ${tANames}</div>
+                                        <div style="color:var(--accent-gold);font-size:0.85rem;font-weight:900">vs</div>
+                                        <div style="color:var(--accent-blue)">${t('team_b')}: ${tBNames}</div>
                                     </div>`;
                                 } else {
                                     playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0">
-                                        <span style="color:var(--accent-purple);font-weight:600;font-size:0.9rem">${chRun2.challenger}</span>
+                                        <span style="color:var(--accent-purple);font-weight:600;font-size:0.9rem"><span class="session-leader-badge">GL</span>${chRun2.challenger}</span>
                                         <span style="color:var(--accent-gold);font-weight:900;font-size:1.1rem">vs</span>
                                         <span style="color:var(--accent-blue);font-weight:600;font-size:0.9rem">${chRun2.opponent}</span>
                                     </div>`;
