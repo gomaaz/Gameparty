@@ -2558,6 +2558,14 @@ function getNowPlus10() {
                 </div>
 
                 <div class="card">
+                    <div class="card-title">💬 ${t('login_message_label')}</div>
+                    <div class="admin-coins-form">
+                        <textarea id="ap-login-message" rows="2" placeholder="${t('placeholder_login_message')}" style="resize:vertical;font-family:inherit;font-size:0.9rem;padding:0.6rem 0.75rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);width:100%;box-sizing:border-box">${settingsData?.login_message || ''}</textarea>
+                        <button class="btn-admin-coins" id="ap-btn-login-message">${t('btn_save')}</button>
+                    </div>
+                </div>
+
+                <div class="card">
                     <div class="card-title">⚙️ ${t('session_coins_title')}</div>
                     <div style="display:flex;flex-direction:column;gap:0.5rem">
                         <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
@@ -2638,6 +2646,15 @@ function getNowPlus10() {
             });
         }
         bindMultiplierInputs();
+
+        panel.querySelector('#ap-btn-login-message')?.addEventListener('click', async () => {
+            const val = panel.querySelector('#ap-login-message')?.value ?? '';
+            try {
+                await api('PUT', '/settings/login_message', { value: val });
+                state.settings.login_message = val;
+                showToast(t('login_message_saved'), 'success');
+            } catch { showToast('Fehler', 'error'); }
+        });
 
         // Attendees Toggle Events
         panel.querySelectorAll('#attendees-grid-admin .attendee-toggle').forEach(btn => {
@@ -4895,6 +4912,7 @@ function getNowPlus10() {
                 <span class="ls-logo-icon">🎮</span>
                 <span class="ls-logo-text">Gameparty</span>
             </div>
+            ${state.settings.login_message ? `<div class="ls-message">${state.settings.login_message}</div>` : ''}
             <div class="ls-form">
                 <select class="ls-select" id="ls-player-select">
                     <option value="">${t('modal_login_title')} ▾</option>
@@ -5186,6 +5204,7 @@ function getNowPlus10() {
             state.coins = data.coins;
             state.stars = data.stars || {};
             state.shopCooldowns = data.shopCooldowns || {};
+            state.settings = data.settings || {};
             state._usersCache = data.users;
 
             // Validate that current player still exists

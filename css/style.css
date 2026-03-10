@@ -3292,6 +3292,17 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     background-clip: text;
 }
 
+.ls-message {
+    position: relative;
+    z-index: 1;
+    max-width: 320px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
 .ls-form {
     position: relative;
     z-index: 1;
