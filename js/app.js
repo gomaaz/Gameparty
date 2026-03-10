@@ -650,6 +650,7 @@ function getNowPlus10() {
                         } else {
                             options = ['A', 'B'];
                         }
+                        const optionLabel = (opt) => s.challenge_type !== '1v1' ? 'Team ' + opt : opt;
 
                         // Pot display
                         let potStr = '';
@@ -689,13 +690,13 @@ function getNowPlus10() {
                             statusBadge = `<span class="pending-approval-badge">🗳️ ${t('duel_vote_header') || 'Wer hat gewonnen?'}</span>`;
 
                             if (isConflict && isAdmin()) {
-                                const voteSummary = duelVotes.map(v => `${v.player} → ${v.voted_for}`).join(' | ');
+                                const voteSummary = duelVotes.map(v => `${v.player} → ${optionLabel(v.voted_for)}`).join(' | ');
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
                                         <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                         ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
-                                        ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
+                                        ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${optionLabel(opt)}</button>`).join('')}
                                         <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="margin-top:0.3rem;padding:0.35rem 0.8rem;font-size:0.85rem;display:block;margin-left:auto;margin-right:auto">🗑️ Abbrechen</button>
                                     </div>`;
                             } else if (isConflict) {
@@ -706,7 +707,7 @@ function getNowPlus10() {
                                         <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
                                     </div>`;
                             } else if (isVoted && isAdmin()) {
-                                const winner = ch?.winner || ch?.winnerTeam;
+                                const winner = s.challenge_type !== '1v1' ? ('Team ' + (ch?.winnerTeam || '')) : (ch?.winner || ch?.winnerTeam);
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
@@ -728,14 +729,14 @@ function getNowPlus10() {
                                     <div class="duel-vote-section">
                                         ${potDisplay}
                                         <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf andere...'}</div>
-                                        ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${opt}</button>`).join('')}
+                                        ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${optionLabel(opt)}</button>`).join('')}
                                     </div>`;
                             } else {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
                                         <div class="vote-label">${t('duel_vote_label') || 'Stimme ab:'}</div>
-                                        ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
+                                        ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${optionLabel(opt)}</button>`).join('')}
                                     </div>`;
                             }
                             // Admin can cancel pending duel sessions
