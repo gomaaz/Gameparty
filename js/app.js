@@ -3350,7 +3350,19 @@ function getNowPlus10() {
             <button class="btn-propose" id="tc-payout-close" style="margin-top:1.25rem;">OK</button>
         `;
         overlay.classList.add('show');
-        $('#tc-payout-close').addEventListener('click', () => overlay.classList.remove('show'));
+        $('#tc-payout-close').addEventListener('click', () => {
+            overlay.classList.remove('show');
+            const myIdx = winners.indexOf(state.currentPlayer);
+            if (isWinner) {
+                const myCoins = data.baseCoins + (myIdx === 0 ? (data.remainder || 0) : 0);
+                const myStars = (data.baseStars || 0) + (myIdx === 0 ? (data.starRemainder || 0) : 0);
+                if (myCoins > 0 || myStars > 0) showCoinAnimation(myCoins, myStars);
+            } else {
+                if ((data.stakeCoinsPerPerson || 0) > 0 || (data.stakeStarsPerPerson || 0) > 0) {
+                    showNegativeCoinAnimation(data.stakeCoinsPerPerson || 0, data.stakeStarsPerPerson || 0);
+                }
+            }
+        });
     }
 
     function showAckModal(msg) {
