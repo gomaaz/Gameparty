@@ -4509,6 +4509,8 @@ function getNowPlus10() {
         $$('.nav-item').forEach(nav => {
             nav.addEventListener('click', () => navigateTo(nav.dataset.view));
         });
+        const logoEl = $('.app-logo[data-view]');
+        if (logoEl) logoEl.addEventListener('click', () => navigateTo('dashboard'));
 
         // Language toggle
         const langBtn = $('#lang-toggle-btn');

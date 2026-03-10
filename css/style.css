@@ -2701,7 +2701,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .notif-item-body { flex: 1; min-width: 0; }
 .notif-item-title {
     font-size: 0.85rem; font-weight: 600; color: var(--text-primary);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    white-space: normal; overflow-wrap: break-word; word-break: break-word;
 }
 .notif-item-sub { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem; }
 .notif-item-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
