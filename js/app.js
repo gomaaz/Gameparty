@@ -62,8 +62,10 @@
         return 0;
     }
 
-    function coinSvgIcon() {
-        return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins">`;
+    function coinSvgIcon(size) {
+        const s = size || '';
+        const style = s ? ` style="width:${s};height:${s};vertical-align:middle"` : '';
+        return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins"${style}>`;
     }
 
     function controllerSvgIcon(size) {
