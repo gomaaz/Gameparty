@@ -4205,14 +4205,13 @@ function getNowPlus10() {
         viewRefreshInterval = setInterval(refreshActiveView, 10000);
         // SSE fuer sofortige Live-Updates (Fallback: Polling laeuft parallel)
         if (typeof EventSource !== 'undefined') {
-            sseSource = new EventSource('/api/events');
-            sseSource.addEventListener('update', () => {
-                refreshActiveView();
-                pollChallenges();
-            });
-            sseSource.onerror = () => {
-                // Browser reconnectet automatisch (NPM muss proxy_buffering off haben)
-            };
+            setTimeout(() => {
+                sseSource = new EventSource('/api/events');
+                sseSource.addEventListener('update', () => {
+                    refreshActiveView();
+                    pollChallenges();
+                });
+            }, 1000);
         }
     }
 

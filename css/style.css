@@ -1184,7 +1184,7 @@ body {
 /* ---- Notification Toast ---- */
 .toast-container {
     position: fixed;
-    bottom: 1.5rem;
+    bottom: 5rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 250;
