@@ -3536,6 +3536,7 @@ function getNowPlus10() {
                             style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
                     </div>
                     <div id="tc-pot-preview" style="font-size:0.85rem;color:var(--accent-gold);margin-top:0.25rem;min-height:1.2rem;"></div>
+                    <div id="tc-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;"></div>
                     <button class="btn-propose" id="tc-create">${t('btn_challenge')}</button>
                 </div>
             ` : '';
@@ -3565,8 +3566,9 @@ function getNowPlus10() {
                     </div>
                     <div class="proposal-row">
                         <input id="ch-coins" type="number" min="0" max="${myCoins}" placeholder="Coins (max ${myCoins})" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
-                        <input id="ch-stars" type="number" min="0" max="${myStars}" placeholder="🎮 (max ${myStars})" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
+                        <input id="ch-stars" type="number" min="0" max="${myStars}" placeholder="Controller-P. (max ${myStars})" style="flex:1;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;">
                     </div>
+                    <div id="ch-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;margin-bottom:0.25rem;"></div>
                     <button class="btn-propose" id="ch-create">${t('btn_challenge')}</button>
                 </div>
                 ${cardsHTML}
@@ -3588,24 +3590,48 @@ function getNowPlus10() {
                 const chCoins = container.querySelector('#ch-coins');
                 const chStars = container.querySelector('#ch-stars');
                 if (chOpponent && chCoins && chStars) {
+                    const chStakeError = container.querySelector('#ch-stake-error');
+
+                    function validate1v1Stake() {
+                        if (!chStakeError) return true;
+                        const opp = chOpponent.value;
+                        const coins = parseInt(chCoins.value) || 0;
+                        const stars = parseInt(chStars.value) || 0;
+                        const maxCoins = opp ? Math.min(myCoins, getPlayerCoins(opp)) : myCoins;
+                        const maxStars = opp ? Math.min(myStars, getPlayerStars(opp)) : myStars;
+                        if (coins > maxCoins) {
+                            chStakeError.textContent = t('stake_coins_too_high');
+                            return false;
+                        }
+                        if (stars > maxStars) {
+                            chStakeError.textContent = t('stake_stars_too_high');
+                            return false;
+                        }
+                        chStakeError.textContent = '';
+                        return true;
+                    }
+
                     chOpponent.addEventListener('change', () => {
                         const opp = chOpponent.value;
                         if (!opp) {
                             chCoins.max = myCoins;
                             chCoins.placeholder = `Coins (max ${myCoins})`;
                             chStars.max = myStars;
-                            chStars.placeholder = `🎮 (max ${myStars})`;
-                            return;
+                            chStars.placeholder = `Controller-P. (max ${myStars})`;
+                        } else {
+                            const effCoins = Math.min(myCoins, getPlayerCoins(opp));
+                            const effStars = Math.min(myStars, getPlayerStars(opp));
+                            chCoins.max = effCoins;
+                            chCoins.placeholder = `Coins (max ${effCoins})`;
+                            chStars.max = effStars;
+                            chStars.placeholder = `Controller-P. (max ${effStars})`;
+                            if (parseInt(chCoins.value) > effCoins) chCoins.value = effCoins;
+                            if (parseInt(chStars.value) > effStars) chStars.value = effStars;
                         }
-                        const effCoins = Math.min(myCoins, getPlayerCoins(opp));
-                        const effStars = Math.min(myStars, getPlayerStars(opp));
-                        chCoins.max = effCoins;
-                        chCoins.placeholder = `Coins (max ${effCoins})`;
-                        chStars.max = effStars;
-                        chStars.placeholder = `🎮 (max ${effStars})`;
-                        if (parseInt(chCoins.value) > effCoins) chCoins.value = effCoins;
-                        if (parseInt(chStars.value) > effStars) chStars.value = effStars;
+                        validate1v1Stake();
                     });
+                    chCoins.addEventListener('input', validate1v1Stake);
+                    chStars.addEventListener('input', validate1v1Stake);
                 }
 
                 // Event: Create challenge
@@ -3617,6 +3643,10 @@ function getNowPlus10() {
                     if (!opponent) { showToast(t('select_opponent_error'), 'error'); playSound('error'); return; }
                     if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
                     if (stakeCoins === 0 && stakeStars === 0) { showToast(t('select_stake_error'), 'error'); playSound('error'); return; }
+                    if (opponent) {
+                        if (stakeCoins > 0 && (stakeCoins > myCoins || stakeCoins > getPlayerCoins(opponent))) { showToast(t('stake_coins_too_high'), 'error'); playSound('error'); return; }
+                        if (stakeStars > 0 && (stakeStars > myStars || stakeStars > getPlayerStars(opponent))) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
+                    }
                     try {
                         await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars });
                         showToast(t('duel_created', opponent), 'success');
@@ -3746,9 +3776,26 @@ function getNowPlus10() {
                         }
                     }
 
-                    if (!preview) return;
                     const coinsVal = parseInt(tcCoinsInput?.value) || 0;
                     const starsVal = parseInt(tcStarsInput?.value) || 0;
+
+                    // Inline stake validation
+                    const tcStakeError = container.querySelector('#tc-stake-error');
+                    if (tcStakeError && allChecked.length > 0) {
+                        const minCoins = Math.min(...allChecked.map(p => getPlayerCoins(p)));
+                        const minStars  = Math.min(...allChecked.map(p => getPlayerStars(p)));
+                        if (coinsVal > minCoins) {
+                            tcStakeError.textContent = t('stake_coins_too_high');
+                        } else if (starsVal > minStars) {
+                            tcStakeError.textContent = t('stake_stars_too_high');
+                        } else {
+                            tcStakeError.textContent = '';
+                        }
+                    } else if (tcStakeError) {
+                        tcStakeError.textContent = '';
+                    }
+
+                    if (!preview) return;
                     if (totalCount > 0 && (coinsVal > 0 || starsVal > 0)) {
                         const parts = [];
                         if (coinsVal > 0) parts.push(`${coinsVal * totalCount} Coins`);
@@ -3797,6 +3844,13 @@ function getNowPlus10() {
                         if (!teamA.includes(state.currentPlayer) && !teamB.includes(state.currentPlayer)) { showToast(t('team_creator_not_in_team_error'), 'error'); playSound('error'); return; }
                         if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
                         if (stakeCoinsPerPerson === 0 && stakeStarsPerPerson === 0) { showToast(t('team_stake_error'), 'error'); playSound('error'); return; }
+                        const allInTeams = [...new Set([...teamA, ...teamB])];
+                        if (allInTeams.length > 0) {
+                            const minCoins = Math.min(...allInTeams.map(p => getPlayerCoins(p)));
+                            const minStars  = Math.min(...allInTeams.map(p => getPlayerStars(p)));
+                            if (stakeCoinsPerPerson > minCoins) { showToast(t('stake_coins_too_high'), 'error'); playSound('error'); return; }
+                            if (stakeStarsPerPerson > minStars) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
+                        }
                         try {
                             await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB });
                             showToast(t('team_duel_created'), 'success');

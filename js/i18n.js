@@ -306,6 +306,8 @@ const TRANSLATIONS = {
         select_opponent_error: 'Please select an opponent',
         select_game_error: 'Please specify a game',
         select_stake_error: 'Please set a stake',
+        stake_coins_too_high: 'Not all participants have enough Coins',
+        stake_stars_too_high: 'Not all participants have enough Controller Points',
         select_winner_error: 'Please select a winner',
         winner_set: 'Winner: {0}',
 
@@ -737,6 +739,8 @@ const TRANSLATIONS = {
         select_opponent_error: 'Bitte Gegner wählen',
         select_game_error: 'Bitte Spiel angeben',
         select_stake_error: 'Bitte einen Einsatz angeben',
+        stake_coins_too_high: 'Nicht alle Teilnehmer besitzen so viele Coins',
+        stake_stars_too_high: 'Nicht alle Teilnehmer besitzen so viele Controller-Punkte',
         select_winner_error: 'Bitte Gewinner wählen',
         winner_set: 'Gewinner: {0}',
 
