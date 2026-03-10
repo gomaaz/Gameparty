@@ -578,7 +578,7 @@ function getNowPlus10() {
                     const isLeader = s.leader === state.currentPlayer;
                     const isInSession = s.players.includes(state.currentPlayer);
                     const sortedPlayers = [s.leader, ...s.players.filter(p => p !== s.leader).sort()];
-                    const playersHTML = sortedPlayers.map(p =>
+                    let playersHTML = sortedPlayers.map(p =>
                         `<span class="player-chip player-name-clickable" data-player-info="${p}">${p === s.leader ? '<span class="session-leader-badge">GL</span>' : ''}${p}</span>`
                     ).join('');
 
@@ -590,7 +590,7 @@ function getNowPlus10() {
                     const rate = getPlayerRate(playerCount);
 
                     if (s.status === 'lobby') {
-                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${s.challenge_id ? '⚔️ Duell · ' : ''}${t('session_lobby')}</span>`;
+                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${s.challenge_id ? '⚔️ ' + t('duel_label') + ' · ' : ''}${t('session_lobby')}</span>`;
                         if (rate > 0) {
                             coinInfoHTML = `<div class="session-coin-rate">${rate} ${coinSvgIcon()} / min</div>`;
                         }
@@ -634,6 +634,26 @@ function getNowPlus10() {
                         }
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="end">${t('btn_end')}</button>`;
+                        }
+                        if (s.challenge_id) {
+                            const chRun2 = challengeMap[s.challenge_id];
+                            if (chRun2) {
+                                if (s.challenge_type !== '1v1') {
+                                    const tA = Array.isArray(chRun2.teamA) ? chRun2.teamA : JSON.parse(chRun2.teamA || '[]');
+                                    const tB = Array.isArray(chRun2.teamB) ? chRun2.teamB : JSON.parse(chRun2.teamB || '[]');
+                                    playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0;flex-wrap:wrap">
+                                        <div style="text-align:right;color:var(--accent-purple);font-weight:600;font-size:0.9rem">${tA.join('<br>')}</div>
+                                        <div style="color:var(--accent-gold);font-weight:900;font-size:1.1rem">vs</div>
+                                        <div style="text-align:left;color:var(--accent-blue);font-weight:600;font-size:0.9rem">${tB.join('<br>')}</div>
+                                    </div>`;
+                                } else {
+                                    playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0">
+                                        <span style="color:var(--accent-purple);font-weight:600;font-size:0.9rem">${chRun2.challenger}</span>
+                                        <span style="color:var(--accent-gold);font-weight:900;font-size:1.1rem">vs</span>
+                                        <span style="color:var(--accent-blue);font-weight:600;font-size:0.9rem">${chRun2.opponent}</span>
+                                    </div>`;
+                                }
+                            }
                         }
                         if (s.challenge_id && (isLeader || isAdmin())) {
                             actionsHTML += `<button class="btn-danger duel-running-cancel-btn" data-sid="${s.id}" style="font-size:0.8rem;padding:0.3rem 0.7rem">🗑️ ${t('btn_cancel')}</button>`;
@@ -795,7 +815,7 @@ function getNowPlus10() {
                     stakeCoins: ch.stakeCoins, stakeStars: ch.stakeStars,
                     sessionId: s.id
                 };
-                showDuelStartModal(payload);
+                try { showDuelStartModal(payload); } catch(e) { console.error('DuelStart modal error:', e); }
             });
 
             container.innerHTML = `
@@ -3473,7 +3493,7 @@ function getNowPlus10() {
                 if (c.status === 'pending' && isOpponent) {
                     actionsHTML = `
                         <div class="proposal-actions">
-                            <button class="btn-join ch-accept" data-id="${c.id}">${t('notif_accept')}</button>
+                            <button class="btn-join ch-accept" data-id="${c.id}" data-game="${c.game}" data-challenger="${c.challenger}" data-opponent="${c.opponent}" data-stake-coins="${c.stakeCoins || 0}" data-stake-stars="${c.stakeStars || 0}">${t('notif_accept')}</button>
                             <button class="btn-leave ch-reject" data-id="${c.id}">${t('notif_reject')}</button>
                         </div>`;
                 }
@@ -3791,9 +3811,21 @@ function getNowPlus10() {
                 container.querySelectorAll('.ch-accept').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         try {
-                            await api('PUT', `/challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
+                            const result = await api('PUT', `/challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
                             showToast(t('duel_accepted'), 'success');
                             playSound('coin');
+                            if (result.sessionId) {
+                                shownDuelStartSessions.add(result.sessionId);
+                                try {
+                                    showDuelStartModal({
+                                        type: '1v1', game: btn.dataset.game,
+                                        challenger: btn.dataset.challenger, opponent: btn.dataset.opponent,
+                                        stakeCoins: parseInt(btn.dataset.stakeCoins) || 0,
+                                        stakeStars: parseInt(btn.dataset.stakeStars) || 0,
+                                        sessionId: result.sessionId
+                                    });
+                                } catch(e) { console.error('DuelStart modal error:', e); }
+                            }
                             navigateTo('dashboard');
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -4008,10 +4040,14 @@ function getNowPlus10() {
                 container.querySelectorAll('.tc-accept').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         try {
-                            await api('PUT', `/team-challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
+                            const result = await api('PUT', `/team-challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
                             showToast(t('team_duel_accepted'), 'success');
                             playSound('coin');
-                            renderChallenges();
+                            if (result.allAccepted) {
+                                navigateTo('dashboard');
+                            } else {
+                                renderChallenges();
+                            }
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
                             playSound('error');
