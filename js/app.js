@@ -3699,10 +3699,10 @@ function getNowPlus10() {
                     conflict: t('duel_status_conflict') || 'Konflikt'
                 };
 
-                const potParts = [];
-                if (tc.stakeCoinsPerPerson > 0) potParts.push(`${fmt(tc.stakeCoinsPerPerson)} Coins/Person · ${t('total_pot_preview', fmt(totalPot) + ' Coins')}`);
-                if (tc.stakeStarsPerPerson > 0) potParts.push(`${fmt(tc.stakeStarsPerPerson)} ${controllerSvgIcon()}/Person · ${t('total_pot_preview', fmt(totalStarPot) + ' ' + controllerSvgIcon())}`);
-                const potStr = potParts.length ? potParts.join(' · ') : t('no_stake');
+                const potLines = [];
+                if (tc.stakeCoinsPerPerson > 0) potLines.push(`${coinSvgIcon()} ${fmt(tc.stakeCoinsPerPerson)} Coins/Person · Gesamtpott: ${fmt(totalPot)} Coins`);
+                if (tc.stakeStarsPerPerson > 0) potLines.push(`${controllerSvgIcon()} ${fmt(tc.stakeStarsPerPerson)} Controller/Person · Gesamtpott: ${fmt(totalStarPot)} Controller`);
+                const potStr = potLines.length ? potLines.join('<br>') : t('no_stake');
 
                 const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
                 const highlightClass = inChallenge ? ' highlight' : '';
@@ -3741,7 +3741,7 @@ function getNowPlus10() {
                 // Sort creator first in their team; render GL badge for creator
                 const sortCreatorFirst = (arr) => [...arr].sort((a, b) => a === tc.createdBy ? -1 : b === tc.createdBy ? 1 : 0);
                 const renderPlayerName = (name) => name === tc.createdBy
-                    ? `<span style="font-size:0.65rem;background:var(--accent-gold,#ffd700);color:#000;padding:0.1rem 0.3rem;border-radius:3px;font-weight:700;margin-right:0.2rem;vertical-align:middle;">GL</span>${name}`
+                    ? `<span class="session-leader-badge">GL</span>${name}`
                     : name;
                 const teamADisplay = sortCreatorFirst(teamA).map(renderPlayerName).join(', ');
                 const teamBDisplay = sortCreatorFirst(teamB).map(renderPlayerName).join(', ');
@@ -3756,11 +3756,16 @@ function getNowPlus10() {
                 return `
                     <div class="proposal-card${highlightClass}" data-id="${tc.id}">
                         <div class="proposal-card-header">
-                            <span style="font-weight:700;">👥 <span style="color:${teamALabelColor}">${t('team_a')}:</span> ${teamADisplay} <span style="color:var(--text-secondary)">vs</span> <span style="color:${teamBLabelColor}">${t('team_b')}:</span> ${teamBDisplay}</span>
+                            <span style="font-weight:700;">👥</span>
                             <span class="status-badge ${tc.status}">${statusLabels[tc.status] || tc.status}</span>
                         </div>
+                        <div style="font-size:0.9rem;font-weight:600;margin:0.3rem 0;line-height:1.7">
+                            <div style="color:${teamALabelColor}">${t('team_a')}: ${teamADisplay}</div>
+                            <div style="color:var(--text-secondary);font-size:0.8rem;font-weight:700">vs</div>
+                            <div style="color:${teamBLabelColor}">${t('team_b')}: ${teamBDisplay}</div>
+                        </div>
                         <div class="game-meta">${tc.game}</div>
-                        <div class="game-meta">${potStr}</div>
+                        <div class="game-meta" style="line-height:1.6">${potStr}</div>
                         ${acceptanceHTML}
                         ${winnerLabel ? `<div class="game-meta" style="margin-top:0.3rem;">🏆 ${winnerLabel}</div>` : ''}
                         ${actionsHTML}
