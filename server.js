@@ -148,6 +148,9 @@ try { db.prepare("ALTER TABLE users ADD COLUMN ip TEXT DEFAULT ''").run(); } cat
     try { db.prepare(`ALTER TABLE users ADD COLUMN ${col} TEXT DEFAULT ''`).run(); } catch {}
 });
 
+// ---- Migration: lang Feld in users (Sprache: 'en' oder 'de') ----
+try { db.prepare("ALTER TABLE users ADD COLUMN lang TEXT DEFAULT 'en'").run(); } catch {}
+
 // ---- Migration: medium Feld in live_sessions (fuer LAN/Steam/etc) ----
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN medium TEXT DEFAULT 'lan'").run(); } catch {}
 
@@ -407,7 +410,7 @@ function getAllGamesWithPlayers() {
 
 // GET /api/init - Load everything for initial state
 app.get('/api/init', (req, res) => {
-    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak FROM users').all();
+    const users = db.prepare('SELECT name, role, ip, lang, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak FROM users').all();
     const games = getAllGamesWithPlayers();
     const coins = {};
     db.prepare('SELECT player, amount FROM coins').all().forEach(r => { coins[r.player] = r.amount; });
@@ -807,7 +810,7 @@ app.put('/api/attendees', (req, res) => {
 
 // GET /api/users
 app.get('/api/users', (req, res) => {
-    const users = db.prepare('SELECT name, role, ip, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak FROM users').all();
+    const users = db.prepare('SELECT name, role, ip, lang, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak FROM users').all();
     res.json(users);
 });
 
@@ -861,6 +864,17 @@ app.put('/api/users/:name/ip', (req, res) => {
     db.prepare('UPDATE users SET ip = ? WHERE name = ?').run(ip, req.params.name);
     broadcast();
     res.json({ success: true });
+});
+
+// PUT /api/users/:name/lang
+app.put('/api/users/:name/lang', (req, res) => {
+    const { lang } = req.body;
+    if (!lang || !['en', 'de'].includes(lang)) return res.status(400).json({ error: "lang muss 'en' oder 'de' sein" });
+    const user = db.prepare('SELECT 1 FROM users WHERE name = ?').get(req.params.name);
+    if (!user) return res.status(404).json({ error: 'User nicht gefunden' });
+    db.prepare('UPDATE users SET lang = ? WHERE name = ?').run(lang, req.params.name);
+    broadcast();
+    res.json({ ok: true });
 });
 
 // PUT /api/users/:name/accounts
