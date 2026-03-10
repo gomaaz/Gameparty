@@ -49,6 +49,8 @@
     let notifPanelOpen = false;
     let focusChallengeId = null;
     let challengeActiveTab = '1v1'; // '1v1' | 'team'
+    let tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '' };
+    let v1FormState = { opponent: '', coins: '', stars: '' };
 
     // ---- Coin Rate Helper ----
     function getPlayerRate(playerCount) {
@@ -3720,6 +3722,23 @@ function getNowPlus10() {
                 ${cardsHTML}
             ` : '';
 
+            // Save form state before re-render
+            const prevTcTeamA = [...container.querySelectorAll('.tc-team-a-btn.active')].map(b => b.dataset.player);
+            const prevTcTeamB = [...container.querySelectorAll('.tc-team-b-btn.active')].map(b => b.dataset.player);
+            if (prevTcTeamA.length || prevTcTeamB.length) {
+                tcFormState.teamA = prevTcTeamA;
+                tcFormState.teamB = prevTcTeamB;
+                tcFormState.game = container.querySelector('#tc-game')?.value || tcFormState.game;
+                tcFormState.coins = container.querySelector('#tc-coins')?.value || tcFormState.coins;
+                tcFormState.stars = container.querySelector('#tc-stars')?.value || tcFormState.stars;
+            }
+            const prevOpponent = container.querySelector('#ch-opponent')?.value;
+            if (prevOpponent) {
+                v1FormState.opponent = prevOpponent;
+                v1FormState.coins = container.querySelector('#ch-coins')?.value || v1FormState.coins;
+                v1FormState.stars = container.querySelector('#ch-stars')?.value || v1FormState.stars;
+            }
+
             container.innerHTML = tabToggleHTML + (challengeActiveTab === '1v1' ? oneVOneContentHTML : teamFormHTML + teamCardsHTML);
 
             // Wire tab buttons
@@ -3797,6 +3816,7 @@ function getNowPlus10() {
                         await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars });
                         showToast(t('duel_created', opponent), 'success');
                         playSound('coin');
+                        v1FormState = { opponent: '', coins: '', stars: '' };
                         renderChallenges();
                     } catch (e) {
                         showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -4027,6 +4047,7 @@ function getNowPlus10() {
                             await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB });
                             showToast(t('team_duel_created'), 'success');
                             playSound('coin');
+                            tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '' };
                             renderChallenges();
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -4142,6 +4163,44 @@ function getNowPlus10() {
                 const el = container.querySelector(`.proposal-card[data-id="${focusChallengeId}"]`);
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 focusChallengeId = null;
+            }
+
+            // Restore form state after re-render
+            if (challengeActiveTab === 'team') {
+                if (tcFormState.teamA.length || tcFormState.teamB.length) {
+                    tcFormState.teamA.forEach(p => {
+                        container.querySelector(`.tc-team-a-btn[data-player="${p}"]`)?.classList.add('active');
+                    });
+                    tcFormState.teamB.forEach(p => {
+                        container.querySelector(`.tc-team-b-btn[data-player="${p}"]`)?.classList.add('active');
+                    });
+                    if (tcFormState.game) {
+                        const sel = container.querySelector('#tc-game');
+                        if (sel) sel.value = tcFormState.game;
+                    }
+                    if (tcFormState.coins) {
+                        const inp = container.querySelector('#tc-coins');
+                        if (inp) inp.value = tcFormState.coins;
+                    }
+                    if (tcFormState.stars) {
+                        const inp = container.querySelector('#tc-stars');
+                        if (inp) inp.value = tcFormState.stars;
+                    }
+                    updateTcPotPreview();
+                }
+            } else {
+                if (v1FormState.opponent) {
+                    const sel = container.querySelector('#ch-opponent');
+                    if (sel) { sel.value = v1FormState.opponent; sel.dispatchEvent(new Event('change')); }
+                }
+                if (v1FormState.coins) {
+                    const inp = container.querySelector('#ch-coins');
+                    if (inp) inp.value = v1FormState.coins;
+                }
+                if (v1FormState.stars) {
+                    const inp = container.querySelector('#ch-stars');
+                    if (inp) inp.value = v1FormState.stars;
+                }
             }
 
         } catch (e) {
