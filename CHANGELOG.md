@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.3.126 (2026-03-10)
+- feat: duel session card shows pot (coins/stars) in voting section
+- feat: isPaid state — after auto-payout card shows winner + "Session schließen" for admin
+- fix: remove confirm popup when ending a session
+
 ## v2.3.124 (2026-03-10)
 - fix: notifications load immediately on page reload, badge shows instantly
 - fix: notif-toasts only appear once per notification (persisted via localStorage)

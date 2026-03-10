@@ -2430,6 +2430,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .duel-vote-section .conflict-label {
     color: var(--accent-red, #ff4444);
 }
+.vote-pot-display {
+    font-size: 0.82rem;
+    color: var(--accent-gold);
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
 .duel-vote-btn {
     background: var(--bg-input);
     border: 1px solid var(--border);

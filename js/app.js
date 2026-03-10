@@ -572,6 +572,7 @@ function getNowPlus10() {
                         const ch = challengeMap[s.challenge_id];
                         const isConflict = challengeStatus === 'conflict';
                         const isVoted = challengeStatus === 'voted';
+                        const isPaid = challengeStatus === 'paid';
 
                         let options;
                         if (s.challenge_type === '1v1') {
@@ -580,57 +581,93 @@ function getNowPlus10() {
                             options = ['A', 'B'];
                         }
 
-                        statusBadge = `<span class="pending-approval-badge">🗳️ ${t('duel_vote_header') || 'Wer hat gewonnen?'}</span>`;
-
-                        if (isConflict && isAdmin()) {
-                            const voteSummary = duelVotes.map(v => `${v.player} → ${v.voted_for}`).join(' | ');
-                            actionsHTML = `
-                                <div class="duel-vote-section">
-                                    <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
-                                    ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
-                                    ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
-                                    <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="margin-top:0.3rem;padding:0.35rem 0.8rem;font-size:0.85rem;display:block;margin-left:auto;margin-right:auto">🗑️ Abbrechen</button>
-                                </div>`;
-                        } else if (isConflict) {
-                            actionsHTML = `
-                                <div class="duel-vote-section">
-                                    <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
-                                    <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
-                                </div>`;
-                        } else if (isVoted && isAdmin()) {
-                            const winner = ch?.winner || ch?.winnerTeam;
-                            actionsHTML = `
-                                <div class="duel-vote-section">
-                                    <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
-                                        🏆 Einigkeit: <strong>${winner}</strong>
-                                    </div>
-                                    <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve') || 'Freigeben'}</button>
-                                    <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button>
-                                </div>`;
-                        } else if (isVoted && !isAdmin()) {
-                            actionsHTML = `
-                                <div class="duel-vote-section">
-                                    <div class="vote-label" style="color:var(--accent-green)">
-                                        🏆 Abstimmung abgeschlossen
-                                    </div>
-                                    <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf Admin...'}</div>
-                                </div>`;
-                        } else if (myVote) {
-                            actionsHTML = `
-                                <div class="duel-vote-section">
-                                    <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf andere...'}</div>
-                                    ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${opt}</button>`).join('')}
-                                </div>`;
+                        // Pot display
+                        let potStr = '';
+                        if (s.challenge_type === '1v1') {
+                            if (ch?.stakeCoins > 0) potStr += `${ch.stakeCoins * 2} ${coinSvgIcon()}`;
+                            if (ch?.stakeStars > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStars * 2} ⭐`;
                         } else {
-                            actionsHTML = `
-                                <div class="duel-vote-section">
-                                    <div class="vote-label">${t('duel_vote_label') || 'Stimme ab:'}</div>
-                                    ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
-                                </div>`;
+                            const tp = s.players?.length || 0;
+                            if (ch?.stakeCoinsPerPerson > 0) potStr += `${ch.stakeCoinsPerPerson * tp} ${coinSvgIcon()}`;
+                            if (ch?.stakeStarsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStarsPerPerson * tp} ⭐`;
                         }
-                        // Admin kann Duel-Session jederzeit abbrechen (auch bei hängenden Abstimmungen)
-                        if (isAdmin() && !isVoted && !isConflict) {
-                            actionsHTML += `<div style="margin-top:0.3rem;text-align:center"><button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button></div>`;
+                        const potDisplay = potStr ? `<div class="vote-pot-display">Pot: ${potStr}</div>` : '';
+
+                        if (isPaid) {
+                            const winner = s.challenge_type === '1v1' ? ch?.winner : (ch?.winnerTeam === 'A' ? 'Team A' : 'Team B');
+                            statusBadge = `<span class="pending-approval-badge" style="background:var(--accent-green);color:#000">✅ ${winner} gewonnen</span>`;
+                            if (isAdmin()) {
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pot wurde ausgeschüttet</div>
+                                        <button class="btn-approve duel-close-btn" data-sid="${s.id}" style="margin-top:0.4rem">Session schließen</button>
+                                    </div>`;
+                            } else {
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pot wurde ausgeschüttet</div>
+                                        <div class="vote-label" style="color:var(--text-secondary)">Admin schließt die Session</div>
+                                    </div>`;
+                            }
+                        } else {
+                            statusBadge = `<span class="pending-approval-badge">🗳️ ${t('duel_vote_header') || 'Wer hat gewonnen?'}</span>`;
+
+                            if (isConflict && isAdmin()) {
+                                const voteSummary = duelVotes.map(v => `${v.player} → ${v.voted_for}`).join(' | ');
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
+                                        ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
+                                        ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
+                                        <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="margin-top:0.3rem;padding:0.35rem 0.8rem;font-size:0.85rem;display:block;margin-left:auto;margin-right:auto">🗑️ Abbrechen</button>
+                                    </div>`;
+                            } else if (isConflict) {
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
+                                        <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
+                                    </div>`;
+                            } else if (isVoted && isAdmin()) {
+                                const winner = ch?.winner || ch?.winnerTeam;
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
+                                            🏆 Einigkeit: <strong>${winner}</strong>
+                                        </div>
+                                        <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve') || 'Freigeben'}</button>
+                                        <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button>
+                                    </div>`;
+                            } else if (isVoted && !isAdmin()) {
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Abstimmung abgeschlossen</div>
+                                        <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf Admin...'}</div>
+                                    </div>`;
+                            } else if (myVote) {
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf andere...'}</div>
+                                        ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${opt}</button>`).join('')}
+                                    </div>`;
+                            } else {
+                                actionsHTML = `
+                                    <div class="duel-vote-section">
+                                        ${potDisplay}
+                                        <div class="vote-label">${t('duel_vote_label') || 'Stimme ab:'}</div>
+                                        ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
+                                    </div>`;
+                            }
+                            // Admin can cancel pending duel sessions
+                            if (isAdmin() && !isVoted && !isConflict) {
+                                actionsHTML += `<div style="margin-top:0.3rem;text-align:center"><button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button></div>`;
+                            }
                         }
                     } else if (s.status === 'ended') {
                         statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
@@ -703,9 +740,7 @@ function getNowPlus10() {
                         } else if (action === 'start') {
                             await api('PUT', `/live-sessions/${sid}/start`);
                         } else if (action === 'end') {
-                            if (confirm(t('confirm_end_session'))) {
-                                await api('PUT', `/live-sessions/${sid}/end`);
-                            }
+                            await api('PUT', `/live-sessions/${sid}/end`);
                         } else if (action === 'approve') {
                             const coinsPerPlayer = parseInt(btn.dataset.coins || 0);
                             await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer });
@@ -768,6 +803,19 @@ function getNowPlus10() {
             container.querySelectorAll('.duel-cancel-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     if (!confirm(t('discard_confirm') || 'Session wirklich abbrechen?')) return;
+                    const sid = btn.dataset.sid;
+                    if (!sid) return;
+                    try {
+                        await api('DELETE', `/live-sessions/${sid}`);
+                    } catch (e) {
+                        showToast(e.message || t('save_error'), 'error');
+                    }
+                });
+            });
+
+            // Admin: paid Duel-Session schließen (no confirm needed)
+            container.querySelectorAll('.duel-close-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
                     const sid = btn.dataset.sid;
                     if (!sid) return;
                     try {
