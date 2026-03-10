@@ -770,8 +770,11 @@ function getNowPlus10() {
                         }
                     } else if (s.status === 'ended') {
                         statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
+                        const coins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
+                        if (coins > 0) {
+                            coinInfoHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><span></span><span style="font-weight:600;color:var(--text-primary)">${coins} ${coinSvgIcon()}</span></div>`;
+                        }
                         if (isAdmin()) {
-                            const coins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
                             actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="approve" data-coins="${coins}">${t('btn_approve_coins', coins)}</button>`;
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">🗑️</button>`;
                         }
