@@ -151,6 +151,27 @@ Edit `docker-compose.yml` and change `"3000:3000"` to `"8080:3000"`.
 
 ---
 
+### Option C — Reverse Proxy (Nginx Proxy Manager)
+
+If you expose Gameparty via a reverse proxy, SSE (live updates) requires specific configuration to work correctly. Without it, the proxy buffers the event stream and clients never receive real-time updates.
+
+**Nginx Proxy Manager — Advanced tab (per Proxy Host):**
+
+```nginx
+# Required for SSE (Server-Sent Events / live updates)
+proxy_buffering off;
+proxy_cache off;
+proxy_read_timeout 86400s;
+proxy_send_timeout 86400s;
+proxy_http_version 1.1;
+proxy_set_header Connection '';
+```
+
+> Without `proxy_buffering off`, SSE events are silently swallowed by the proxy and clients fall back to 10-second polling only.
+> Without `proxy_read_timeout 86400s`, the proxy closes idle SSE connections after ~60 seconds, causing constant reconnects and browser console errors.
+
+---
+
 ### Option B — Manual (Node.js)
 
 ```bash
