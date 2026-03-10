@@ -1,6 +1,5 @@
 node_modules/
-gameparty.db
-*.db-shm
-*.db-wal
-backups/
-.claude/
+data/
+# Rogue agent artifacts — never commit these
+VERSION
+CHANGELOG.md
