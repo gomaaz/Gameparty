@@ -3182,3 +3182,96 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         font-size: 0.65rem;
     }
 }
+
+/* ---- Login Screen ---- */
+#login-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    transition: opacity 0.25s ease;
+}
+#login-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+#login-screen:empty { display: none; }
+
+.ls-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 2.5rem;
+}
+.ls-logo-icon { font-size: 4.5rem; line-height: 1; }
+.ls-logo-text {
+    font-size: 2.4rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent-gold), #ff9800);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.ls-form {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.ls-select {
+    width: 100%;
+    padding: 0.9rem 2.5rem 0.9rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%238888aa' d='M5 7L0 0h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    transition: var(--transition);
+}
+.ls-select:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 2px rgba(255,215,0,0.12);
+}
+.ls-select option { background: var(--bg-card); }
+
+.ls-pin-section {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+.ls-selected-name {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--accent-gold);
+}
+
+.ls-version {
+    position: absolute;
+    bottom: 1.25rem;
+    right: 1.5rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+

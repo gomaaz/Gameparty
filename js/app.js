@@ -4809,10 +4809,77 @@ function getNowPlus10() {
         updateHeader();
         updateNavVisibility();
         navigateTo('dashboard');
-        setTimeout(() => showLoginModal(), 300);
+        showLoginScreen();
     }
 
-    // ---- Login Modal ----
+    // ---- Login Screen (full-page, shown when not authenticated) ----
+    async function showLoginScreen() {
+        const screen = $('#login-screen');
+        if (!screen) return;
+        let users = [];
+        try {
+            users = await api('GET', '/users');
+            state._usersCache = users;
+        } catch (e) {}
+
+        screen.innerHTML = `
+            <div class="ls-logo">
+                <span class="ls-logo-icon">🎮</span>
+                <span class="ls-logo-text">Gameparty</span>
+            </div>
+            <div class="ls-form">
+                <select class="ls-select" id="ls-player-select">
+                    <option value="">${t('modal_login_title')} ▾</option>
+                    ${users.map(u => `<option value="${u.name}">${u.name}${u.role === 'admin' ? ' ★' : ''}</option>`).join('')}
+                </select>
+                <div class="ls-pin-section" id="ls-pin-section" style="display:none">
+                    <div class="ls-selected-name" id="ls-selected-name"></div>
+                    <div class="pin-input-row">
+                        <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="0" autocomplete="off">
+                        <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="1" autocomplete="off">
+                        <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="2" autocomplete="off">
+                        <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="3" autocomplete="off">
+                    </div>
+                    <div class="pin-error" id="login-pin-error"></div>
+                </div>
+            </div>
+            <div class="ls-version">v${state.version || ''}</div>
+        `;
+        screen.classList.remove('hidden');
+
+        const select = screen.querySelector('#ls-player-select');
+        select.addEventListener('change', () => {
+            const playerName = select.value;
+            const pinSection = screen.querySelector('#ls-pin-section');
+            const selectedName = screen.querySelector('#ls-selected-name');
+            const errorEl = screen.querySelector('#login-pin-error');
+            if (!playerName) { pinSection.style.display = 'none'; return; }
+            selectedName.textContent = playerName;
+            pinSection.style.display = 'flex';
+            errorEl.textContent = '';
+            const digits = Array.from(pinSection.querySelectorAll('.pin-digit'));
+            digits.forEach(d => { d.value = ''; const c = d.cloneNode(true); d.parentNode.replaceChild(c, d); });
+            const freshDigits = Array.from(pinSection.querySelectorAll('.pin-digit'));
+            freshDigits[0].focus();
+            freshDigits.forEach((input, idx) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value.length > 1) e.target.value = e.target.value.slice(-1);
+                    if (e.target.value && idx < 3) freshDigits[idx + 1].focus();
+                    if (freshDigits.map(d => d.value).join('').length === 4) attemptLogin(playerName, freshDigits.map(d => d.value).join(''));
+                });
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && idx > 0) freshDigits[idx - 1].focus();
+                });
+            });
+        });
+    }
+
+    function hideLoginScreen() {
+        const screen = $('#login-screen');
+        if (screen) screen.classList.add('hidden');
+    }
+
+    // ---- Login Modal (used for player switching from header) ----
     async function showLoginModal() {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
@@ -4907,6 +4974,7 @@ function getNowPlus10() {
 
             const overlay = $('#modal-overlay');
             overlay.classList.remove('show');
+            hideLoginScreen();
 
             updateHeader();
             updateNavVisibility();
@@ -4916,11 +4984,11 @@ function getNowPlus10() {
             const activeNav = document.querySelector('.nav-item.active');
             if (activeNav) navigateTo(activeNav.dataset.view);
         } catch (e) {
-            const errorEl = document.querySelector('#pin-error');
+            const errorEl = document.querySelector('#pin-error') || document.querySelector('#login-pin-error');
             if (errorEl) errorEl.textContent = t('pin_wrong');
             playSound('error');
             document.querySelectorAll('.pin-digit').forEach(d => { d.value = ''; });
-            document.querySelector('.pin-digit').focus();
+            document.querySelector('.pin-digit')?.focus();
         }
     }
 
@@ -5133,7 +5201,7 @@ function getNowPlus10() {
         if (state.currentPlayer) {
             startChallengePoll();
         } else {
-            setTimeout(() => showLoginModal(), 500);
+            showLoginScreen();
         }
     }
 
