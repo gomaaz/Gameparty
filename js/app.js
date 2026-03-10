@@ -132,7 +132,7 @@
                 if (!startedAt || !rate) return;
                 const minutes = (Date.now() - startedAt) / 60000;
                 const coins = Math.ceil(minutes * rate);
-                el.innerHTML = `~${coins} ${coinSvgIcon()}`;
+                el.innerHTML = `~${fmt(coins)} ${coinSvgIcon()}`;
             });
             document.querySelectorAll('.session-runtime').forEach(el => {
                 const startedAt = parseInt(el.dataset.startedAt || '0');
@@ -457,6 +457,10 @@ function getNowPlus10() {
         return state.stars[player] || 0;
     }
 
+    function fmt(n) {
+        return Math.round(n || 0).toLocaleString('de-DE');
+    }
+
     // ---- Navigation ----
     function navigateTo(viewId) {
         $$('.view').forEach(v => v.classList.remove('active'));
@@ -540,14 +544,14 @@ function getNowPlus10() {
             leaderboard.forEach((p, i) => {
                 const isCurrent = p.name === state.currentPlayer;
                 const starsBlock = p.stars > 0
-                    ? `<span class="lb-stat lb-stat-stars">${p.stars} <img src="svg/console-controller.svg" class="lb-icon"></span>`
+                    ? `<span class="lb-stat lb-stat-stars">${fmt(p.stars)} <img src="svg/console-controller.svg" class="lb-icon"></span>`
                     : `<span class="lb-stat lb-stat-stars" style="visibility:hidden">0 <img src="svg/console-controller.svg" class="lb-icon"></span>`;
                 leaderboardHTML += `
                     <div class="leaderboard-item ${isCurrent ? 'current-player' : ''}">
                         <div class="leaderboard-rank">#${i + 1}</div>
                         <div class="leaderboard-name player-name-clickable" data-player-info="${p.name}">${p.name}</div>
                         <div class="leaderboard-stats">
-                            <span class="lb-stat">${p.coins} <img src="svg/coins.svg" class="lb-icon"></span>
+                            <span class="lb-stat">${fmt(p.coins)} <img src="svg/coins.svg" class="lb-icon"></span>
                             ${starsBlock}
                         </div>
                     </div>`;
@@ -638,19 +642,19 @@ function getNowPlus10() {
                             coinInfoHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="live-session-meta"><span class="datetime-label">${t('start_time_label')}</span> ${startTimeStr}</div>
-        <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${initialCoins} ${coinSvgIcon()}</span>
+        <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${fmt(initialCoins)} ${coinSvgIcon()}</span>
     </div>`;
                         }
                         if (s.challenge_id) {
                             const chRun = challengeMap[s.challenge_id];
                             let potRunStr = '';
                             if (s.challenge_type === '1v1') {
-                                if (chRun?.stakeCoins > 0) potRunStr += `${chRun.stakeCoins * 2} ${coinSvgIcon()}`;
-                                if (chRun?.stakeStars > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStars * 2} ${controllerSvgIcon()}`;
+                                if (chRun?.stakeCoins > 0) potRunStr += `${fmt(chRun.stakeCoins * 2)} ${coinSvgIcon()}`;
+                                if (chRun?.stakeStars > 0) potRunStr += (potRunStr ? ' + ' : '') + `${fmt(chRun.stakeStars * 2)} ${controllerSvgIcon()}`;
                             } else {
                                 const tp = s.players?.length || 0;
-                                if (chRun?.stakeCoinsPerPerson > 0) potRunStr += `${chRun.stakeCoinsPerPerson * tp} ${coinSvgIcon()}`;
-                                if (chRun?.stakeStarsPerPerson > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStarsPerPerson * tp} ${controllerSvgIcon()}`;
+                                if (chRun?.stakeCoinsPerPerson > 0) potRunStr += `${fmt(chRun.stakeCoinsPerPerson * tp)} ${coinSvgIcon()}`;
+                                if (chRun?.stakeStarsPerPerson > 0) potRunStr += (potRunStr ? ' + ' : '') + `${fmt(chRun.stakeStarsPerPerson * tp)} ${controllerSvgIcon()}`;
                             }
                             if (potRunStr) {
                                 coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">${t('pot_label')} ${potRunStr}</div>`;
@@ -703,12 +707,12 @@ function getNowPlus10() {
                         // Pot display
                         let potStr = '';
                         if (s.challenge_type === '1v1') {
-                            if (ch?.stakeCoins > 0) potStr += `${ch.stakeCoins * 2} ${coinSvgIcon()}`;
-                            if (ch?.stakeStars > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStars * 2} ${controllerSvgIcon()}`;
+                            if (ch?.stakeCoins > 0) potStr += `${fmt(ch.stakeCoins * 2)} ${coinSvgIcon()}`;
+                            if (ch?.stakeStars > 0) potStr += (potStr ? ' + ' : '') + `${fmt(ch.stakeStars * 2)} ${controllerSvgIcon()}`;
                         } else {
                             const tp = s.players?.length || 0;
-                            if (ch?.stakeCoinsPerPerson > 0) potStr += `${ch.stakeCoinsPerPerson * tp} ${coinSvgIcon()}`;
-                            if (ch?.stakeStarsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStarsPerPerson * tp} ${controllerSvgIcon()}`;
+                            if (ch?.stakeCoinsPerPerson > 0) potStr += `${fmt(ch.stakeCoinsPerPerson * tp)} ${coinSvgIcon()}`;
+                            if (ch?.stakeStarsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${fmt(ch.stakeStarsPerPerson * tp)} ${controllerSvgIcon()}`;
                         }
                         const potDisplay = potStr ? `<div class="vote-pot-display">${t('pot_label')} ${potStr}</div>` : '';
 
@@ -716,7 +720,7 @@ function getNowPlus10() {
                             const winner = s.challenge_type === '1v1' ? ch?.winner : (ch?.winnerTeam === 'A' ? 'Team A' : 'Team B');
                             statusBadge = `<span class="pending-approval-badge" style="background:var(--accent-green);color:#000">${t('duel_won_badge', winner)}</span>`;
                             const sessionCoins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
-                            const sessionCoinsDisplay = sessionCoins > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem"><span class="vote-label" style="margin:0">Session-Coins:</span><span style="font-weight:600;color:var(--text-primary)">${sessionCoins} ${coinSvgIcon()}</span></div>` : '';
+                            const sessionCoinsDisplay = sessionCoins > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem"><span class="vote-label" style="margin:0">Session-Coins:</span><span style="font-weight:600;color:var(--text-primary)">${fmt(sessionCoins)} ${coinSvgIcon()}</span></div>` : '';
                             if (isAdmin()) {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
@@ -796,10 +800,10 @@ function getNowPlus10() {
                         statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
                         const coins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
                         if (coins > 0) {
-                            coinInfoHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><span></span><span style="font-weight:600;color:var(--text-primary)">${coins} ${coinSvgIcon()}</span></div>`;
+                            coinInfoHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><span></span><span style="font-weight:600;color:var(--text-primary)">${fmt(coins)} ${coinSvgIcon()}</span></div>`;
                         }
                         if (isAdmin()) {
-                            actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="approve" data-coins="${coins}">${t('btn_approve_coins', coins)}</button>`;
+                            actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="approve" data-coins="${coins}">${t('btn_approve_coins', fmt(coins))}</button>`;
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">🗑️</button>`;
                         }
                     }
@@ -1181,7 +1185,7 @@ function getNowPlus10() {
                 const coins = parseInt((coinsInput || {}).value) || 0;
                 try {
                     await api('PUT', `/games/${encodeURIComponent(gameName)}/approve`, { sessionCoins: coins });
-                    showToast(`"${gameName}" ${t('btn_release')} (${coins} C/Session)!`, 'success');
+                    showToast(`"${gameName}" ${t('btn_release')} (${fmt(coins)} C/Session)!`, 'success');
                     playSound('coin');
                     renderMatcher();
                 } catch (e) { console.error(e); }
@@ -1643,9 +1647,9 @@ function getNowPlus10() {
 
         let coinStatusHTML = '';
         if (p.status === 'completed' && !p.coinsApproved) {
-            coinStatusHTML = `<div class="live-session-meta" style="color:var(--accent-gold)">🪙 ${p.pendingCoins || 0} C ${t('session_awaiting_approval')}</div>`;
+            coinStatusHTML = `<div class="live-session-meta" style="color:var(--accent-gold)">🪙 ${fmt(p.pendingCoins || 0)} C ${t('session_awaiting_approval')}</div>`;
         } else if (p.status === 'completed' && p.coinsApproved) {
-            coinStatusHTML = `<div class="live-session-meta" style="color:var(--accent-green)">✓ ${p.pendingCoins || 0} C ${t('coins_paid_out') || 'paid out'}</div>`;
+            coinStatusHTML = `<div class="live-session-meta" style="color:var(--accent-green)">✓ ${fmt(p.pendingCoins || 0)} C ${t('coins_paid_out') || 'paid out'}</div>`;
         }
 
         // Coin rate / accumulator based on player count
@@ -1662,7 +1666,7 @@ function getNowPlus10() {
             coinRateHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="live-session-meta"><span class="datetime-label">${t('start_time_label')}</span> ${startTimeStr}</div>
-        <span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${initialCoins} ${coinSvgIcon()}</span>
+        <span class="session-coin-accumulator" data-started-at="${p.startedAt}" data-rate="${proposalRate}">~${fmt(initialCoins)} ${coinSvgIcon()}</span>
     </div>`;
         }
 
@@ -1709,7 +1713,7 @@ function getNowPlus10() {
             actions.push(`<button class="btn-session-end btn-reject" data-id="${p.id}">${t('btn_reject')}</button>`);
         }
         if (admin && p.status === 'completed' && p.coinsApproved === false) {
-            actions.push(`<button class="btn-session-start btn-approve-coins" data-id="${p.id}">${t('btn_approve_coins', p.pendingCoins || '?')}</button>`);
+            actions.push(`<button class="btn-session-start btn-approve-coins" data-id="${p.id}">${t('btn_approve_coins', p.pendingCoins ? fmt(p.pendingCoins) : '?')}</button>`);
         }
         if (admin) {
             actions.push(`<button class="btn-session-end btn-withdraw" data-id="${p.id}" data-admin-delete="true" title="Loeschen" style="font-size:0.75rem;opacity:0.6">&#x2716;</button>`);
@@ -1783,7 +1787,7 @@ function getNowPlus10() {
                         pendingCoins: coinsAmount,
                         coinsApproved: 0
                     });
-                    showToast(t('session_ended', coinsAmount), 'gold');
+                    showToast(t('session_ended', fmt(coinsAmount)), 'gold');
                     refreshActiveView();
                 } catch (e) { console.error(e); }
             });
@@ -1798,7 +1802,7 @@ function getNowPlus10() {
                     const coinsPerPlayer = proposal.pendingCoins || 0;
                     await api('POST', `/proposals/${btn.dataset.id}/approve`, { coins: coinsPerPlayer, approvedBy: state.currentPlayer });
                     showCoinAnimation(coinsPerPlayer);
-                    showToast(t('coins_released', coinsPerPlayer, proposal.players.length), 'success');
+                    showToast(t('coins_released', fmt(coinsPerPlayer), proposal.players.length), 'success');
                     renderDashboard();
                 } catch (e) { console.error(e); }
             });
@@ -1980,15 +1984,15 @@ function getNowPlus10() {
             container.innerHTML = `
                 <div class="card profile-header">
                     <div class="profile-name">${player}${isAdmin() ? ' <span class="admin-badge">Admin</span>' : ''}</div>
-                    <div class="profile-coins-big">${coins} Coins</div>
-                    ${playerStars > 0 ? `<div class="profile-stars"><img src="svg/console-controller.svg" class="controller-svg-icon"> x${playerStars}</div>` : ''}
+                    <div class="profile-coins-big">${fmt(coins)} Coins</div>
+                    ${playerStars > 0 ? `<div class="profile-stars"><img src="svg/console-controller.svg" class="controller-svg-icon"> x${fmt(playerStars)}</div>` : ''}
                     <div class="profile-stats">
                         <div class="stat-box">
-                            <div class="stat-value earned">${earned}</div>
+                            <div class="stat-value earned">${fmt(earned)}</div>
                             <div class="stat-label">${t('stat_earned')}</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-value spent">${spent}</div>
+                            <div class="stat-value spent">${fmt(spent)}</div>
                             <div class="stat-label">${t('stat_spent')}</div>
                         </div>
                         <div class="stat-box">
@@ -1996,7 +2000,7 @@ function getNowPlus10() {
                             <div class="stat-label">${t('stat_sessions')}</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-value">${playerStars}</div>
+                            <div class="stat-value">${fmt(playerStars)}</div>
                             <div class="stat-label">${t('stat_ctrl_points')}</div>
                         </div>
                     </div>
@@ -2302,7 +2306,7 @@ function getNowPlus10() {
                             <div style="font-size:1.2rem;font-weight:700">${sessionState.selectedGame || '-'}</div>
                             <div class="text-muted text-sm mt-1">${t('label_players', sessionState.selectedPlayers.length)}</div>
                             <div style="font-size:1.5rem;font-weight:800;color:var(--accent-gold);margin-top:0.5rem">
-                                ${calculateSessionCoins(sessionState.selectedPlayers.length, state.attendees.length)} C
+                                ${fmt(calculateSessionCoins(sessionState.selectedPlayers.length, state.attendees.length))} C
                             </div>
                         </div>
                     </div>
@@ -2329,7 +2333,7 @@ function getNowPlus10() {
                     try {
                         await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer, player: state.currentPlayer });
                         showCoinAnimation(coinsPerPlayer);
-                        showToast(t('session_approved', coinsPerPlayer), 'success');
+                        showToast(t('session_approved', fmt(coinsPerPlayer)), 'success');
                         renderSession();
                     } catch (e) { showToast(t('session_error_approve'), 'error'); }
                 });
@@ -2694,8 +2698,8 @@ function getNowPlus10() {
             if (!player || !amount) return;
             try {
                 await api('POST', '/coins/add', { player, amount, reason });
-                if (amount > 0) { showCoinAnimation(amount); showToast(t('coins_given', amount, player), 'success'); }
-                else { showToast(t('coins_deducted', amount, player), 'error'); playSound('spend'); }
+                if (amount > 0) { showCoinAnimation(amount); showToast(t('coins_given', fmt(amount), player), 'success'); }
+                else { showToast(t('coins_deducted', fmt(amount), player), 'error'); playSound('spend'); }
                 coinPlayer.value = ''; coinAmount.value = ''; coinReason.value = '';
                 coinBtn.disabled = true;
             } catch (e) { console.error(e); }
@@ -2767,7 +2771,7 @@ function getNowPlus10() {
             await api('POST', '/sessions', { game, players: [...players], coinsPerPlayer });
 
             showCoinAnimation(coinsPerPlayer);
-            showToast(t('session_confirmed', coinsPerPlayer, players.length), 'success');
+            showToast(t('session_confirmed', fmt(coinsPerPlayer), players.length), 'success');
 
             sessionState = { selectedGame: null, selectedPlayers: [] };
             setTimeout(() => navigateTo('dashboard'), 1500);
@@ -2801,7 +2805,7 @@ function getNowPlus10() {
                 <div class="section-title">${t('shop_title')}</div>
                 <div class="card" style="text-align:center">
                     <div class="text-muted text-sm">${t('your_balance')}</div>
-                    <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${coins} Coins</div>
+                    <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${fmt(coins)} Coins</div>
                 </div>
                 <div class="shop-grid">
                     ${CONFIG.SHOP_ITEMS.map(item => `
@@ -2813,7 +2817,7 @@ function getNowPlus10() {
                             </div>
                             <button class="shop-buy-btn" data-item="${item.id}" data-cost="${item.cost}"
                                 ${coins < item.cost ? 'disabled' : ''}>
-                                ${item.cost} Coins
+                                ${fmt(item.cost)} Coins
                             </button>
                         </div>
                     `).join('')}
@@ -2846,7 +2850,7 @@ function getNowPlus10() {
                 const result = await api('POST', '/shop/buy-star', { player, cost });
                 state.coins[player] = (state.coins[player] || 0) - cost;
                 state.stars[player] = result.newStars;
-                showToast(t('star_bought', state.stars[player]), 'success');
+                showToast(t('star_bought', fmt(state.stars[player])), 'success');
                 updateHeader();
                 renderShop();
             } catch (e) { showToast(t('not_enough_coins'), 'error'); }
@@ -2969,7 +2973,7 @@ function getNowPlus10() {
                         const result = await api('POST', '/shop/rob-coins', { thief: state.currentPlayer, target, cost });
                         playSound('spend');
                         if (result.stolen > 0) {
-                            showToast(t('rob_coins_success', result.stolen, target), 'gold');
+                            showToast(t('rob_coins_success', fmt(result.stolen), target), 'gold');
                             await api('POST', '/player-events', {
                                 target, type: 'rob_coins_victim', from_player: state.currentPlayer,
                                 message: JSON.stringify({ thief: state.currentPlayer, stolen: result.stolen })
@@ -3070,7 +3074,7 @@ function getNowPlus10() {
             <div class="modal-title">${t('time_up_title')}</div>
             <div style="text-align:center;padding:1rem;font-size:1.1rem">
                 ${t('time_up_text', penalty).split('\n')[0]}<br>
-                <span style="color:var(--accent-red);font-weight:700">−${penalty} Coins</span> wurden abgezogen.
+                <span style="color:var(--accent-red);font-weight:700">−${fmt(penalty)} Coins</span> wurden abgezogen.
             </div>
             <button class="btn-propose" id="penalty-close-btn">${t('time_up_ok')}</button>
         `;
@@ -3107,11 +3111,11 @@ function getNowPlus10() {
 
         const potParts = [];
         if (isTeam) {
-            if (data.stakeCoinsPerPerson > 0) potParts.push(`${data.stakeCoinsPerPerson} ${coinSvgIcon()} ${t('per_person')}`);
-            if (data.stakeStarsPerPerson > 0) potParts.push(`${data.stakeStarsPerPerson} ${controllerSvgIcon()} ${t('per_person')}`);
+            if (data.stakeCoinsPerPerson > 0) potParts.push(`${fmt(data.stakeCoinsPerPerson)} ${coinSvgIcon()} ${t('per_person')}`);
+            if (data.stakeStarsPerPerson > 0) potParts.push(`${fmt(data.stakeStarsPerPerson)} ${controllerSvgIcon()} ${t('per_person')}`);
         } else {
-            if (data.stakeCoins > 0) potParts.push(`${data.stakeCoins * 2} ${coinSvgIcon()}`);
-            if (data.stakeStars > 0) potParts.push(`${data.stakeStars * 2} ${controllerSvgIcon()}`);
+            if (data.stakeCoins > 0) potParts.push(`${fmt(data.stakeCoins * 2)} ${coinSvgIcon()}`);
+            if (data.stakeStars > 0) potParts.push(`${fmt(data.stakeStars * 2)} ${controllerSvgIcon()}`);
         }
         const potStr = potParts.length ? potParts.join(' + ') : '';
 
@@ -3153,11 +3157,11 @@ function getNowPlus10() {
 
         const resultParts = [];
         if (isWinner) {
-            if (wonCoins > 0) resultParts.push(`+${wonCoins} ${coinSvgIcon()}`);
-            if (wonStars > 0) resultParts.push(`+${wonStars} ${controllerSvgIcon()}`);
+            if (wonCoins > 0) resultParts.push(`+${fmt(wonCoins)} ${coinSvgIcon()}`);
+            if (wonStars > 0) resultParts.push(`+${fmt(wonStars)} ${controllerSvgIcon()}`);
         } else {
-            if (stakeCoins > 0) resultParts.push(`-${stakeCoins} ${coinSvgIcon()}`);
-            if (stakeStars > 0) resultParts.push(`-${stakeStars} ${controllerSvgIcon()}`);
+            if (stakeCoins > 0) resultParts.push(`-${fmt(stakeCoins)} ${coinSvgIcon()}`);
+            if (stakeStars > 0) resultParts.push(`-${fmt(stakeStars)} ${controllerSvgIcon()}`);
         }
         const resultStr = resultParts.join(' + ') || '–';
 
@@ -3204,14 +3208,14 @@ function getNowPlus10() {
             const coins = data.baseCoins + (idx === 0 ? data.remainder : 0);
             const stars = (data.baseStars || 0) + (idx === 0 ? (data.starRemainder || 0) : 0);
             const parts = [];
-            if (coins > 0) parts.push(`+${coins} Coins`);
-            if (stars > 0) parts.push(`+${stars} ${controllerSvgIcon()}`);
+            if (coins > 0) parts.push(`+${fmt(coins)} Coins`);
+            if (stars > 0) parts.push(`+${fmt(stars)} ${controllerSvgIcon()}`);
             rows.push({ player: p, text: parts.join(' + ') || '–', winner: true });
         });
         losers.forEach(p => {
             const parts = [];
-            if (data.stakeCoinsPerPerson > 0) parts.push(`-${data.stakeCoinsPerPerson} Coins`);
-            if (data.stakeStarsPerPerson > 0) parts.push(`-${data.stakeStarsPerPerson} ${controllerSvgIcon()}`);
+            if (data.stakeCoinsPerPerson > 0) parts.push(`-${fmt(data.stakeCoinsPerPerson)} Coins`);
+            if (data.stakeStarsPerPerson > 0) parts.push(`-${fmt(data.stakeStarsPerPerson)} ${controllerSvgIcon()}`);
             rows.push({ player: p, text: parts.join(' + ') || '–', winner: false });
         });
 
@@ -3222,13 +3226,13 @@ function getNowPlus10() {
             </div>`).join('');
 
         const potParts = [];
-        if (data.totalPot > 0) potParts.push(`${data.totalPot} Coins`);
-        if (data.totalStarPot > 0) potParts.push(`${data.totalStarPot} ${controllerSvgIcon()}`);
+        if (data.totalPot > 0) potParts.push(`${fmt(data.totalPot)} Coins`);
+        if (data.totalStarPot > 0) potParts.push(`${fmt(data.totalStarPot)} ${controllerSvgIcon()}`);
         const potStr = potParts.join(' + ') || '–';
 
         const stakeParts = [];
-        if (data.stakeCoinsPerPerson > 0) stakeParts.push(`${data.stakeCoinsPerPerson} Coins`);
-        if (data.stakeStarsPerPerson > 0) stakeParts.push(`${data.stakeStarsPerPerson} ${controllerSvgIcon()}`);
+        if (data.stakeCoinsPerPerson > 0) stakeParts.push(`${fmt(data.stakeCoinsPerPerson)} Coins`);
+        if (data.stakeStarsPerPerson > 0) stakeParts.push(`${fmt(data.stakeStarsPerPerson)} ${controllerSvgIcon()}`);
         const stakeStr = stakeParts.join(' + ') || '–';
 
         modal.innerHTML = `
@@ -3463,10 +3467,10 @@ function getNowPlus10() {
         if (state.currentPlayer) {
             playerBtn.textContent = state.currentPlayer;
             playerBtn.style.display = 'inline-block';
-            coinsDisplay.textContent = getPlayerCoins(state.currentPlayer);
+            coinsDisplay.textContent = fmt(getPlayerCoins(state.currentPlayer));
             coinsDisplay.parentElement.style.display = 'flex';
             const playerStars = getPlayerStars(state.currentPlayer);
-            if (starsDisplay) starsDisplay.textContent = playerStars;
+            if (starsDisplay) starsDisplay.textContent = fmt(playerStars);
             if (starsContainer) starsContainer.style.display = playerStars > 0 ? 'flex' : 'none';
         } else {
             playerBtn.textContent = t('header_login');
@@ -3510,8 +3514,8 @@ function getNowPlus10() {
                 const isOpponent = c.opponent === state.currentPlayer;
                 const admin = isAdmin();
                 const pot = [];
-                if (c.stakeCoins > 0) pot.push(`${c.stakeCoins * 2} ${coinSvgIcon()}`);
-                if (c.stakeStars > 0) pot.push(`${c.stakeStars * 2} ${controllerSvgIcon()}`);
+                if (c.stakeCoins > 0) pot.push(`${fmt(c.stakeCoins * 2)} ${coinSvgIcon()}`);
+                if (c.stakeStars > 0) pot.push(`${fmt(c.stakeStars * 2)} ${controllerSvgIcon()}`);
                 const potStr = pot.length ? pot.join(' + ') : t('no_stake');
 
                 let actionsHTML = '';
@@ -3582,8 +3586,8 @@ function getNowPlus10() {
                 };
 
                 const potParts = [];
-                if (tc.stakeCoinsPerPerson > 0) potParts.push(`${tc.stakeCoinsPerPerson} Coins/Person · ${t('total_pot_preview', totalPot + ' Coins')}`);
-                if (tc.stakeStarsPerPerson > 0) potParts.push(`${tc.stakeStarsPerPerson} ${controllerSvgIcon()}/Person · ${t('total_pot_preview', totalStarPot + ' ' + controllerSvgIcon())}`);
+                if (tc.stakeCoinsPerPerson > 0) potParts.push(`${fmt(tc.stakeCoinsPerPerson)} Coins/Person · ${t('total_pot_preview', fmt(totalPot) + ' Coins')}`);
+                if (tc.stakeStarsPerPerson > 0) potParts.push(`${fmt(tc.stakeStarsPerPerson)} ${controllerSvgIcon()}/Person · ${t('total_pot_preview', fmt(totalStarPot) + ' ' + controllerSvgIcon())}`);
                 const potStr = potParts.length ? potParts.join(' · ') : t('no_stake');
 
                 const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
@@ -4007,8 +4011,8 @@ function getNowPlus10() {
                     if (!preview) return;
                     if (totalCount > 0 && (coinsVal > 0 || starsVal > 0)) {
                         const parts = [];
-                        if (coinsVal > 0) parts.push(`${coinsVal * totalCount} Coins`);
-                        if (starsVal > 0) parts.push(`${starsVal * totalCount} 🎮`);
+                        if (coinsVal > 0) parts.push(`${fmt(coinsVal * totalCount)} Coins`);
+                        if (starsVal > 0) parts.push(`${fmt(starsVal * totalCount)} 🎮`);
                         preview.textContent = t('total_pot_preview', parts.join(' + '));
                     } else {
                         preview.textContent = '';
@@ -4518,7 +4522,7 @@ function getNowPlus10() {
                         const data = JSON.parse(ev.message);
                         const notifId = 'rob_' + ev.id;
                         if (!dismissedRobIds.has(notifId) && !pendingNotifications.find(n => n.id === notifId)) {
-                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, data.stolen), ts: ev.createdAt });
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, fmt(data.stolen)), ts: ev.createdAt });
                             showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                             updateBadge();
                             if (getNotifPref('sound')) playSound('error');
@@ -4586,8 +4590,8 @@ function getNowPlus10() {
                 notifiedChallengeIds.add(c.id);
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = [
-                    c.stakeCoins > 0 ? `${c.stakeCoins} ${coinSvgIcon()}` : '',
-                    c.stakeStars > 0 ? `${c.stakeStars} ${controllerSvgIcon()}` : ''
+                    c.stakeCoins > 0 ? `${fmt(c.stakeCoins)} ${coinSvgIcon()}` : '',
+                    c.stakeStars > 0 ? `${fmt(c.stakeStars)} ${controllerSvgIcon()}` : ''
                 ].filter(Boolean).join(' + ') || t('no_stake');
                 pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: c.createdAt });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
@@ -4617,7 +4621,7 @@ function getNowPlus10() {
             for (const tc of newTeamOnes) {
                 notifiedChallengeIds.add('tc_' + tc.id);
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
-                const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${tc.stakeCoinsPerPerson} ${coinSvgIcon()}/Person` : t('no_stake');
+                const stakeStr = tc.stakeCoinsPerPerson > 0 ? `${fmt(tc.stakeCoinsPerPerson)} ${coinSvgIcon()}/Person` : t('no_stake');
                 const teamA = JSON.parse(tc.teamA);
                 const teamB = JSON.parse(tc.teamB);
                 const notifTitle = buildTeamNotifTitle(teamA, teamB, tc.createdBy, state.currentPlayer);
@@ -4764,11 +4768,11 @@ function getNowPlus10() {
     async function updateHeaderCoins() {
         if (state.currentPlayer) {
             const coinsDisplay = $('#header-coins');
-            coinsDisplay.textContent = getPlayerCoins(state.currentPlayer);
+            coinsDisplay.textContent = fmt(getPlayerCoins(state.currentPlayer));
             const starsDisplay = $('#header-stars');
             const starsContainer = $('#header-stars-display');
             const playerStars = getPlayerStars(state.currentPlayer);
-            if (starsDisplay) starsDisplay.textContent = playerStars;
+            if (starsDisplay) starsDisplay.textContent = fmt(playerStars);
             if (starsContainer) starsContainer.style.display = playerStars > 0 ? 'flex' : 'none';
         }
     }
