@@ -2161,10 +2161,9 @@ function getNowPlus10() {
             const langToggleBtn = container.querySelector('#lang-toggle-btn');
             if (langToggleBtn) {
                 langToggleBtn.addEventListener('click', () => {
-                    const currentLang = getLang();
-                    const newLang = currentLang === 'de' ? 'en' : 'de';
+                    const newLang = getLang() === 'de' ? 'en' : 'de';
                     setLang(newLang);
-                    // setLang handles refresh via refreshActiveView() and updateNavLabels()
+                    if (state.currentPlayer) api('PUT', `/users/${encodeURIComponent(state.currentPlayer)}/lang`, { lang: newLang }).catch(() => {});
                 });
             }
 
@@ -4838,6 +4837,9 @@ function getNowPlus10() {
             state.role = result.role;
             localStorage.setItem(LOCAL_KEYS.PLAYER, JSON.stringify(state.currentPlayer));
             localStorage.setItem(LOCAL_KEYS.ROLE, JSON.stringify(state.role));
+            // Apply player's saved language preference
+            const me = (state._usersCache || []).find(u => u.name === playerName);
+            if (me?.lang) setLang(me.lang);
             notifiedChallengeIds.clear();
             localStorage.removeItem('gameparty_notified_challenge_ids');
             shownNotifToastIds.clear();
@@ -4999,6 +5001,12 @@ function getNowPlus10() {
                 localStorage.removeItem(LOCAL_KEYS.ROLE);
             }
 
+            // Apply player's saved language preference from server
+            if (state.currentPlayer) {
+                const me = (data.users || []).find(u => u.name === state.currentPlayer);
+                if (me?.lang) setLang(me.lang);
+            }
+
             console.log(`Gameparty: ${state.games.length} Spiele geladen.`);
         } catch (e) {
             console.error('Init error - Server nicht erreichbar?', e);
@@ -5016,7 +5024,9 @@ function getNowPlus10() {
         const langBtn = $('#lang-toggle-btn');
         if (langBtn) {
             langBtn.addEventListener('click', () => {
-                setLang(getLang() === 'en' ? 'de' : 'en');
+                const newLang = getLang() === 'en' ? 'de' : 'en';
+                setLang(newLang);
+                if (state.currentPlayer) api('PUT', `/users/${encodeURIComponent(state.currentPlayer)}/lang`, { lang: newLang }).catch(() => {});
             });
             updateLangBtn();
         }
