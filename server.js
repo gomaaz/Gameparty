@@ -5,6 +5,7 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { version } = require('./package.json');
 
 const app = express();
@@ -12,6 +13,19 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// index.html mit versionierten Asset-URLs ausliefern (Cache-Busting)
+app.get('/', (req, res) => {
+    let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    html = html
+        .replace('css/style.css"', `css/style.css?v=${version}"`)
+        .replace('js/i18n.js"', `js/i18n.js?v=${version}"`)
+        .replace('js/data.js"', `js/data.js?v=${version}"`)
+        .replace('js/app.js"', `js/app.js?v=${version}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(html);
+});
+
 app.use(express.static(path.join(__dirname)));
 
 // ---- Server-Sent Events ----

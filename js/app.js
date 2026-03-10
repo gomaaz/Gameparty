@@ -4203,7 +4203,7 @@ function getNowPlus10() {
         // Fallback-Polling falls SSE abbricht
         challengePollInterval = setInterval(pollChallenges, 10000);
         viewRefreshInterval = setInterval(refreshActiveView, 10000);
-        // SSE fuer sofortige Live-Updates
+        // SSE fuer sofortige Live-Updates (Fallback: Polling laeuft parallel)
         if (typeof EventSource !== 'undefined') {
             sseSource = new EventSource('/api/events');
             sseSource.addEventListener('update', () => {
@@ -4211,7 +4211,8 @@ function getNowPlus10() {
                 pollChallenges();
             });
             sseSource.onerror = () => {
-                // Bei Fehler schliesst der Browser die Verbindung und versucht selbst neu
+                // SSE schliessen damit kein endloser Reconnect-Loop in der Konsole
+                if (sseSource) { sseSource.close(); sseSource = null; }
             };
         }
     }
