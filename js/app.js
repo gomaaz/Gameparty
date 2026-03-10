@@ -684,7 +684,7 @@ function getNowPlus10() {
                             }
                         }
                         if (s.challenge_id && (isLeader || isAdmin())) {
-                            actionsHTML += `<button class="btn-danger duel-running-cancel-btn" data-sid="${s.id}" style="font-size:0.8rem;padding:0.3rem 0.7rem">🗑️ ${t('btn_cancel')}</button>`;
+                            actionsHTML += `<button class="btn-danger duel-running-cancel-btn" data-sid="${s.id}" style="font-size:0.8rem;padding:0.3rem 0.7rem;margin-left:auto">🗑️ ${t('btn_cancel')}</button>`;
                         }
                     } else if (s.status === 'ended' && s.challenge_id) {
                         // Duel session — show voting UI instead of admin approval
@@ -695,6 +695,12 @@ function getNowPlus10() {
                         const isConflict = challengeStatus === 'conflict';
                         const isVoted = challengeStatus === 'voted';
                         const isPaid = challengeStatus === 'paid';
+                        const voterStatusHTML = !isPaid ? `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin:0.3rem 0;">${
+                            (s.players || []).map(p => {
+                                const hasVoted = duelVotes.some(v => v.player === p);
+                                return `<span style="display:inline-flex;align-items:center;gap:0.25rem;font-size:0.8rem;padding:0.15rem 0.4rem;border-radius:var(--radius-sm);background:${hasVoted ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.05)'};color:${hasVoted ? 'var(--accent-green,#00e676)' : 'var(--text-secondary)'};border:1px solid ${hasVoted ? 'rgba(0,230,118,0.3)' : 'var(--border)'};">${p}${hasVoted ? ' ✓' : ' ⏳'}</span>`;
+                            }).join('')
+                        }</div>` : '';
 
                         let options;
                         if (s.challenge_type === '1v1') {
@@ -746,6 +752,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
+                                        ${voterStatusHTML}
                                         <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                         ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
                                         ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${optionLabel(opt)}</button>`).join('')}
@@ -755,6 +762,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
+                                        ${voterStatusHTML}
                                         <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                         <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
                                     </div>`;
@@ -763,6 +771,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
+                                        ${voterStatusHTML}
                                         <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
                                             🏆 ${t('duel_consensus')} <strong>${winner}</strong>
                                         </div>
@@ -773,6 +782,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
+                                        ${voterStatusHTML}
                                         <div class="vote-label" style="color:var(--accent-green)">🏆 ${t('duel_voting_complete')}</div>
                                         <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf Admin...'}</div>
                                     </div>`;
@@ -780,6 +790,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
+                                        ${voterStatusHTML}
                                         <div class="vote-label">${t('duel_vote_waiting_others') || 'Warte auf Abstimmung...'}</div>
                                         ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${optionLabel(opt)}</button>`).join('')}
                                     </div>`;
@@ -787,6 +798,7 @@ function getNowPlus10() {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
+                                        ${voterStatusHTML}
                                         <div class="vote-label">${t('duel_vote_label') || 'Stimme ab:'}</div>
                                         ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${optionLabel(opt)}</button>`).join('')}
                                     </div>`;
