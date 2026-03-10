@@ -3188,7 +3188,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     position: fixed;
     inset: 0;
     z-index: 300;
-    background: var(--bg-primary);
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3202,7 +3203,78 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 #login-screen:empty { display: none; }
 
+/* Shooting Stars Background */
+.ls-stars {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.shooting_star {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(95, 145, 255, 1), rgba(0, 0, 255, 0));
+    border-radius: 999px;
+    filter: drop-shadow(0 0 6px rgba(105, 155, 255, 1));
+    animation: ls-tail var(--duration, 3s) ease-in-out infinite,
+               ls-shooting var(--duration, 3s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+    transform: rotate(215deg);
+}
+
+.shooting_star::before,
+.shooting_star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    border-radius: 100%;
+}
+
+.shooting_star::before {
+    width: 300px;
+    height: 1px;
+    transform: translateX(50%);
+    background: linear-gradient(to left, rgba(0, 0, 255, 0), rgba(255, 255, 255, 1) 50%, rgba(0, 0, 255, 0));
+    opacity: 0;
+    animation: ls-shining var(--duration, 3s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+}
+
+.shooting_star::after {
+    width: 30px;
+    height: 30px;
+    transform: translateX(50%) translateY(-50%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(0, 0, 255, 0) 100%);
+    opacity: 0;
+    animation: ls-shining var(--duration, 3s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+}
+
+@keyframes ls-tail {
+    0%   { width: 0; }
+    30%  { width: 100px; }
+    100% { width: 0; }
+}
+
+@keyframes ls-shining {
+    0%   { opacity: 0; }
+    50%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes ls-shooting {
+    0%   { transform: rotate(215deg) translateX(0); opacity: 1; }
+    100% { transform: rotate(215deg) translateX(-1500px); opacity: 0; }
+}
+
 .ls-logo {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3221,6 +3293,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .ls-form {
+    position: relative;
+    z-index: 1;
     width: 100%;
     max-width: 320px;
     display: flex;
@@ -3273,5 +3347,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     right: 1.5rem;
     font-size: 0.72rem;
     color: var(--text-muted);
+    z-index: 1;
 }
 

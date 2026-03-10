@@ -4876,7 +4876,21 @@ function getNowPlus10() {
             state._usersCache = users;
         } catch (e) {}
 
+        const starData = [
+            [0,  24, 1.0, 6],  [15, 78, 4.2, 10], [3,  48, 6.1, 8],
+            [61, 86, 2.3, 7],  [9,  60, 0.4, 9],  [38, 12, 5.7, 11],
+            [72, 35, 3.1, 8],  [22, 52, 7.8, 6],  [50, 70, 1.5, 10],
+            [84, 8,  4.9, 7],  [5,  90, 8.3, 9],  [43, 30, 0.9, 8],
+            [67, 55, 6.5, 11], [29, 15, 3.7, 6],  [78, 44, 2.1, 9],
+            [11, 72, 9.2, 7],  [54, 18, 5.3, 10], [35, 65, 7.1, 8],
+            [90, 80, 1.8, 6],  [20, 40, 4.4, 9],
+        ];
+        const starsHtml = `<div class="ls-stars">${starData.map(([top, left, delay, duration]) =>
+            `<div class="shooting_star" style="top:${top}%;left:${left}%;--delay:${delay}s;--duration:${duration}s"></div>`
+        ).join('')}</div>`;
+
         screen.innerHTML = `
+            ${starsHtml}
             <div class="ls-logo">
                 <span class="ls-logo-icon">🎮</span>
                 <span class="ls-logo-text">Gameparty</span>
