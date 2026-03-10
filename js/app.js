@@ -3649,16 +3649,16 @@ function getNowPlus10() {
                         const opp = chOpponent.value;
                         if (!opp) {
                             chCoins.max = myCoins;
-                            chCoins.placeholder = `Coins (max ${myCoins})`;
+                            chCoins.placeholder = `max ${myCoins}`;
                             chStars.max = myStars;
-                            chStars.placeholder = `Controller-P. (max ${myStars})`;
+                            chStars.placeholder = `max ${myStars}`;
                         } else {
                             const effCoins = Math.min(myCoins, getPlayerCoins(opp));
                             const effStars = Math.min(myStars, getPlayerStars(opp));
                             chCoins.max = effCoins;
-                            chCoins.placeholder = `Coins (max ${effCoins})`;
+                            chCoins.placeholder = `max ${effCoins}`;
                             chStars.max = effStars;
-                            chStars.placeholder = `Controller-P. (max ${effStars})`;
+                            chStars.placeholder = `max ${effStars}`;
                             if (parseInt(chCoins.value) > effCoins) chCoins.value = effCoins;
                             if (parseInt(chStars.value) > effStars) chStars.value = effStars;
                         }
