@@ -65,6 +65,21 @@
         return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins">`;
     }
 
+    function controllerSvgIcon(size) {
+        const s = size || '1em';
+        return `<img src="svg/console-controller.svg" class="coin-svg-icon" alt="controller" style="width:${s};height:${s};vertical-align:middle">`;
+    }
+
+    function showNegativeCoinAnimation(amount) {
+        const popup = document.createElement('div');
+        popup.className = 'coin-popup';
+        popup.style.cssText = 'background:var(--danger,#ff4444);color:#fff';
+        popup.textContent = `-${amount} ${t('coins_label') || 'Coins'}`;
+        document.body.appendChild(popup);
+        playSound('error');
+        setTimeout(() => popup.remove(), 1500);
+    }
+
     function startCoinAccumulatorInterval() {
         if (coinAccumulatorInterval) clearInterval(coinAccumulatorInterval);
         coinAccumulatorInterval = setInterval(() => {
@@ -534,7 +549,7 @@ function getNowPlus10() {
                     const rate = getPlayerRate(playerCount);
 
                     if (s.status === 'lobby') {
-                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${s.challenge_id ? '⚔️ Duel · ' : ''}${t('session_lobby')}</span>`;
+                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem">${s.challenge_id ? '⚔️ Duell · ' : ''}${t('session_lobby')}</span>`;
                         if (rate > 0) {
                             coinInfoHTML = `<div class="session-coin-rate">${rate} ${coinSvgIcon()} / min</div>`;
                         }
@@ -549,7 +564,7 @@ function getNowPlus10() {
                         }
                     } else if (s.status === 'running') {
                         const initialMins0 = s.startedAt ? Math.floor((Date.now() - s.startedAt) / 60000) : 0;
-                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ Duel · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
+                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ Duell · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
                         if (rate > 0 && s.startedAt) {
                             const initialMinutes = (Date.now() - s.startedAt) / 60000;
                             const initialCoins = Math.ceil(initialMinutes * rate);
@@ -566,14 +581,14 @@ function getNowPlus10() {
                             let potRunStr = '';
                             if (s.challenge_type === '1v1') {
                                 if (chRun?.stakeCoins > 0) potRunStr += `${chRun.stakeCoins * 2} ${coinSvgIcon()}`;
-                                if (chRun?.stakeStars > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStars * 2} ⭐`;
+                                if (chRun?.stakeStars > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStars * 2} ${controllerSvgIcon()}`;
                             } else {
                                 const tp = s.players?.length || 0;
                                 if (chRun?.stakeCoinsPerPerson > 0) potRunStr += `${chRun.stakeCoinsPerPerson * tp} ${coinSvgIcon()}`;
-                                if (chRun?.stakeStarsPerPerson > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStarsPerPerson * tp} ⭐`;
+                                if (chRun?.stakeStarsPerPerson > 0) potRunStr += (potRunStr ? ' + ' : '') + `${chRun.stakeStarsPerPerson * tp} ${controllerSvgIcon()}`;
                             }
                             if (potRunStr) {
-                                coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">Pot: ${potRunStr}</div>`;
+                                coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">Pott: ${potRunStr}</div>`;
                             }
                         }
                         if (isLeader || isAdmin()) {
@@ -600,30 +615,34 @@ function getNowPlus10() {
                         let potStr = '';
                         if (s.challenge_type === '1v1') {
                             if (ch?.stakeCoins > 0) potStr += `${ch.stakeCoins * 2} ${coinSvgIcon()}`;
-                            if (ch?.stakeStars > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStars * 2} ⭐`;
+                            if (ch?.stakeStars > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStars * 2} ${controllerSvgIcon()}`;
                         } else {
                             const tp = s.players?.length || 0;
                             if (ch?.stakeCoinsPerPerson > 0) potStr += `${ch.stakeCoinsPerPerson * tp} ${coinSvgIcon()}`;
-                            if (ch?.stakeStarsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStarsPerPerson * tp} ⭐`;
+                            if (ch?.stakeStarsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${ch.stakeStarsPerPerson * tp} ${controllerSvgIcon()}`;
                         }
-                        const potDisplay = potStr ? `<div class="vote-pot-display">Pot: ${potStr}</div>` : '';
+                        const potDisplay = potStr ? `<div class="vote-pot-display">Pott: ${potStr}</div>` : '';
 
                         if (isPaid) {
                             const winner = s.challenge_type === '1v1' ? ch?.winner : (ch?.winnerTeam === 'A' ? 'Team A' : 'Team B');
                             statusBadge = `<span class="pending-approval-badge" style="background:var(--accent-green);color:#000">✅ ${winner} gewonnen</span>`;
+                            const sessionCoins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
+                            const sessionCoinsDisplay = sessionCoins > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem"><span class="vote-label" style="margin:0">Session-Coins:</span><span style="font-weight:600;color:var(--text-primary)">${sessionCoins} ${coinSvgIcon()}</span></div>` : '';
                             if (isAdmin()) {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
-                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pot wurde ausgeschüttet</div>
-                                        <button class="btn-approve duel-close-btn" data-sid="${s.id}" style="margin-top:0.4rem">Session schließen</button>
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pott wurde ausgeschüttet</div>
+                                        ${sessionCoinsDisplay}
+                                        <button class="btn-approve duel-close-btn" data-sid="${s.id}" data-coins="${sessionCoins}" style="margin-top:0.4rem">Session schließen</button>
                                     </div>`;
                             } else {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
-                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pot wurde ausgeschüttet</div>
-                                        <div class="vote-label" style="color:var(--text-secondary)">Admin schließt die Session</div>
+                                        <div class="vote-label" style="color:var(--accent-green)">🏆 Pott wurde ausgeschüttet</div>
+                                        ${sessionCoinsDisplay}
+                                        <div class="vote-label" style="color:var(--text-secondary)">Gamemaster schließt die Session</div>
                                     </div>`;
                             }
                         } else {
@@ -828,13 +847,14 @@ function getNowPlus10() {
                 });
             });
 
-            // Admin: paid Duel-Session schließen (no confirm needed)
+            // Admin: paid Duel-Session schließen — approve session coins and close
             container.querySelectorAll('.duel-close-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const sid = btn.dataset.sid;
                     if (!sid) return;
                     try {
-                        await api('DELETE', `/live-sessions/${sid}`);
+                        const coinsPerPlayer = parseInt(btn.dataset.coins || 0);
+                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer });
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
                     }
@@ -2952,11 +2972,11 @@ function getNowPlus10() {
 
         const resultParts = [];
         if (isWinner) {
-            if (wonCoins > 0) resultParts.push(`+${wonCoins} Coins`);
-            if (wonStars > 0) resultParts.push(`+${wonStars} ⭐`);
+            if (wonCoins > 0) resultParts.push(`+${wonCoins} ${coinSvgIcon()}`);
+            if (wonStars > 0) resultParts.push(`+${wonStars} ${controllerSvgIcon()}`);
         } else {
-            if (stakeCoins > 0) resultParts.push(`-${stakeCoins} Coins`);
-            if (stakeStars > 0) resultParts.push(`-${stakeStars} ⭐`);
+            if (stakeCoins > 0) resultParts.push(`-${stakeCoins} ${coinSvgIcon()}`);
+            if (stakeStars > 0) resultParts.push(`-${stakeStars} ${controllerSvgIcon()}`);
         }
         const resultStr = resultParts.join(' + ') || '–';
 
@@ -2982,6 +3002,8 @@ function getNowPlus10() {
                 overlay.classList.remove('show');
                 if (isWinner) {
                     if (wonCoins > 0) showCoinAnimation(wonCoins);
+                } else {
+                    if (stakeCoins > 0) showNegativeCoinAnimation(stakeCoins);
                 }
             });
         }
@@ -3002,13 +3024,13 @@ function getNowPlus10() {
             const stars = (data.baseStars || 0) + (idx === 0 ? (data.starRemainder || 0) : 0);
             const parts = [];
             if (coins > 0) parts.push(`+${coins} Coins`);
-            if (stars > 0) parts.push(`+${stars} 🎮`);
+            if (stars > 0) parts.push(`+${stars} ${controllerSvgIcon()}`);
             rows.push({ player: p, text: parts.join(' + ') || '–', winner: true });
         });
         losers.forEach(p => {
             const parts = [];
             if (data.stakeCoinsPerPerson > 0) parts.push(`-${data.stakeCoinsPerPerson} Coins`);
-            if (data.stakeStarsPerPerson > 0) parts.push(`-${data.stakeStarsPerPerson} 🎮`);
+            if (data.stakeStarsPerPerson > 0) parts.push(`-${data.stakeStarsPerPerson} ${controllerSvgIcon()}`);
             rows.push({ player: p, text: parts.join(' + ') || '–', winner: false });
         });
 
@@ -3020,12 +3042,12 @@ function getNowPlus10() {
 
         const potParts = [];
         if (data.totalPot > 0) potParts.push(`${data.totalPot} Coins`);
-        if (data.totalStarPot > 0) potParts.push(`${data.totalStarPot} 🎮`);
+        if (data.totalStarPot > 0) potParts.push(`${data.totalStarPot} ${controllerSvgIcon()}`);
         const potStr = potParts.join(' + ') || '–';
 
         const stakeParts = [];
         if (data.stakeCoinsPerPerson > 0) stakeParts.push(`${data.stakeCoinsPerPerson} Coins`);
-        if (data.stakeStarsPerPerson > 0) stakeParts.push(`${data.stakeStarsPerPerson} 🎮`);
+        if (data.stakeStarsPerPerson > 0) stakeParts.push(`${data.stakeStarsPerPerson} ${controllerSvgIcon()}`);
         const stakeStr = stakeParts.join(' + ') || '–';
 
         modal.innerHTML = `
@@ -3308,7 +3330,7 @@ function getNowPlus10() {
                 const admin = isAdmin();
                 const pot = [];
                 if (c.stakeCoins > 0) pot.push(`${c.stakeCoins * 2} ${coinSvgIcon()}`);
-                if (c.stakeStars > 0) pot.push(`${c.stakeStars * 2} ⭐`);
+                if (c.stakeStars > 0) pot.push(`${c.stakeStars * 2} ${controllerSvgIcon()}`);
                 const potStr = pot.length ? pot.join(' + ') : t('no_stake');
 
                 let actionsHTML = '';
@@ -3342,7 +3364,7 @@ function getNowPlus10() {
                         </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div class="game-meta">${c.game}</div>
-                            <div class="vote-pot-display" style="margin:0">Pot: ${potStr}</div>
+                            <div class="vote-pot-display" style="margin:0">Pott: ${potStr}</div>
                         </div>
                         ${winnerInfo}
                         ${actionsHTML}
@@ -3374,7 +3396,7 @@ function getNowPlus10() {
 
                 const potParts = [];
                 if (tc.stakeCoinsPerPerson > 0) potParts.push(`${tc.stakeCoinsPerPerson} Coins/Person · ${t('total_pot_preview', totalPot + ' Coins')}`);
-                if (tc.stakeStarsPerPerson > 0) potParts.push(`${tc.stakeStarsPerPerson} 🎮/Person · ${t('total_pot_preview', totalStarPot + ' 🎮')}`);
+                if (tc.stakeStarsPerPerson > 0) potParts.push(`${tc.stakeStarsPerPerson} ${controllerSvgIcon()}/Person · ${t('total_pot_preview', totalStarPot + ' ' + controllerSvgIcon())}`);
                 const potStr = potParts.length ? potParts.join(' · ') : t('no_stake');
 
                 const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
@@ -4198,7 +4220,7 @@ function getNowPlus10() {
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = [
                     c.stakeCoins > 0 ? `${c.stakeCoins} Coins` : '',
-                    c.stakeStars > 0 ? `${c.stakeStars} 🎮` : ''
+                    c.stakeStars > 0 ? `${c.stakeStars} ${controllerSvgIcon()}` : ''
                 ].filter(Boolean).join(' + ') || 'Kein Einsatz';
                 pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: c.createdAt });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);

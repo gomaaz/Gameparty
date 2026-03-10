@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.3.128 (2026-03-10)
+- fix: "Duel" → "Duell" in session card badge (German spelling)
+- fix: "Pot" → "Pott" everywhere in German UI (badges, labels, i18n key)
+- feat: ⭐ and 🎮 replaced with controller SVG icon throughout (pot, modal, notifications)
+- feat: controllerSvgIcon() helper function added
+- feat: Session-Coins shown in paid duel card; "Session schließen" now approves + pays out
+- feat: loser coin popup (red, negative amount) on duel payout modal close
+- fix: "Admin schließt die Session" → "Gamemaster schließt die Session"
+
 ## v2.3.127 (2026-03-10)
 - feat: ⚔️ Duel badge on lobby/running session cards with challenge_id
 - feat: pot displayed under live coin counter in running duel sessions
