@@ -2059,7 +2059,7 @@ function getNowPlus10() {
                         ${getNotifPref('visual') && Notification.permission === 'granted' ? `
                         <div class="notif-row">
                             <span>${t('notif_test')}</span>
-                            <button class="btn-secondary" id="notif-test-btn">🔔 Testen</button>
+                            <button class="notif-toggle" id="notif-test-btn">🔔 Test</button>
                         </div>` : ''}
                     </div>
                 </div>
