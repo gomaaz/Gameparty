@@ -4211,8 +4211,7 @@ function getNowPlus10() {
                 pollChallenges();
             });
             sseSource.onerror = () => {
-                // SSE schliessen damit kein endloser Reconnect-Loop in der Konsole
-                if (sseSource) { sseSource.close(); sseSource = null; }
+                // Browser reconnectet automatisch (NPM muss proxy_buffering off haben)
             };
         }
     }
