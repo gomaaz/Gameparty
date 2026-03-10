@@ -1,7 +1,9 @@
 # Changelog
 
-## v.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1 (2026-03-10)
-- fix: persist notif badges and add timestamp to notif items
+## v2.3.124 (2026-03-10)
+- fix: notifications load immediately on page reload, badge shows instantly
+- fix: notif-toasts only appear once per notification (persisted via localStorage)
+- feat: timestamp shown above notif-item-title with muted styling
 
 ## v2.3.122 (2026-03-10)
 - fix: remove duplicate showToast function that was overriding the correct implementation
