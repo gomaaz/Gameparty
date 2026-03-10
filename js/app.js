@@ -438,8 +438,9 @@ function getNowPlus10() {
 
             // Build challenge status lookup
             const challengeStatusMap = {};
-            (challengesData || []).forEach(c => { challengeStatusMap[c.id] = c.status; });
-            (teamChallengesData || []).forEach(tc => { challengeStatusMap[tc.id] = tc.status; });
+            const challengeMap = {};
+            (challengesData || []).forEach(c => { challengeStatusMap[c.id] = c.status; challengeMap[c.id] = c; });
+            (teamChallengesData || []).forEach(tc => { challengeStatusMap[tc.id] = tc.status; challengeMap[tc.id] = tc; });
             const userIpMap = Object.fromEntries((usersData || []).map(u => [u.name, u.ip || '']));
             state.coins = coinsData;
             state.stars = starsData;
@@ -561,7 +562,9 @@ function getNowPlus10() {
                         const duelVotes = duelVotesMap[s.id] || [];
                         const myVote = duelVotes.find(v => v.player === state.currentPlayer)?.voted_for;
                         const challengeStatus = challengeStatusMap[s.challenge_id];
+                        const ch = challengeMap[s.challenge_id];
                         const isConflict = challengeStatus === 'conflict';
+                        const isVoted = challengeStatus === 'voted';
 
                         let options;
                         if (s.challenge_type === '1v1') {
@@ -579,12 +582,31 @@ function getNowPlus10() {
                                     <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                     ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
                                     ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${opt}</button>`).join('')}
+                                    <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="margin-top:0.3rem;padding:0.35rem 0.8rem;font-size:0.85rem;display:block;margin-left:auto;margin-right:auto">🗑️ Abbrechen</button>
                                 </div>`;
                         } else if (isConflict) {
                             actionsHTML = `
                                 <div class="duel-vote-section">
                                     <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                     <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
+                                </div>`;
+                        } else if (isVoted && isAdmin()) {
+                            const winner = ch?.winner || ch?.winnerTeam;
+                            actionsHTML = `
+                                <div class="duel-vote-section">
+                                    <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
+                                        🏆 Einigkeit: <strong>${winner}</strong>
+                                    </div>
+                                    <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve') || 'Freigeben'}</button>
+                                    <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button>
+                                </div>`;
+                        } else if (isVoted && !isAdmin()) {
+                            actionsHTML = `
+                                <div class="duel-vote-section">
+                                    <div class="vote-label" style="color:var(--accent-green)">
+                                        🏆 Abstimmung abgeschlossen
+                                    </div>
+                                    <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf Admin...'}</div>
                                 </div>`;
                         } else if (myVote) {
                             actionsHTML = `
@@ -715,6 +737,33 @@ function getNowPlus10() {
                         showToast(e.message || t('save_error'), 'error');
                     }
                     renderDashboard();
+                });
+            });
+
+            // Admin: Duel-Payout freigeben
+            container.querySelectorAll('.duel-approve-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const sid = btn.dataset.sid;
+                    if (!sid) return;
+                    try {
+                        await api('POST', '/duel-votes/approve', { sessionId: sid });
+                    } catch (e) {
+                        showToast(e.message || t('save_error'), 'error');
+                    }
+                });
+            });
+
+            // Admin: Duel-Session abbrechen
+            container.querySelectorAll('.duel-cancel-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm(t('discard_confirm') || 'Session wirklich abbrechen?')) return;
+                    const sid = btn.dataset.sid;
+                    if (!sid) return;
+                    try {
+                        await api('DELETE', `/live-sessions/${sid}`);
+                    } catch (e) {
+                        showToast(e.message || t('save_error'), 'error');
+                    }
                 });
             });
 
