@@ -3643,21 +3643,13 @@ function getNowPlus10() {
                         <div style="flex:1;">
                             <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.4rem;font-weight:600;">${t('team_a')}</div>
                             ${allPlayers.map(p => `
-                                <label style="display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;cursor:pointer;">
-                                    <input type="checkbox" class="tc-team-a-check" value="${p}" ${p === state.currentPlayer ? 'checked' : ''}
-                                        style="accent-color:var(--accent-purple);width:14px;height:14px;">
-                                    <span style="font-size:0.9rem;">${p}</span>
-                                </label>
+                                <button type="button" class="tc-player-btn tc-team-a-btn${p === state.currentPlayer ? ' active' : ''}" data-player="${p}">${p}</button>
                             `).join('')}
                         </div>
                         <div style="flex:1;">
                             <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.4rem;font-weight:600;">${t('team_b')}</div>
                             ${allPlayers.map(p => `
-                                <label style="display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;cursor:pointer;">
-                                    <input type="checkbox" class="tc-team-b-check" value="${p}"
-                                        style="accent-color:var(--accent-blue);width:14px;height:14px;">
-                                    <span style="font-size:0.9rem;">${p}</span>
-                                </label>
+                                <button type="button" class="tc-player-btn tc-team-b-btn" data-player="${p}">${p}</button>
                             `).join('')}
                         </div>
                     </div>
@@ -3923,8 +3915,8 @@ function getNowPlus10() {
             if (challengeActiveTab === 'team') {
                 // Live pot preview + stake cap based on selected players
                 function updateTcPotPreview() {
-                    const checkedA = [...container.querySelectorAll('.tc-team-a-check:checked')].map(cb => cb.value);
-                    const checkedB = [...container.querySelectorAll('.tc-team-b-check:checked')].map(cb => cb.value);
+                    const checkedA = [...container.querySelectorAll('.tc-team-a-btn.active')].map(btn => btn.dataset.player);
+                    const checkedB = [...container.querySelectorAll('.tc-team-b-btn.active')].map(btn => btn.dataset.player);
                     const allChecked = [...new Set([...checkedA, ...checkedB])];
                     const totalCount = checkedA.length + checkedB.length;
 
@@ -3984,20 +3976,22 @@ function getNowPlus10() {
                     }
                 }
                 // Mutual exclusion: a player cannot be on both teams simultaneously
-                container.querySelectorAll('.tc-team-a-check').forEach(cb => {
-                    cb.addEventListener('change', () => {
-                        if (cb.checked) {
-                            const oppCheck = container.querySelector(`.tc-team-b-check[value="${cb.value}"]`);
-                            if (oppCheck) oppCheck.checked = false;
+                container.querySelectorAll('.tc-team-a-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        btn.classList.toggle('active');
+                        if (btn.classList.contains('active')) {
+                            const opp = container.querySelector(`.tc-team-b-btn[data-player="${btn.dataset.player}"]`);
+                            if (opp) opp.classList.remove('active');
                         }
                         updateTcPotPreview();
                     });
                 });
-                container.querySelectorAll('.tc-team-b-check').forEach(cb => {
-                    cb.addEventListener('change', () => {
-                        if (cb.checked) {
-                            const oppCheck = container.querySelector(`.tc-team-a-check[value="${cb.value}"]`);
-                            if (oppCheck) oppCheck.checked = false;
+                container.querySelectorAll('.tc-team-b-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        btn.classList.toggle('active');
+                        if (btn.classList.contains('active')) {
+                            const opp = container.querySelector(`.tc-team-a-btn[data-player="${btn.dataset.player}"]`);
+                            if (opp) opp.classList.remove('active');
                         }
                         updateTcPotPreview();
                     });
@@ -4011,8 +4005,8 @@ function getNowPlus10() {
                 const tcCreateBtn = container.querySelector('#tc-create');
                 if (tcCreateBtn) {
                     tcCreateBtn.addEventListener('click', async () => {
-                        const teamA = [...container.querySelectorAll('.tc-team-a-check:checked')].map(cb => cb.value);
-                        const teamB = [...container.querySelectorAll('.tc-team-b-check:checked')].map(cb => cb.value);
+                        const teamA = [...container.querySelectorAll('.tc-team-a-btn.active')].map(btn => btn.dataset.player);
+                        const teamB = [...container.querySelectorAll('.tc-team-b-btn.active')].map(btn => btn.dataset.player);
                         const game = container.querySelector('#tc-game')?.value;
                         const stakeCoinsPerPerson = parseInt(container.querySelector('#tc-coins')?.value) || 0;
                         const stakeStarsPerPerson = parseInt(container.querySelector('#tc-stars')?.value) || 0;

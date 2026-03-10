@@ -1962,6 +1962,43 @@ body {
     box-shadow: none;
 }
 
+/* Team Duel — Player Toggle Buttons */
+.tc-player-btn {
+    display: block;
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 0.45rem 0.7rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.tc-player-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+.tc-team-a-btn.active {
+    background: rgba(179, 136, 255, 0.12);
+    border-color: var(--accent-purple);
+    color: var(--accent-purple);
+    font-weight: 600;
+    box-shadow: 0 0 8px rgba(179, 136, 255, 0.2);
+}
+
+.tc-team-b-btn.active {
+    background: rgba(100, 160, 255, 0.12);
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    font-weight: 600;
+    box-shadow: 0 0 8px rgba(100, 160, 255, 0.2);
+}
+
 .proposal-list {
     display: flex;
     flex-direction: column;
