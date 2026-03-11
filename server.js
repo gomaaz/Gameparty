@@ -1744,6 +1744,15 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
         db.prepare('DELETE FROM live_sessions WHERE id = ?').run(req.params.id);
     });
     approve();
+    // Notify all participants via player_events
+    if (coinsPerPlayer > 0) {
+        const payoutPayload = JSON.stringify({ game: session.game, coins: coinsPerPlayer, playerCount: players.length });
+        const payoutNow = Date.now();
+        for (const p of players) {
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'session_payout', '', payoutPayload, payoutNow, 'active');
+        }
+    }
+    broadcast({ type: 'update' });
     res.json({ success: true });
 });
 

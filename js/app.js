@@ -3578,6 +3578,35 @@ function getNowPlus10() {
         });
     }
 
+    function showSessionPayoutModal(data) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        const coins = data.coins || 0;
+        modal.innerHTML = `
+            <div class="modal-title" style="color:var(--accent-gold);">
+                🧾 ${t('session_payout_title')}
+            </div>
+            <div style="text-align:center;font-size:1.5rem;font-weight:700;margin:0.75rem 0;color:var(--accent-gold);">
+                +${fmt(coins)} ${coinSvgIcon('1.2em')}
+            </div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.25rem;">
+                🎮 ${data.game}
+            </div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;">
+                ${data.playerCount} ${t('session_payout_players')}
+            </div>
+            <button class="btn-propose" id="session-payout-close">OK</button>
+        `;
+        overlay.classList.add('show');
+        const closeBtn = $('#session-payout-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.classList.remove('show');
+                if (coins > 0) showCoinAnimation(coins, 0);
+            });
+        }
+    }
+
     function showAckModal(msg) {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
@@ -4838,6 +4867,15 @@ function getNowPlus10() {
                     try {
                         const data = JSON.parse(ev.message);
                         showTcPayoutModal(data);
+                        if (getNotifPref('sound')) playSound('coin');
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
+                if (ev.type === 'session_payout') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        showSessionPayoutModal(data);
                         if (getNotifPref('sound')) playSound('coin');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
