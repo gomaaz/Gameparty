@@ -5181,7 +5181,7 @@ function getNowPlus10() {
                             pendingNotifications.push({ id: notifId, evId: ev.id, type: ev.type, title: t(titleKey, data.game || ''), ts: ev.createdAt });
                             showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                             updateBadge();
-                            if (getNotifPref('sound')) playSound(ev.type === 'game_approved' ? 'coin' : 'error');
+                            if (getNotifPref('sound')) playSound('challenge');
                         }
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
