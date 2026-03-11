@@ -2057,6 +2057,7 @@ body {
     cursor: pointer;
     text-align: left;
     transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+    margin-bottom: 0.4rem;
 }
 
 .tc-player-btn:hover {
