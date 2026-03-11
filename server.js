@@ -722,6 +722,28 @@ app.post('/api/proposals/:id/approve', (req, res) => {
 
     db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp) VALUES (?, ?, ?, ?)').run(proposal.game, JSON.stringify(players), coinsPerPlayer, Date.now());
     db.prepare('UPDATE proposals SET coinsApproved = 1 WHERE id = ?').run(req.params.id);
+
+    if (coinsPerPlayer > 0) {
+        // Calculate durationMin and coinRate for the receipt
+        const durationMin = (proposal.startedAt && proposal.completedAt)
+            ? Math.ceil((proposal.completedAt - proposal.startedAt) / 60000)
+            : 0;
+        const maxMultiplierSetting = db.prepare("SELECT value FROM settings WHERE key = 'max_multiplier'").get();
+        const playerMultipliersSetting = db.prepare("SELECT value FROM settings WHERE key = 'player_multipliers'").get();
+        const maxMultiplier = parseInt(maxMultiplierSetting?.value || '10');
+        const playerMultipliersMap = (() => { try { return JSON.parse(playerMultipliersSetting?.value || '{}'); } catch { return {}; } })();
+        const cappedCount = Math.min(players.length, maxMultiplier);
+        let coinRate = 0;
+        for (let c = cappedCount; c >= 2; c--) {
+            if (playerMultipliersMap[String(c)] !== undefined) { coinRate = parseFloat(playerMultipliersMap[String(c)]); break; }
+        }
+        const payoutPayload = JSON.stringify({ game: proposal.game, coins: coinsPerPlayer, playerCount: players.length, durationMin, coinRate });
+        const payoutNow = Date.now();
+        for (const p of players) {
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'session_payout', '', payoutPayload, payoutNow, 'active');
+        }
+    }
+
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
