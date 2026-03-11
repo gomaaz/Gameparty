@@ -394,7 +394,7 @@ app.post('/api/games/:name/interest', (req, res) => {
 });
 
 // GET /api/genres
-const BASE_GENRES = ['Action', 'Egoshooter', 'Indie', 'Rollenspiel', 'Strategie', 'Taktik'];
+const BASE_GENRES = ['2D Plattformer', '3D Plattformer', 'Action', 'Adventure', 'Battle Royale', 'Beat em Up', 'Crafting', 'Egoshooter', 'Horror', 'Indie', 'Openworld', 'Racing', 'Rollenspiel', 'Simulation', 'Sport', 'Strategie', 'Survival', 'Taktik', 'Topdown'];
 
 app.get('/api/genres', (req, res) => {
     const games = db.prepare("SELECT genre FROM games WHERE genre IS NOT NULL AND genre != ''").all();

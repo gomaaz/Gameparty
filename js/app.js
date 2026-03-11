@@ -44,7 +44,7 @@
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
     let cooldownTickInterval = null;
     const COOLDOWN_MS = { rob_controller: 5 * 60 * 1000 };
-    const GAME_GENRES = ['Strategie', 'Taktik', 'Egoshooter', 'Rollenspiel', 'Action', 'Indie'];
+    const GAME_GENRES = ['2D Plattformer', '3D Plattformer', 'Action', 'Adventure', 'Battle Royale', 'Beat em Up', 'Crafting', 'Egoshooter', 'Horror', 'Indie', 'Openworld', 'Racing', 'Rollenspiel', 'Simulation', 'Sport', 'Strategie', 'Survival', 'Taktik', 'Topdown'];
     const notifiedChallengeIds = new Set(JSON.parse(localStorage.getItem('gameparty_notified_challenge_ids') || '[]'));
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
     const shownDuelStartSessions = new Set(); // Duel-Start Modals die bereits gezeigt wurden
