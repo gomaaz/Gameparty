@@ -1936,6 +1936,8 @@ function getNowPlus10() {
                     return `<a class="game-shop-link" href="${url}" target="_blank" rel="noopener" title="${label}">${label}</a>`;
                 }).join('')
                 : '';
+            const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(g.name)}`;
+            const ytBadge = `<a class="game-yt-link" href="${ytUrl}" target="_blank" rel="noopener" title="YouTube-Suche">YouTube</a>`;
 
             const checkbox = admin ? `<input type="checkbox" class="game-checkbox" data-game="${g.name}" ${selectedGames.has(g.name) ? 'checked' : ''}>` : '';
 
@@ -1949,7 +1951,7 @@ function getNowPlus10() {
                         <div class="game-name ${g.previewUrl ? 'game-name-link' : ''}" ${g.previewUrl ? `data-preview="${g.previewUrl}"` : ''}>
                             ${g.name}
                         </div>
-                        ${shopLinksHTML ? `<div class="game-shop-links-row">${shopLinksHTML}</div>` : ''}
+                        <div class="game-shop-links-row">${ytBadge}${shopLinksHTML}</div>
                         <div class="game-meta">
                             <span>${g.genre || '?'}</span>
                             <span>Max ${g.maxPlayers}</span>

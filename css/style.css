@@ -2808,6 +2808,20 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .game-shop-link:hover {
     background: rgba(102, 153, 255, 0.3);
 }
+.game-yt-link {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    background: #c00;
+    color: #fff;
+    border: 1px solid rgba(255,0,0,0.4);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+.game-yt-link:hover { background: #e00; }
 
 /* Shop-Link row in edit modal */
 .shop-link-row {
