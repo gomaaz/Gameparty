@@ -476,11 +476,11 @@ const TRANSLATIONS = {
         help_sessions_title: '🎮 Sessions',
         help_sessions_body: 'Go to <b>Games</b> and select a game. Start a session — other players can join. When the session ends, an admin closes it and distributes coins to all participants.',
         help_shop_title: '🛒 Shop',
-        help_shop_body: 'Spend your earned coins on special actions — for example steal coins from other players or trigger special effects. Some items have a cooldown.',
+        help_shop_body: 'Spend your Coins on special actions against other players — for example steal coins or Controller Points from others. Note: some items share a common cooldown, meaning after one player buys such an item, it becomes unavailable for everyone for a certain period. First come, first served.',
         help_accounts_title: '👤 Accounts',
-        help_accounts_body: 'Enter your gaming usernames (Steam, Discord, Battle.net, etc.) in your <b>Profile</b>. Other players can then copy your account names to add you in games.',
+        help_accounts_body: 'Enter your gaming usernames (Steam, Discord, Battle.net, etc.) in your <b>Profile</b>. Other players can copy your account names to add you in games.<br><br>Your account names and connection details are also displayed in active sessions so everyone can see at a glance how to connect to you.',
         help_admin_title: '⚙️ Admin',
-        help_admin_body: 'As admin you can: manage players, approve game sessions, add/remove games, grant coins manually, view the full log, and configure settings via the gear menu.',
+        help_admin_body: 'As admin you can: manage players, add/remove games, grant coins manually, set the coin rate and its scaling per player count, and manage player attendance.<br><br>You can also reset all points, duels, or data. A full reset deletes everything and restarts the app at the setup wizard — as if opened for the first time.',
         firstlogin_sub: 'Enter your accounts — other players can copy them to connect with you.',
 
         // --- Medium Account Step ---
@@ -999,11 +999,11 @@ const TRANSLATIONS = {
         help_sessions_title: '🎮 Sitzungen',
         help_sessions_body: 'Gehe zu <b>Spiele</b> und wähle ein Spiel aus. Starte eine Sitzung – andere Spieler können beitreten. Wenn die Sitzung endet, schließt ein Admin sie und verteilt Coins an alle Teilnehmer.',
         help_shop_title: '🛒 Shop',
-        help_shop_body: 'Gib deine Coins für besondere Aktionen aus – zum Beispiel Coins von anderen Spielern stehlen oder besondere Effekte auslösen. Manche Items haben einen Cooldown.',
+        help_shop_body: 'Gib deine Coins für besondere Aktionen gegenüber anderen Spielern aus. Du kannst z.&nbsp;B. Münzen oder Controller-Punkte von anderen klauen. Beachte: Manche Items teilen einen gemeinsamen Cooldown – nach dem Kauf steht das Item für eine bestimmte Zeit niemandem zur Verfügung. Es gilt: Wer zuerst kommt, malt zuerst.',
         help_accounts_title: '👤 Accounts',
-        help_accounts_body: 'Trage deine Gaming-Nutzernamen (Steam, Discord, Battle.net usw.) in deinem <b>Profil</b> ein. Andere Spieler können deine Account-Namen dann kopieren, um dich in Spielen hinzuzufügen.',
+        help_accounts_body: 'Trage deine Gaming-Nutzernamen (Steam, Discord, Battle.net usw.) in deinem <b>Profil</b> ein. Andere Spieler können deine Account-Namen dann kopieren, um dich in Spielen hinzuzufügen.<br><br>Deine Account-Namen und Connect-Informationen werden außerdem in laufenden Sitzungen angezeigt, damit alle direkt sehen, wie sie sich mit dir verbinden können.',
         help_admin_title: '⚙️ Admin',
-        help_admin_body: 'Als Admin kannst du: Spieler verwalten, Spielsitzungen genehmigen, Spiele hinzufügen/entfernen, Coins manuell vergeben, das vollständige Log einsehen und Einstellungen über das Zahnrad-Menü konfigurieren.',
+        help_admin_body: 'Als Admin kannst du: Spieler verwalten, Spiele hinzufügen oder entfernen, Coins manuell vergeben, die Coinrate und deren Skalierung mit der Spieleranzahl festlegen sowie die Anwesenheiten der Spieler bestimmen.<br><br>Außerdem kannst du alle Punkte, Duelle oder Daten zurücksetzen. Ein vollständiges Zurücksetzen löscht alle Daten und startet die App direkt beim Einrichtungsassistenten – als würde sie zum ersten Mal geöffnet.',
         firstlogin_sub: 'Trage deine Accounts ein – andere Spieler können sie kopieren, um dich zu finden.',
 
         // --- Medium Account Step ---
