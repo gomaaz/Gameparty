@@ -210,6 +210,9 @@ try { db.prepare("CREATE INDEX IF NOT EXISTS idx_challenges_status ON challenges
 try { db.prepare("CREATE INDEX IF NOT EXISTS idx_team_challenges_status ON team_challenges(status)").run(); } catch {}
 try { db.prepare("CREATE INDEX IF NOT EXISTS idx_history_player ON history(player)").run(); } catch {}
 
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN duration_min INT DEFAULT 0").run(); } catch {}
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN coin_rate REAL DEFAULT 0").run(); } catch {}
+
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
     const result = db.prepare('DELETE FROM attendees WHERE player NOT IN (SELECT name FROM users)').run();
@@ -1719,7 +1722,7 @@ app.put('/api/live-sessions/:id/end', (req, res) => {
     }
     const durationMin = sessionData?.startedAt ? Math.ceil((endedAt - sessionData.startedAt) / 60000) : 0;
     const pendingCoins = Math.round(durationMin * playerRate);
-    db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ?, pending_coins = ? WHERE id = ?").run(endedAt, pendingCoins, req.params.id);
+    db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ?, pending_coins = ?, duration_min = ?, coin_rate = ? WHERE id = ?").run(endedAt, pendingCoins, durationMin, playerRate, req.params.id);
     res.json({ success: true });
 });
 
@@ -1746,7 +1749,7 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
     approve();
     // Notify all participants via player_events
     if (coinsPerPlayer > 0) {
-        const payoutPayload = JSON.stringify({ game: session.game, coins: coinsPerPlayer, playerCount: players.length });
+        const payoutPayload = JSON.stringify({ game: session.game, coins: coinsPerPlayer, playerCount: players.length, durationMin: session.duration_min || 0, coinRate: session.coin_rate || 0 });
         const payoutNow = Date.now();
         for (const p of players) {
             db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'session_payout', '', payoutPayload, payoutNow, 'active');

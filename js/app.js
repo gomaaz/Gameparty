@@ -3592,9 +3592,11 @@ function getNowPlus10() {
             <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.25rem;">
                 🎮 ${data.game}
             </div>
-            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;">
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">
                 ${data.playerCount} ${t('session_payout_players')}
             </div>
+            ${data.durationMin ? `<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">⏱ ${data.durationMin} min &times; ${data.coinRate} ${coinSvgIcon('0.85em')} / min</div>` : ''}
+            <div style="margin-bottom:0.75rem;"></div>
             <button class="btn-propose" id="session-payout-close">OK</button>
         `;
         overlay.classList.add('show');
