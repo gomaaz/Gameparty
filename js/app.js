@@ -14,7 +14,7 @@
         players: [],
         coins: {},
         stars: {},
-        soundEnabled: false,
+        soundEnabled: true,
         version: '',
         allUsers: [],
         settings: {},
@@ -5252,9 +5252,10 @@ function getNowPlus10() {
                 <div class="pw-genre-grid">${GAME_GENRES.map(g =>
                     `<button class="pw-genre-chip${wiz.genres.includes(g) ? ' selected' : ''}" data-genre="${g}">${g}</button>`
                 ).join('')}</div>
-                <button class="ls-btn-secondary ls-btn-back" id="pw-step2-back">← ${t('pw_back')}</button>
-                <button class="ls-btn" id="pw-step2-next">${t('pw_next')}</button>
-                <button class="ls-btn-secondary" id="pw-step2-skip">${t('pw_skip')}</button>
+                <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+                    <button class="ls-btn-secondary ls-btn-back" id="pw-step2-back" style="flex:1">← ${t('pw_back')}</button>
+                    <button class="ls-btn" id="pw-step2-next" style="flex:2">${t('pw_next')} →</button>
+                </div>
             `);
             screen.querySelectorAll('.pw-genre-chip').forEach(btn => {
                 btn.addEventListener('click', () => btn.classList.toggle('selected'));
@@ -5267,10 +5268,6 @@ function getNowPlus10() {
                 wiz.genres = Array.from(screen.querySelectorAll('.pw-genre-chip.selected')).map(b => b.dataset.genre);
                 showStep3();
             });
-            screen.querySelector('#pw-step2-skip').addEventListener('click', () => {
-                wiz.game = ''; wiz.genres = [];
-                showStep3();
-            });
         }
 
         // Step 3: Login message
@@ -5280,19 +5277,16 @@ function getNowPlus10() {
                 <div class="ls-wizard-title">${t('pw_message_title')}</div>
                 <div class="ls-wizard-sub">${t('pw_message_sub')}</div>
                 <input class="ls-input" id="pw-message" type="text" placeholder="${t('pw_message_placeholder')}" value="${wiz.message}" autocomplete="off">
-                <button class="ls-btn-secondary ls-btn-back" id="pw-step3-back">← ${t('pw_back')}</button>
-                <button class="ls-btn" id="pw-step3-next">${t('pw_next')}</button>
-                <button class="ls-btn-secondary" id="pw-step3-skip">${t('pw_skip')}</button>
+                <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+                    <button class="ls-btn-secondary ls-btn-back" id="pw-step3-back" style="flex:1">← ${t('pw_back')}</button>
+                    <button class="ls-btn" id="pw-step3-next" style="flex:2">${t('pw_next')} →</button>
+                </div>
             `);
             screen.querySelector('#pw-step3-back').addEventListener('click', () => {
                 showStep2();
             });
             screen.querySelector('#pw-step3-next').addEventListener('click', () => {
                 wiz.message = screen.querySelector('#pw-message').value.trim();
-                showStep4();
-            });
-            screen.querySelector('#pw-step3-skip').addEventListener('click', () => {
-                wiz.message = '';
                 showStep4();
             });
         }
@@ -5304,8 +5298,10 @@ function getNowPlus10() {
                 <div class="ls-wizard-title">${t('pw_coins_title')}</div>
                 <div class="ls-wizard-sub">${t('pw_coins_sub')}<br><span style="font-size:0.82rem;opacity:0.6">${t('pw_coins_recommended')}</span></div>
                 <input class="ls-input" id="pw-coins" type="number" min="0" max="9999" value="${wiz.coins}" placeholder="0">
-                <button class="ls-btn-secondary ls-btn-back" id="pw-step4-back">← ${t('pw_back')}</button>
-                <button class="ls-btn" id="pw-step4-finish">${t('pw_finish')}</button>
+                <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+                    <button class="ls-btn-secondary ls-btn-back" id="pw-step4-back" style="flex:1">← ${t('pw_back')}</button>
+                    <button class="ls-btn" id="pw-step4-finish" style="flex:2">${t('pw_finish')}</button>
+                </div>
             `);
             screen.querySelector('#pw-step4-back').addEventListener('click', () => {
                 showStep3();
@@ -5609,8 +5605,9 @@ function getNowPlus10() {
             state.role = JSON.parse(localStorage.getItem(LOCAL_KEYS.ROLE));
         } catch { state.role = null; }
         try {
-            state.soundEnabled = JSON.parse(localStorage.getItem(LOCAL_KEYS.SOUND));
-        } catch { state.soundEnabled = false; }
+            const storedSound = localStorage.getItem(LOCAL_KEYS.SOUND);
+            state.soundEnabled = storedSound === null ? true : JSON.parse(storedSound);
+        } catch { state.soundEnabled = true; }
 
         // Load initial data from server
         try {
