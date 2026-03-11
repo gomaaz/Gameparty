@@ -2589,6 +2589,7 @@ function getNowPlus10() {
                         <div class="help-accordion-body">${s.body}</div>
                     </div>
                 `).join('')}
+                <div style="text-align:center;padding:1rem 0 0.5rem;font-size:0.75rem;color:var(--text-secondary);opacity:0.5">v${state.version}</div>
             </div>`;
         panel.querySelector('#help-panel-close').addEventListener('click', closeHelpPanel);
         panel.querySelectorAll('.help-accordion-header').forEach(h => {
