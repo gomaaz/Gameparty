@@ -3142,6 +3142,7 @@ function getNowPlus10() {
                     <button class="btn-danger" id="ap-btn-reset-coins">${t('btn_reset_coins')}</button>
                     <button class="btn-danger" id="ap-btn-reset-stars">${t('btn_reset_stars')}</button>
                     <button class="btn-danger" id="ap-btn-reset-challenges">${t('btn_reset_challenges')}</button>
+                    <button class="btn-danger" id="ap-btn-clear-shop-links">🔗 Alle Shop-Links löschen</button>
                     <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
                 </div>
 
@@ -3476,6 +3477,12 @@ function getNowPlus10() {
         $('#ap-btn-reset-challenges').addEventListener('click', () => {
             showConfirm(t('confirm_reset_challenges'), async () => {
                 try { await api('DELETE', '/reset/challenges', { requestedBy: state.currentPlayer }); showToast(t('reset_challenges_done'), 'error'); }
+                catch (e) { console.error(e); }
+            });
+        });
+        $('#ap-btn-clear-shop-links').addEventListener('click', () => {
+            showConfirm('Wirklich alle Shop-Links löschen?', async () => {
+                try { await api('DELETE', '/games/shop-links'); showToast('Alle Shop-Links gelöscht', 'error'); }
                 catch (e) { console.error(e); }
             });
         });

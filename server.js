@@ -427,6 +427,14 @@ app.put('/api/games/:name/approve', (req, res) => {
     res.json({ success: true });
 });
 
+// DELETE /api/games/shop-links — clear all shop links
+app.delete('/api/games/shop-links', (req, res) => {
+    db.prepare("UPDATE games SET shop_links = '[]'").run();
+    logger.info('All shop links cleared');
+    broadcast({ type: 'update' });
+    res.json({ ok: true });
+});
+
 // DELETE /api/games/:name
 app.delete('/api/games/:name', (req, res) => {
     const game = db.prepare('SELECT id, name, suggestedBy, status FROM games WHERE name = ?').get(req.params.name);
