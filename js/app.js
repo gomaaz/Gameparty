@@ -3148,7 +3148,7 @@ function getNowPlus10() {
                 <div class="section-title">${t('shop_title')}</div>
                 <div class="card" style="text-align:center">
                     <div class="text-muted text-sm">${t('your_balance')}</div>
-                    <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${fmt(coins)} Coins</div>
+                    <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${fmt(coins)} ${coinSvgIcon('1.5rem')}</div>
                 </div>
                 <div class="shop-grid">
                     ${CONFIG.SHOP_ITEMS.map(item => {
