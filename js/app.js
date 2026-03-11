@@ -77,7 +77,7 @@
 
     function controllerSvgIcon(size) {
         const s = size || '1em';
-        return `<img src="svg/console-controller.svg" class="coin-svg-icon" alt="controller" style="width:${s};height:${s};vertical-align:middle">`;
+        return `<img src="svg/console-controller.svg" class="coin-svg-icon" alt="controller" style="width:${s};height:1.3em;vertical-align:middle;margin-bottom:-0.2em">`;
     }
 
     function buildTeamNotifTitle(teamA, teamB, createdBy, currentPlayer) {
