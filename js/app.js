@@ -278,6 +278,73 @@
         modal.querySelector('#confirm-no').onclick = () => overlay.classList.remove('show');
     }
 
+    function showFirstLoginModal() {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        const player = state.currentPlayer;
+        const currentUser = (state.allUsers || []).find(u => u.name === player) || {};
+        modal.innerHTML = `
+            <div class="modal-title" style="margin-bottom:0.3rem">🎮 ${t('firstlogin_title')}</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1rem">${t('firstlogin_sub')}</div>
+            <div class="accounts-grid" style="margin-bottom:1rem">
+                <label class="accounts-label">🖥️ LAN-IP</label>
+                <input type="text" id="fl-ip" class="accounts-input" placeholder="${t('profile_ip_placeholder')}" value="${currentUser.ip || ''}">
+                <label class="accounts-label">${createIconSvg('steam')} ${t('profile_steam')}</label>
+                <input type="text" id="fl-steam" class="accounts-input" placeholder="${t('profile_accounts_placeholder_steam')}" value="${currentUser.steam || ''}">
+                <label class="accounts-label">${createIconSvg('ubisoft')} ${t('profile_ubisoft')}</label>
+                <input type="text" id="fl-ubisoft" class="accounts-input" placeholder="${t('profile_accounts_placeholder_ubisoft')}" value="${currentUser.ubisoft || ''}">
+                <label class="accounts-label">${createIconSvg('battlenet')} ${t('profile_battlenet')}</label>
+                <input type="text" id="fl-battlenet" class="accounts-input" placeholder="${t('profile_accounts_placeholder_battlenet')}" value="${currentUser.battlenet || ''}">
+                <label class="accounts-label">${createIconSvg('epic')} ${t('profile_epic')}</label>
+                <input type="text" id="fl-epic" class="accounts-input" placeholder="${t('profile_accounts_placeholder_epic')}" value="${currentUser.epic || ''}">
+                <label class="accounts-label">${createIconSvg('ea')} ${t('profile_ea')}</label>
+                <input type="text" id="fl-ea" class="accounts-input" placeholder="${t('profile_accounts_placeholder_ea')}" value="${currentUser.ea || ''}">
+                <label class="accounts-label">${createIconSvg('riot')} ${t('profile_riot')}</label>
+                <input type="text" id="fl-riot" class="accounts-input" placeholder="${t('profile_accounts_placeholder_riot')}" value="${currentUser.riot || ''}">
+                <label class="accounts-label">${createIconSvg('discord')} ${t('profile_discord')}</label>
+                <input type="text" id="fl-discord" class="accounts-input" placeholder="${t('profile_accounts_placeholder_discord')}" value="${currentUser.discord || ''}">
+                <label class="accounts-label">${createIconSvg('teamspeak')} ${t('profile_teamspeak')}</label>
+                <input type="text" id="fl-teamspeak" class="accounts-input" placeholder="${t('profile_accounts_placeholder_teamspeak')}" value="${currentUser.teamspeak || ''}">
+            </div>
+            <div style="display:flex;gap:0.5rem">
+                <button class="btn-secondary" id="fl-skip" style="flex:1;padding:0.6rem">${t('btn_later')}</button>
+                <button class="btn-propose" id="fl-save" style="flex:2;padding:0.6rem">${t('btn_save_accounts')}</button>
+            </div>`;
+        modal.style.maxHeight = '80vh';
+        modal.style.overflowY = 'auto';
+        overlay.classList.add('show');
+
+        const done = () => {
+            localStorage.setItem(`gameparty_firstlogin_${player}`, 'true');
+            overlay.classList.remove('show');
+            modal.style.maxHeight = '';
+            modal.style.overflowY = '';
+        };
+
+        modal.querySelector('#fl-skip').onclick = done;
+        modal.querySelector('#fl-save').onclick = async () => {
+            const ip       = modal.querySelector('#fl-ip').value.trim();
+            const steam    = modal.querySelector('#fl-steam').value.trim();
+            const ubisoft  = modal.querySelector('#fl-ubisoft').value.trim();
+            const battlenet = modal.querySelector('#fl-battlenet').value.trim();
+            const epic     = modal.querySelector('#fl-epic').value.trim();
+            const ea       = modal.querySelector('#fl-ea').value.trim();
+            const riot     = modal.querySelector('#fl-riot').value.trim();
+            const discord  = modal.querySelector('#fl-discord').value.trim();
+            const teamspeak = modal.querySelector('#fl-teamspeak').value.trim();
+            try {
+                await Promise.all([
+                    api('PUT', `/users/${encodeURIComponent(player)}/ip`, { ip }),
+                    api('PUT', `/users/${encodeURIComponent(player)}/accounts`, { steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak }),
+                ]);
+                const idx = state.allUsers.findIndex(u => u.name === player);
+                if (idx >= 0) Object.assign(state.allUsers[idx], { ip, steam, ubisoft, battlenet, epic, ea, riot, discord, teamspeak });
+                showToast(t('ip_saved'), 'success');
+            } catch (e) { console.error(e); }
+            done();
+        };
+    }
+
     function showCoinAnimation(coins, stars) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
@@ -5432,6 +5499,9 @@ function getNowPlus10() {
                     playSound('coin');
                     navigateTo('dashboard');
                     startChallengePoll();
+                    if (!localStorage.getItem(`gameparty_firstlogin_${state.currentPlayer}`)) {
+                        setTimeout(() => showFirstLoginModal(), 600);
+                    }
                 }, 2000);
             } catch (e) {
                 buildScreen(`
@@ -5554,6 +5624,10 @@ function getNowPlus10() {
             updateNavVisibility();
             showToast(t('welcome', playerName), result.role === 'admin' ? 'gold' : 'success');
             playSound('coin');
+
+            if (!localStorage.getItem(`gameparty_firstlogin_${playerName}`)) {
+                setTimeout(() => showFirstLoginModal(), 400);
+            }
 
             const activeNav = document.querySelector('.nav-item.active');
             if (activeNav) navigateTo(activeNav.dataset.view);

@@ -460,6 +460,9 @@ const TRANSLATIONS = {
         profile_teamspeak: 'TeamSpeak',
         profile_accounts_placeholder_teamspeak: 'TeamSpeak username',
         btn_save_accounts: 'Save',
+        btn_later: 'Later',
+        firstlogin_title: 'Your Gaming Accounts',
+        firstlogin_sub: 'Enter your accounts — other players can copy them to connect with you.',
 
         // --- Medium Account Step ---
         medium_account_hint: 'What account link / nickname should others use to find you?',
@@ -961,6 +964,9 @@ const TRANSLATIONS = {
         profile_teamspeak: 'TeamSpeak',
         profile_accounts_placeholder_teamspeak: 'TeamSpeak-Nutzername',
         btn_save_accounts: 'Speichern',
+        btn_later: 'Später',
+        firstlogin_title: 'Deine Gaming-Accounts',
+        firstlogin_sub: 'Trage deine Accounts ein – andere Spieler können sie kopieren, um dich zu finden.',
 
         // --- Medium Account Step ---
         medium_account_hint: 'Welchen Account-Link / Nickname sollen andere verwenden?',
