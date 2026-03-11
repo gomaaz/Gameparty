@@ -2129,7 +2129,9 @@ app.post('/api/games/enrich', async (req, res) => {
         AND (cover_url = '' OR cover_url IS NULL
              OR platforms = '' OR platforms IS NULL
              OR released = '' OR released IS NULL
-             OR shop_links = '' OR shop_links IS NULL OR shop_links = '[]')
+             OR description = '' OR description IS NULL
+             OR shop_links = '' OR shop_links IS NULL OR shop_links = '[]'
+             OR screenshots = '' OR screenshots IS NULL OR screenshots = '[]')
     `).all();
 
     logger.info(`RAWG enrich started: ${games.length} games to process`);
