@@ -3812,6 +3812,7 @@ function getNowPlus10() {
                 showToast(t('start_time_future_error'), 'error');
                 return;
             }
+            const maxSlots = parseInt($('#ps-slots')?.value) || 0;
             overlay.classList.remove('show');
             showMediumSelectModal(selectedGame, async (medium, account) => {
                 try {
@@ -3823,7 +3824,7 @@ function getNowPlus10() {
                         isNewGame: 0,
                         medium,
                         medium_account: account,
-                        maxSlots: parseInt($('#ps-slots')?.value) || 0
+                        maxSlots
                     });
                     showToast(t('session_planned', selectedGame), 'success');
                     renderDashboard();
