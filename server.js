@@ -441,6 +441,59 @@ app.post('/api/games/:name/interest', (req, res) => {
     }
 });
 
+// POST /api/games/fetch-csv-url — fetch a public CSV (or Google Sheets) URL server-side, return parsed games
+app.post('/api/games/fetch-csv-url', async (req, res) => {
+    let { url } = req.body;
+    if (!url) return res.status(400).json({ error: 'url required' });
+    // Google Sheets: convert edit/view URL to CSV export URL
+    const sheetsMatch = url.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (sheetsMatch) url = `https://docs.google.com/spreadsheets/d/${sheetsMatch[1]}/export?format=csv`;
+    try {
+        const response = await fetch(url, { headers: { 'User-Agent': 'Gameparty/1.0' } });
+        if (!response.ok) return res.status(400).json({ error: `Fetch failed: HTTP ${response.status}` });
+        const text = await response.text();
+        const games = parseGameCSVServer(text);
+        res.json({ games });
+    } catch (e) {
+        res.status(400).json({ error: 'URL konnte nicht geladen werden: ' + e.message });
+    }
+});
+
+function parseGameCSVServer(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    return lines.slice(1).map(line => {
+        const values = [];
+        let inQuote = false, cur = '';
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"' && !inQuote) { inQuote = true; }
+            else if (ch === '"' && inQuote && line[i + 1] === '"') { cur += '"'; i++; }
+            else if (ch === '"' && inQuote) { inQuote = false; }
+            else if (ch === ',' && !inQuote) { values.push(cur); cur = ''; }
+            else { cur += ch; }
+        }
+        values.push(cur);
+        const row = Object.fromEntries(headers.map((h, i) => [h, (values[i] || '').trim()]));
+        const shopLinks = [];
+        let n = 1;
+        while (row[`shoplink_label_${n}`] !== undefined || row[`shoplink_url_${n}`] !== undefined) {
+            const platform = (row[`shoplink_label_${n}`] || '').trim();
+            const url = (row[`shoplink_url_${n}`] || '').trim();
+            if (platform || url) shopLinks.push({ platform, url });
+            delete row[`shoplink_label_${n}`]; delete row[`shoplink_url_${n}`];
+            n++;
+        }
+        if (shopLinks.length === 0 && row.shoplinks) {
+            try { const p = JSON.parse(row.shoplinks); if (Array.isArray(p)) shopLinks.push(...p); } catch {}
+            delete row.shoplinks;
+        }
+        row.shopLinks = shopLinks;
+        return row;
+    }).filter(r => r.name && r.name.trim());
+}
+
 // POST /api/games/import
 app.post('/api/games/import', (req, res) => {
     const { games } = req.body;

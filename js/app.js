@@ -3008,6 +3008,11 @@ function getNowPlus10() {
                         <button class="ls-btn-secondary" id="btn-import-games">${t('btn_import_games')}</button>
                         <input type="file" id="game-import-file" accept=".csv" style="display:none">
                     </div>
+                    <div style="display:flex;gap:0.4rem;margin-top:0.5rem">
+                        <input type="url" id="game-import-url" placeholder="${t('import_url_placeholder')}"
+                            style="flex:1;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem">
+                        <button class="ls-btn-secondary" id="btn-import-url">${t('btn_import_url')}</button>
+                    </div>
                     <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem">${t('game_data_hint')}</div>
                 </div>
 
@@ -3239,6 +3244,23 @@ function getNowPlus10() {
                 } catch (e) { showToast('Fehler beim Importieren', 'error'); }
             });
             e.target.value = '';
+        });
+        panel.querySelector('#btn-import-url')?.addEventListener('click', async () => {
+            const url = panel.querySelector('#game-import-url')?.value?.trim();
+            if (!url) return;
+            try {
+                const { games } = await api('POST', '/games/fetch-csv-url', { url });
+                if (!games || games.length === 0) { showToast(t('import_empty'), 'error'); return; }
+                showImportPreviewModal(games, async (confirmed) => {
+                    if (!confirmed) return;
+                    try {
+                        const result = await api('POST', '/games/import', { games });
+                        showToast(t('import_done', result.imported, result.updated), 'success');
+                        state.games = await api('GET', '/games');
+                        renderMatcher();
+                    } catch (e) { showToast('Fehler beim Importieren', 'error'); }
+                });
+            } catch (e) { showToast('Fehler beim Laden der URL', 'error'); }
         });
 
         // Danger zone
