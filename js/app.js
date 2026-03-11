@@ -1683,11 +1683,17 @@ function getNowPlus10() {
     }
 
     function exportGamesCSV(games) {
-        const rows = [['name','genre','maxPlayers','lanRating','previewUrl','shopLinks']];
-        games.forEach(g => rows.push([
-            g.name, g.genre || '', g.maxPlayers || 4, g.lanRating || 0, g.previewUrl || '',
-            JSON.stringify(g.shopLinks || [])
-        ]));
+        const maxLinks = Math.max(1, ...games.map(g => (g.shopLinks || []).length));
+        const linkHeaders = [];
+        for (let i = 1; i <= maxLinks; i++) { linkHeaders.push(`shoplink_label_${i}`, `shoplink_url_${i}`); }
+        const headers = ['name','genre','maxPlayers','lanRating','previewUrl', ...linkHeaders];
+        const rows = [headers];
+        games.forEach(g => {
+            const links = g.shopLinks || [];
+            const linkCols = [];
+            for (let i = 0; i < maxLinks; i++) { linkCols.push(links[i]?.platform || '', links[i]?.url || ''); }
+            rows.push([g.name, g.genre || '', g.maxPlayers || 4, g.lanRating || 0, g.previewUrl || '', ...linkCols]);
+        });
         const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -1697,10 +1703,10 @@ function getNowPlus10() {
 
     function downloadGameTemplate() {
         const csv = [
-            'name,genre,maxPlayers,lanRating,previewUrl,shopLinks',
-            '"Mario Kart 8","Racing",4,1,"",[]',
-            '"Rocket League","Sport",8,1,"",[]',
-            '"Among Us","Party",15,0,"",[]',
+            'name,genre,maxPlayers,lanRating,previewUrl,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2',
+            '"Mario Kart 8","Racing",4,1,"","Steam","https://store.steampowered.com/app/1234","","" ',
+            '"Rocket League","Sport",8,1,"","Epic Games","https://store.epicgames.com/p/rocket-league","Steam","https://store.steampowered.com/app/252950"',
+            '"Among Us","Party",15,0,"","","","",""',
         ].join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -1725,11 +1731,22 @@ function getNowPlus10() {
             }
             values.push(cur);
             const row = Object.fromEntries(headers.map((h, i) => [h, (values[i] || '').trim()]));
-            const slKey = row.shoplinks !== undefined ? 'shoplinks' : (row.shopLinks !== undefined ? 'shopLinks' : null);
-            if (slKey) {
-                try { row.shopLinks = JSON.parse(row[slKey] || '[]'); } catch { row.shopLinks = []; }
-                if (slKey !== 'shopLinks') delete row[slKey];
-            } else { row.shopLinks = []; }
+            // Build shopLinks from flat shoplink_label_N / shoplink_url_N columns
+            const shopLinks = [];
+            let n = 1;
+            while (row[`shoplink_label_${n}`] !== undefined || row[`shoplink_url_${n}`] !== undefined) {
+                const platform = (row[`shoplink_label_${n}`] || '').trim();
+                const url = (row[`shoplink_url_${n}`] || '').trim();
+                if (platform || url) shopLinks.push({ platform, url });
+                delete row[`shoplink_label_${n}`]; delete row[`shoplink_url_${n}`];
+                n++;
+            }
+            // Fallback: legacy JSON shoplinks column
+            if (shopLinks.length === 0 && row.shoplinks !== undefined) {
+                try { const parsed = JSON.parse(row.shoplinks || '[]'); if (Array.isArray(parsed)) shopLinks.push(...parsed); } catch {}
+                delete row.shoplinks;
+            }
+            row.shopLinks = shopLinks;
             return row;
         }).filter(r => r.name && r.name.trim());
     }
