@@ -44,6 +44,7 @@
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
     let cooldownTickInterval = null;
     const COOLDOWN_MS = { rob_controller: 5 * 60 * 1000 };
+    const GAME_GENRES = ['Strategie', 'Taktik', 'Egoshooter', 'Rollenspiel', 'Action', 'Indie'];
     const notifiedChallengeIds = new Set(JSON.parse(localStorage.getItem('gameparty_notified_challenge_ids') || '[]'));
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
     const shownDuelStartSessions = new Set(); // Duel-Start Modals die bereits gezeigt wurden
@@ -5107,6 +5108,194 @@ function getNowPlus10() {
         renderStep(1);
     }
 
+    function showPostLoginWizard() {
+        const screen = $('#login-screen');
+        if (!screen) return;
+
+        const starData = [
+            [0,  24, 1.0, 6],  [15, 78, 4.2, 10], [3,  48, 6.1, 8],
+            [61, 86, 2.3, 7],  [9,  60, 0.4, 9],  [38, 12, 5.7, 11],
+            [72, 35, 3.1, 8],  [22, 52, 7.8, 6],  [50, 70, 1.5, 10],
+            [84, 8,  4.9, 7],  [5,  90, 8.3, 9],  [43, 30, 0.9, 8],
+            [67, 55, 6.5, 11], [29, 15, 3.7, 6],  [78, 44, 2.1, 9],
+            [11, 72, 9.2, 7],  [54, 18, 5.3, 10], [35, 65, 7.1, 8],
+            [90, 80, 1.8, 6],  [20, 40, 4.4, 9],
+        ];
+        const starsHtml = `<div class="ls-stars">${starData.map(([top, left, delay, duration]) =>
+            `<div class="shooting_star" style="top:${top}%;left:${left}%;--delay:${delay}s;--duration:${duration}s"></div>`
+        ).join('')}</div>`;
+
+        const wiz = { coins: 0, players: [], game: '', genres: [], message: '' };
+
+        function buildScreen(formHtml) {
+            screen.innerHTML = `
+                ${starsHtml}
+                <div class="ls-logo">
+                    <span class="ls-logo-icon">🎮</span>
+                    <span class="ls-logo-text">Gameparty</span>
+                </div>
+                <div class="ls-form" style="max-height:70vh;overflow-y:auto;scrollbar-width:none">${formHtml}</div>
+                <div class="ls-version">v${state.version || ''}</div>
+            `;
+            screen.classList.remove('hidden');
+        }
+
+        function renderPlayerRows(rows) {
+            return rows.map((r, i) => `
+                <div class="pw-row">
+                    <input class="ls-input pw-name" data-idx="${i}" type="text" placeholder="Name" value="${r.name}" autocomplete="off">
+                    <input class="ls-input pw-pin" data-idx="${i}" type="text" placeholder="PIN" value="${r.pin || '1111'}" maxlength="4" autocomplete="off" style="width:5.5rem;flex-shrink:0">
+                </div>
+            `).join('');
+        }
+
+        function savePlayerRows() {
+            const names = Array.from(screen.querySelectorAll('.pw-name'));
+            const pins = Array.from(screen.querySelectorAll('.pw-pin'));
+            wiz.players = names.map((n, i) => ({ name: n.value, pin: pins[i]?.value || '1111' }));
+        }
+
+        // Step 1: Spieler anlegen
+        function showStep1() {
+            if (!wiz.players.length) wiz.players = [{ name: '', pin: '1111' }, { name: '', pin: '1111' }];
+            buildScreen(`
+                <div class="ls-wizard-title">Wer spielt mit?</div>
+                <div class="ls-wizard-sub">Gib die Namen und PINs aller Mitspieler ein.</div>
+                <div id="pw-player-list">${renderPlayerRows(wiz.players)}</div>
+                <button class="ls-btn-secondary" id="pw-add-player">+ Spieler hinzufügen</button>
+                <button class="ls-btn" id="pw-step1-next">Weiter →</button>
+            `);
+            screen.querySelector('#pw-add-player').addEventListener('click', () => {
+                savePlayerRows();
+                wiz.players.push({ name: '', pin: '1111' });
+                const list = screen.querySelector('#pw-player-list');
+                list.innerHTML = renderPlayerRows(wiz.players);
+                list.querySelectorAll('.pw-name')[wiz.players.length - 1]?.focus();
+            });
+            screen.querySelector('#pw-step1-next').addEventListener('click', () => {
+                savePlayerRows();
+                showStep2();
+            });
+        }
+
+        // Step 2: Erstes Spiel
+        function showStep2() {
+            buildScreen(`
+                <div class="ls-wizard-title">Erstes Spiel</div>
+                <div class="ls-wizard-sub">Welches Spiel soll aufgenommen werden?</div>
+                <input class="ls-input" id="pw-game-name" type="text" placeholder="Spielname" value="${wiz.game}" autocomplete="off">
+                <div class="pw-genre-grid">${GAME_GENRES.map(g =>
+                    `<button class="pw-genre-chip${wiz.genres.includes(g) ? ' selected' : ''}" data-genre="${g}">${g}</button>`
+                ).join('')}</div>
+                <button class="ls-btn" id="pw-step2-next">Weiter →</button>
+                <button class="ls-btn-secondary" id="pw-step2-skip">Überspringen</button>
+            `);
+            screen.querySelectorAll('.pw-genre-chip').forEach(btn => {
+                btn.addEventListener('click', () => btn.classList.toggle('selected'));
+            });
+            screen.querySelector('#pw-step2-next').addEventListener('click', () => {
+                wiz.game = screen.querySelector('#pw-game-name').value.trim();
+                wiz.genres = Array.from(screen.querySelectorAll('.pw-genre-chip.selected')).map(b => b.dataset.genre);
+                showStep3();
+            });
+            screen.querySelector('#pw-step2-skip').addEventListener('click', () => {
+                wiz.game = ''; wiz.genres = [];
+                showStep3();
+            });
+        }
+
+        // Step 3: Login-Nachricht
+        function showStep3() {
+            buildScreen(`
+                <div class="ls-wizard-title">Login-Nachricht</div>
+                <div class="ls-wizard-sub">Erscheint unterhalb des Logos beim Login.</div>
+                <input class="ls-input" id="pw-message" type="text" placeholder="z.B. Willkommen zur LAN-Party!" value="${wiz.message}" autocomplete="off">
+                <button class="ls-btn" id="pw-step3-next">Weiter →</button>
+                <button class="ls-btn-secondary" id="pw-step3-skip">Überspringen</button>
+            `);
+            screen.querySelector('#pw-step3-next').addEventListener('click', () => {
+                wiz.message = screen.querySelector('#pw-message').value.trim();
+                showStep4();
+            });
+            screen.querySelector('#pw-step3-skip').addEventListener('click', () => {
+                wiz.message = '';
+                showStep4();
+            });
+        }
+
+        // Step 4: Willkommens-Coins
+        function showStep4() {
+            buildScreen(`
+                <div class="ls-wizard-title">Startguthaben</div>
+                <div class="ls-wizard-sub">Wie viele Coins erhält jeder Spieler zu Beginn?<br><span style="font-size:0.82rem;opacity:0.6">Empfohlen: 0</span></div>
+                <input class="ls-input" id="pw-coins" type="number" min="0" max="9999" value="0" placeholder="0">
+                <button class="ls-btn" id="pw-step4-finish">Fertig →</button>
+            `);
+            screen.querySelector('#pw-step4-finish').addEventListener('click', async () => {
+                wiz.coins = parseInt(screen.querySelector('#pw-coins').value) || 0;
+                await finishWizard();
+            });
+        }
+
+        async function finishWizard() {
+            buildScreen(`
+                <div class="ls-wizard-title" style="font-size:1.1rem">⏳ Wird eingerichtet…</div>
+                <div class="ls-wizard-sub">Einen Moment bitte.</div>
+            `);
+            try {
+                const filledPlayers = wiz.players.filter(r => r.name.trim());
+                for (const p of filledPlayers) {
+                    await api('POST', '/users', { name: p.name.trim(), pin: p.pin || '1111', role: 'player' });
+                    if (wiz.coins > 0) await api('POST', '/coins/add', { player: p.name.trim(), amount: wiz.coins, reason: 'Willkommens-Coins' });
+                }
+                if (wiz.game) {
+                    try {
+                        await api('POST', '/games/suggest', { name: wiz.game, genre: wiz.genres.join(', '), maxPlayers: 4, suggestedBy: state.currentPlayer });
+                        await api('PUT', `/games/${encodeURIComponent(wiz.game)}/approve`, { sessionCoins: 0 });
+                    } catch (e) {}
+                }
+                if (wiz.message) await api('PUT', '/settings/login_message', { value: wiz.message });
+                await api('PUT', '/settings/setup_completed', { value: 'true' });
+                state.settings.setup_completed = 'true';
+
+                const parts = [];
+                if (filledPlayers.length) parts.push(`${filledPlayers.length} Spieler`);
+                if (wiz.coins > 0) parts.push(`${wiz.coins} Coins`);
+                if (wiz.game) parts.push(`Spiel: ${wiz.game}`);
+
+                buildScreen(`
+                    <div class="ls-wizard-title">✅ Alles bereit!</div>
+                    <div class="ls-wizard-sub">${parts.join(' · ') || 'Setup abgeschlossen'}</div>
+                    <div class="ls-wizard-sub" style="font-size:0.82rem;opacity:0.5">Die App öffnet sich gleich…</div>
+                `);
+
+                setTimeout(async () => {
+                    const freshData = await api('GET', '/init');
+                    state.players = freshData.players;
+                    state.allUsers = freshData.users || [];
+                    state.coins = freshData.coins;
+                    state.settings = freshData.settings || {};
+                    hideLoginScreen();
+                    updateHeader();
+                    updateNavVisibility();
+                    showToast(t('welcome', state.currentPlayer), 'gold');
+                    playSound('coin');
+                    navigateTo('dashboard');
+                    startChallengePoll();
+                }, 2000);
+            } catch (e) {
+                buildScreen(`
+                    <div class="ls-wizard-title">❌ Fehler</div>
+                    <div class="ls-wizard-sub">${e.message || 'Unbekannter Fehler'}</div>
+                    <button class="ls-btn" id="pw-retry">Erneut versuchen</button>
+                `);
+                screen.querySelector('#pw-retry').addEventListener('click', () => finishWizard());
+            }
+        }
+
+        showStep1();
+    }
+
     // ---- Login Modal (used for player switching from header) ----
     async function showLoginModal() {
         const overlay = $('#modal-overlay');
@@ -5198,6 +5387,13 @@ function getNowPlus10() {
             shownNotifToastIds.clear();
             localStorage.removeItem('gameparty_shown_notif_toast_ids');
             shownPenaltyIds.clear();
+
+            // Post-Login Wizard: nur beim ersten Setup
+            if (result.role === 'admin' && state.settings.setup_completed !== 'true' && state.players.length <= 1) {
+                showPostLoginWizard();
+                return;
+            }
+
             startChallengePoll();
 
             const overlay = $('#modal-overlay');

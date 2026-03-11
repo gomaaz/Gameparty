@@ -3420,3 +3420,53 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .ls-btn:not(:disabled):hover { opacity: 0.9; }
 .ls-btn:not(:disabled):active { transform: scale(0.98); }
 
+/* Post-Login Wizard */
+.pw-row {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+.pw-row .ls-input { margin: 0; }
+.ls-btn-secondary {
+    width: 100%;
+    padding: 0.7rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    margin-top: 0.25rem;
+    position: relative;
+    z-index: 1;
+}
+.ls-btn-secondary:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.pw-genre-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    margin: 0.25rem 0;
+}
+.pw-genre-chip {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.pw-genre-chip.selected {
+    border-color: var(--accent-gold);
+    background: rgba(255,215,0,0.1);
+    color: var(--accent-gold);
+}
+
