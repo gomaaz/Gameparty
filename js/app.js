@@ -3308,6 +3308,7 @@ function getNowPlus10() {
                             });
                         } else {
                             showToast(t('rob_controller_fail', target), 'error');
+                            playSound('spend');
                             await api('POST', '/player-events', {
                                 target, type: 'rob_controller_victim', from_player: state.currentPlayer,
                                 message: JSON.stringify({ thief: state.currentPlayer, success: false })
@@ -3323,6 +3324,7 @@ function getNowPlus10() {
                             });
                         } else {
                             showToast(t('rob_coins_fail', target), 'error');
+                            playSound('spend');
                         }
                     }
                     updateHeader();
