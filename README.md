@@ -99,6 +99,24 @@ A live panel in the header (⚔️ badge) collects all pending actions for the c
 - Admin can add per-game **shop links** (Steam, Epic Games, etc.) for easy purchase access
 - Admin can add, approve, or edit games
 
+### Game Import & Export
+The admin panel includes a **Game Data** card for bulk management:
+
+| Action | Description |
+|---|---|
+| **Export CSV** | Download all approved games as a CSV file (name, genre, maxPlayers, lanRating, previewUrl, shop links) |
+| **Import CSV** | Upload a CSV to add or update games — existing entries are overwritten, player interests are preserved |
+| **Import via URL** | Paste a public Google Sheets link or direct CSV URL — the server fetches and parses it automatically |
+| **Load Default Games** | One-click import of ~100 pre-configured games — ideal for a fresh setup |
+
+All imports show a **preview modal** before committing. The CSV format uses flat columns for shop links:
+```
+name,genre,maxPlayers,lanRating,previewUrl,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2
+"Mario Kart 8","Racing",4,1,"","Steam","https://store.steampowered.com/app/...","",""
+```
+
+> **Tip (Excel):** Save as *CSV UTF-8 (comma delimited)* — not the default semicolon-separated format used in some locales.
+
 ### Sessions
 Two session types, same unified interface:
 

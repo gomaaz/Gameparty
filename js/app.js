@@ -2762,7 +2762,10 @@ function getNowPlus10() {
             { title: t('help_sessions_title'),                                            body: t('help_sessions_body') },
             { title: t('help_shop_title'),                                                body: t('help_shop_body') },
             { title: t('help_accounts_title'),                                            body: t('help_accounts_body') },
-            ...(isAdmin() ? [{ title: t('help_admin_title'), body: t('help_admin_body') }] : []),
+            ...(isAdmin() ? [
+                { title: t('help_import_export_title'), body: t('help_import_export_body') },
+                { title: t('help_admin_title'), body: t('help_admin_body') },
+            ] : []),
         ];
         panel.innerHTML = `
             <div class="help-panel-header">
