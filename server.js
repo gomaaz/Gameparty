@@ -296,7 +296,6 @@ function getGameWithPlayers(game) {
         ready: !!game.ready,
         status: game.status,
         suggestedBy: game.suggestedBy,
-        sessionCoins: game.sessionCoins || 0,
         shopLinks: JSON.parse(game.shop_links || '[]'),
         players: playersObj
     };
@@ -357,10 +356,9 @@ app.post('/api/games/suggest', (req, res) => {
 
 // PUT /api/games/:name/approve
 app.put('/api/games/:name/approve', (req, res) => {
-    const { sessionCoins } = req.body;
     const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
-    db.prepare('UPDATE games SET status = ?, sessionCoins = ? WHERE id = ?').run('approved', sessionCoins || 0, game.id);
+    db.prepare('UPDATE games SET status = ? WHERE id = ?').run('approved', game.id);
     res.json({ success: true });
 });
 
@@ -379,14 +377,13 @@ app.delete('/api/games/:name', (req, res) => {
 app.put('/api/games/:name', (req, res) => {
     const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
-    const { newName, genre, maxPlayers, previewUrl, sessionCoins, shopLinks } = req.body;
+    const { newName, genre, maxPlayers, previewUrl, shopLinks } = req.body;
     const updates = [];
     const params = [];
     if (newName !== undefined) { updates.push('name = ?'); params.push(newName); }
     if (genre !== undefined) { updates.push('genre = ?'); params.push(genre); }
     if (maxPlayers !== undefined) { updates.push('maxPlayers = ?'); params.push(maxPlayers); }
     if (previewUrl !== undefined) { updates.push('previewUrl = ?'); params.push(previewUrl); }
-    if (sessionCoins !== undefined) { updates.push('sessionCoins = ?'); params.push(sessionCoins); }
     if (shopLinks !== undefined) { updates.push('shop_links = ?'); params.push(JSON.stringify(shopLinks)); }
     if (updates.length > 0) {
         params.push(game.id);
@@ -408,6 +405,36 @@ app.post('/api/games/:name/interest', (req, res) => {
         db.prepare('INSERT INTO game_players (game_id, player) VALUES (?, ?)').run(game.id, player);
         res.json({ interested: true });
     }
+});
+
+// POST /api/games/import
+app.post('/api/games/import', (req, res) => {
+    const { games } = req.body;
+    if (!Array.isArray(games) || games.length === 0)
+        return res.status(400).json({ error: 'games array required' });
+    let imported = 0, skipped = 0;
+    const insertStmt = db.prepare(
+        'INSERT OR IGNORE INTO games (name, maxPlayers, genre, lanRating, previewUrl, status, shop_links) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+    const tx = db.transaction(() => {
+        for (const g of games) {
+            if (!g.name?.trim()) { skipped++; continue; }
+            const shopLinks = Array.isArray(g.shopLinks) ? JSON.stringify(g.shopLinks) : '[]';
+            const result = insertStmt.run(
+                g.name.trim(),
+                parseInt(g.maxPlayers) || 4,
+                g.genre?.trim() || '',
+                parseInt(g.lanRating) || 0,
+                g.previewUrl?.trim() || '',
+                'approved',
+                shopLinks
+            );
+            result.changes > 0 ? imported++ : skipped++;
+        }
+    });
+    tx();
+    broadcast();
+    res.json({ imported, skipped });
 });
 
 // GET /api/genres

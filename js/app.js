@@ -1328,7 +1328,7 @@ function getNowPlus10() {
                     try {
                         await api('POST', '/games/suggest', { name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, previewUrl, shopLinks });
                         if (isAdmin()) {
-                            await api('PUT', `/games/${encodeURIComponent(name)}/approve`, { sessionCoins: 0 });
+                            await api('PUT', `/games/${encodeURIComponent(name)}/approve`);
                         }
                         showToast(t('game_suggested', name), 'success');
                         renderMatcher();
@@ -1389,7 +1389,7 @@ function getNowPlus10() {
             btn.addEventListener('click', async () => {
                 const gameName = btn.dataset.game;
                 try {
-                    await api('PUT', `/games/${encodeURIComponent(gameName)}/approve`, { sessionCoins: 0 });
+                    await api('PUT', `/games/${encodeURIComponent(gameName)}/approve`);
                     showToast(`"${gameName}" ${t('btn_release')}!`, 'success');
                     renderMatcher();
                 } catch (e) { console.error(e); }
@@ -1679,6 +1679,110 @@ function getNowPlus10() {
 
         modal.querySelector('#edit-game-cancel').addEventListener('click', () => {
             overlay.classList.remove('show');
+        });
+    }
+
+    function exportGamesCSV(games) {
+        const rows = [['name','genre','maxPlayers','lanRating','previewUrl','shopLinks']];
+        games.forEach(g => rows.push([
+            g.name, g.genre || '', g.maxPlayers || 4, g.lanRating || 0, g.previewUrl || '',
+            JSON.stringify(g.shopLinks || [])
+        ]));
+        const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'gameparty-spiele.csv'; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadGameTemplate() {
+        const csv = [
+            'name,genre,maxPlayers,lanRating,previewUrl,shopLinks',
+            '"Mario Kart 8","Racing",4,1,"",[]',
+            '"Rocket League","Sport",8,1,"",[]',
+            '"Among Us","Party",15,0,"",[]',
+        ].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'gameparty-spiele-template.csv'; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function parseGameCSV(text) {
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
+        return lines.slice(1).map(line => {
+            const values = [];
+            let inQuote = false, cur = '';
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"' && !inQuote) { inQuote = true; }
+                else if (ch === '"' && inQuote && line[i+1] === '"') { cur += '"'; i++; }
+                else if (ch === '"' && inQuote) { inQuote = false; }
+                else if (ch === ',' && !inQuote) { values.push(cur); cur = ''; }
+                else { cur += ch; }
+            }
+            values.push(cur);
+            const row = Object.fromEntries(headers.map((h, i) => [h, (values[i] || '').trim()]));
+            const slKey = row.shoplinks !== undefined ? 'shoplinks' : (row.shopLinks !== undefined ? 'shopLinks' : null);
+            if (slKey) {
+                try { row.shopLinks = JSON.parse(row[slKey] || '[]'); } catch { row.shopLinks = []; }
+                if (slKey !== 'shopLinks') delete row[slKey];
+            } else { row.shopLinks = []; }
+            return row;
+        }).filter(r => r.name && r.name.trim());
+    }
+
+    function showImportPreviewModal(games, onConfirm) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        const rows = games.slice(0, 50).map(g => `
+            <tr>
+                <td style="padding:0.3rem 0.5rem;font-size:0.82rem">${g.name}</td>
+                <td style="padding:0.3rem 0.5rem;font-size:0.82rem;color:var(--text-secondary)">${g.genre || '—'}</td>
+                <td style="padding:0.3rem 0.5rem;font-size:0.82rem;color:var(--text-secondary);text-align:center">${g.maxPlayers || 4}</td>
+            </tr>
+        `).join('');
+        const more = games.length > 50 ? `<div style="font-size:0.75rem;color:var(--text-muted);padding:0.3rem">… und ${games.length - 50} weitere</div>` : '';
+        modal.innerHTML = `
+            <div class="modal-title">${t('import_preview_title')}</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem">${t('import_preview_count', games.length)}</div>
+            <div style="max-height:40vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:1rem">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead><tr style="background:var(--bg-secondary)">
+                        <th style="padding:0.3rem 0.5rem;font-size:0.75rem;text-align:left">Name</th>
+                        <th style="padding:0.3rem 0.5rem;font-size:0.75rem;text-align:left">Genre</th>
+                        <th style="padding:0.3rem 0.5rem;font-size:0.75rem;text-align:center">Max</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                ${more}
+            </div>
+            <div style="display:flex;gap:0.5rem">
+                <button class="btn-propose" id="import-confirm-btn" style="flex:1">${t('btn_import_games')}</button>
+                <button class="modal-close-btn" id="import-cancel-btn" style="flex:1">${t('btn_cancel')}</button>
+            </div>
+        `;
+        overlay.classList.add('show');
+        modal.querySelector('#import-confirm-btn').addEventListener('click', () => {
+            overlay.classList.remove('show');
+            onConfirm(true);
+        });
+        modal.querySelector('#import-cancel-btn').addEventListener('click', () => {
+            overlay.classList.remove('show');
+            onConfirm(false);
+        });
+    }
+
+    async function loadDefaultGames() {
+        showConfirm(t('load_defaults_confirm', FALLBACK_GAMES.length), async () => {
+            try {
+                const result = await api('POST', '/games/import', { games: FALLBACK_GAMES });
+                showToast(t('import_done', result.imported, result.skipped), 'success');
+                state.games = await api('GET', '/games');
+                renderMatcher();
+            } catch (e) { showToast('Fehler beim Importieren', 'error'); }
         });
     }
 
@@ -2744,6 +2848,7 @@ function getNowPlus10() {
 
         const maxMultiplier = parseInt(settingsData?.max_multiplier || '10');
         const playerMultipliersMap = (() => { try { return JSON.parse(settingsData?.player_multipliers || '{}'); } catch { return {}; } })();
+        const approvedGames = (state.games || []).filter(g => g.status === 'approved');
 
         function buildMultipliersTable(maxMult, currentMap) {
             let rows = '';
@@ -2872,6 +2977,21 @@ function getNowPlus10() {
                             </div>
                         `).join('')}
                     </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📋 ${t('game_data_title')}</div>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                        ${approvedGames.length > 0 ? `
+                            <button class="ls-btn-secondary" id="btn-export-games">${t('btn_export_games')}</button>
+                        ` : `
+                            <button class="ls-btn-secondary" id="btn-download-template">${t('btn_game_template')}</button>
+                            <button class="ls-btn-secondary" id="btn-load-defaults">${t('btn_load_defaults')}</button>
+                        `}
+                        <button class="ls-btn-secondary" id="btn-import-games">${t('btn_import_games')}</button>
+                        <input type="file" id="game-import-file" accept=".csv" style="display:none">
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem">${t('game_data_hint')}</div>
                 </div>
 
                 <div class="danger-zone">
@@ -3075,6 +3195,33 @@ function getNowPlus10() {
                 starAmount.value = '';
                 starBtn.disabled = true;
             } catch (e) { showToast(t('error_loading'), 'error'); console.error(e); }
+        });
+
+        // Game import/export
+        panel.querySelector('#btn-export-games')?.addEventListener('click', () => {
+            exportGamesCSV(approvedGames);
+        });
+        panel.querySelector('#btn-download-template')?.addEventListener('click', downloadGameTemplate);
+        panel.querySelector('#btn-load-defaults')?.addEventListener('click', loadDefaultGames);
+        panel.querySelector('#btn-import-games')?.addEventListener('click', () => {
+            panel.querySelector('#game-import-file').click();
+        });
+        panel.querySelector('#game-import-file')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const text = await file.text();
+            const games = parseGameCSV(text);
+            if (games.length === 0) { showToast(t('import_empty'), 'error'); e.target.value = ''; return; }
+            showImportPreviewModal(games, async (confirmed) => {
+                if (!confirmed) return;
+                try {
+                    const result = await api('POST', '/games/import', { games });
+                    showToast(t('import_done', result.imported, result.skipped), 'success');
+                    state.games = await api('GET', '/games');
+                    renderMatcher();
+                } catch (e) { showToast('Fehler beim Importieren', 'error'); }
+            });
+            e.target.value = '';
         });
 
         // Danger zone
@@ -5693,7 +5840,7 @@ function getNowPlus10() {
                 if (wiz.game) {
                     try {
                         await api('POST', '/games/suggest', { name: wiz.game, genre: wiz.genres.join(', '), maxPlayers: 4, suggestedBy: state.currentPlayer });
-                        await api('PUT', `/games/${encodeURIComponent(wiz.game)}/approve`, { sessionCoins: 0 });
+                        await api('PUT', `/games/${encodeURIComponent(wiz.game)}/approve`);
                     } catch (e) {}
                 }
                 if (wiz.message) await api('PUT', '/settings/login_message', { value: wiz.message });
