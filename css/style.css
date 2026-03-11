@@ -521,7 +521,7 @@ body {
     z-index: 0;
 }
 
-.game-item > * {
+.game-item > *:not(.game-cover-bg) {
     position: relative;
     z-index: 1;
 }
@@ -3834,12 +3834,58 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     max-height: 75vh;
     overflow-y: auto;
 }
-.game-detail-cover {
+.game-detail-slider {
+    position: relative;
     width: 100%;
-    max-height: 180px;
-    object-fit: cover;
     border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 16/9;
 }
+.game-detail-slide-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.gd-slide-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    border: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    padding: 0.1rem 0.5rem 0.25rem;
+    cursor: pointer;
+    border-radius: 4px;
+    z-index: 2;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+.gd-slide-btn:hover { opacity: 1; }
+.gd-prev { left: 0.4rem; }
+.gd-next { right: 0.4rem; }
+.gd-slide-dots {
+    position: absolute;
+    bottom: 0.4rem;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    z-index: 2;
+}
+.gd-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.gd-dot.active { background: #fff; }
 .game-detail-title {
     font-size: 1.05rem;
     font-weight: 700;

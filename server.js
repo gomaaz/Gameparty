@@ -221,6 +221,7 @@ try { db.prepare("ALTER TABLE games ADD COLUMN rawg_id INT DEFAULT 0").run(); } 
 try { db.prepare("ALTER TABLE games ADD COLUMN platforms TEXT DEFAULT ''").run(); } catch {}
 try { db.prepare("ALTER TABLE games ADD COLUMN released TEXT DEFAULT ''").run(); } catch {}
 try { db.prepare("ALTER TABLE games ADD COLUMN requirements TEXT DEFAULT ''").run(); } catch {}
+try { db.prepare("ALTER TABLE games ADD COLUMN screenshots TEXT DEFAULT '[]'").run(); } catch {}
 
 // ---- Migration: pending_coins Feld in live_sessions ----
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN pending_coins INT DEFAULT 0").run(); } catch {}
@@ -346,6 +347,7 @@ function getGameWithPlayers(game) {
         platforms: game.platforms || '',
         released: game.released || '',
         requirements: game.requirements || '',
+        screenshots: game.screenshots || '[]',
         players: playersObj
     };
 }
@@ -2197,6 +2199,19 @@ app.post('/api/games/enrich', async (req, res) => {
             }
             logger.debug(`[${g.name}] shops=${rawgStores.map(s=>`${s.platform}(${s.url ? 'url✓' : 'no-url'})`).join(', ') || 'none'}`);
 
+            // Fetch screenshots
+            let screenshotUrls = [];
+            try {
+                const ssRes = await fetch(`https://api.rawg.io/api/games/${rawgId}/screenshots?key=${key}&page_size=6`);
+                const ssData = await ssRes.json();
+                const ssc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
+                db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(ssc+1), String(ssc+1));
+                screenshotUrls = (ssData.results || []).slice(0, 6).map(s => s.image).filter(Boolean);
+                logger.debug(`[${g.name}] screenshots → ${screenshotUrls.length}`);
+            } catch (ssErr) {
+                logger.debug(`[${g.name}] screenshots fetch failed: ${ssErr.message}`);
+            }
+
             // System requirements (prefer PC, fallback to first platform with requirements)
             const pcPlat = (d.platforms || []).find(p => p.platform.name === 'PC');
             const anyReq = (d.platforms || []).find(p => p.requirements_en?.minimum || p.requirements?.minimum);
@@ -2228,11 +2243,11 @@ app.post('/api/games/enrich', async (req, res) => {
 
             // Update DB
             if (rawgStores.length > 0) {
-                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=?, shop_links=? WHERE name=?`)
-                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, JSON.stringify(rawgStores), g.name);
+                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=?, shop_links=?, screenshots=? WHERE name=?`)
+                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, JSON.stringify(rawgStores), JSON.stringify(screenshotUrls), g.name);
             } else {
-                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=? WHERE name=?`)
-                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, g.name);
+                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=?, screenshots=? WHERE name=?`)
+                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, JSON.stringify(screenshotUrls), g.name);
             }
 
             logger.debug(`[${g.name}] ✓ enriched: genre="${genres}", released="${released}", cover=${coverUrl ? '✓' : '✗'}, shops=${rawgStores.length}`);

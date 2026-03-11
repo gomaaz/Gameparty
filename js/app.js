@@ -1197,6 +1197,8 @@ function getNowPlus10() {
         try { platforms = JSON.parse(g.platforms || '[]'); } catch {}
         let requirements = {};
         try { requirements = JSON.parse(g.requirements || '{}'); } catch {}
+        let screenshots = [];
+        try { screenshots = JSON.parse(g.screenshots || '[]'); } catch {}
 
         const shopLinksHtml = (g.shopLinks && g.shopLinks.length)
             ? g.shopLinks.map(l => {
@@ -1206,9 +1208,24 @@ function getNowPlus10() {
             }).join('')
             : '';
 
+        // Build slides array: cover first, then screenshots
+        const slides = [];
+        if (g.cover_url) slides.push(g.cover_url);
+        screenshots.forEach(s => { if (s && !slides.includes(s)) slides.push(s); });
+
+        const sliderHtml = slides.length ? `
+            <div class="game-detail-slider" id="gd-slider">
+                <img class="game-detail-slide-img" id="gd-slide-img" src="${slides[0]}" alt="">
+                ${slides.length > 1 ? `
+                    <button class="gd-slide-btn gd-prev" id="gd-prev">&#8249;</button>
+                    <button class="gd-slide-btn gd-next" id="gd-next">&#8250;</button>
+                    <div class="gd-slide-dots" id="gd-dots">${slides.map((_, i) => `<span class="gd-dot${i===0?' active':''}" data-i="${i}"></span>`).join('')}</div>
+                ` : ''}
+            </div>` : '';
+
         modal.innerHTML = `
             <div class="game-detail-modal">
-                ${g.cover_url ? `<img class="game-detail-cover" src="${g.cover_url}" alt="">` : ''}
+                ${sliderHtml}
                 <div class="game-detail-title">${g.name}</div>
                 ${g.released ? `<div class="game-detail-meta-row"><span class="game-detail-label">Release:</span> ${g.released}</div>` : ''}
                 ${g.genre ? `<div class="game-detail-meta-row"><span class="game-detail-label">Genres:</span> ${g.genre}</div>` : ''}
@@ -1219,8 +1236,24 @@ function getNowPlus10() {
                 ${requirements.minimum ? `<div class="game-detail-requirements"><div class="game-detail-label" style="margin-bottom:0.3rem">Systemanforderungen (Minimum):</div><pre>${requirements.minimum}</pre></div>` : ''}
                 <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
             </div>`;
+
         overlay.classList.add('show');
         modal.querySelector('#modal-cancel').addEventListener('click', () => overlay.classList.remove('show'));
+
+        // Slider logic
+        if (slides.length > 1) {
+            let current = 0;
+            const img = modal.querySelector('#gd-slide-img');
+            const dots = modal.querySelectorAll('.gd-dot');
+            const go = (i) => {
+                current = (i + slides.length) % slides.length;
+                img.src = slides[current];
+                dots.forEach((d, di) => d.classList.toggle('active', di === current));
+            };
+            modal.querySelector('#gd-prev').addEventListener('click', () => go(current - 1));
+            modal.querySelector('#gd-next').addEventListener('click', () => go(current + 1));
+            dots.forEach(d => d.addEventListener('click', () => go(parseInt(d.dataset.i))));
+        }
     }
 
     // ---- Render: Matcher ----
