@@ -3610,7 +3610,7 @@ function getNowPlus10() {
             </div>
             ${data.durationMin ? `<div style="text-align:center;font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">⏱ ${data.durationMin} min &times; ${data.coinRate} ${coinSvgIcon('0.85em')} / min</div>` : ''}
             <div style="margin-bottom:0.75rem;"></div>
-            <button class="btn-propose" id="session-payout-close">OK</button>
+            <div style="text-align:center;"><button class="btn-propose" id="session-payout-close">OK</button></div>
         `;
         overlay.classList.add('show');
         const closeBtn = $('#session-payout-close');
