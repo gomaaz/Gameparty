@@ -446,15 +446,22 @@ app.post('/api/games/import', (req, res) => {
     const { games } = req.body;
     if (!Array.isArray(games) || games.length === 0)
         return res.status(400).json({ error: 'games array required' });
-    let imported = 0, skipped = 0;
-    const insertStmt = db.prepare(
-        'INSERT OR IGNORE INTO games (name, maxPlayers, genre, lanRating, previewUrl, status, shop_links) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    let imported = 0, updated = 0;
+    const upsertStmt = db.prepare(
+        `INSERT INTO games (name, maxPlayers, genre, lanRating, previewUrl, status, shop_links) VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(name) DO UPDATE SET
+             maxPlayers = excluded.maxPlayers,
+             genre = excluded.genre,
+             lanRating = excluded.lanRating,
+             previewUrl = excluded.previewUrl,
+             shop_links = excluded.shop_links`
     );
     const tx = db.transaction(() => {
         for (const g of games) {
-            if (!g.name?.trim()) { skipped++; continue; }
+            if (!g.name?.trim()) continue;
             const shopLinks = Array.isArray(g.shopLinks) ? JSON.stringify(g.shopLinks) : '[]';
-            const result = insertStmt.run(
+            const existing = db.prepare('SELECT id FROM games WHERE name = ?').get(g.name.trim());
+            upsertStmt.run(
                 g.name.trim(),
                 parseInt(g.maxPlayers) || 4,
                 g.genre?.trim() || '',
@@ -463,12 +470,12 @@ app.post('/api/games/import', (req, res) => {
                 'approved',
                 shopLinks
             );
-            result.changes > 0 ? imported++ : skipped++;
+            existing ? updated++ : imported++;
         }
     });
     tx();
     broadcast();
-    res.json({ imported, skipped });
+    res.json({ imported, updated });
 });
 
 // GET /api/genres

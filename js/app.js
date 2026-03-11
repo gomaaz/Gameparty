@@ -1796,7 +1796,7 @@ function getNowPlus10() {
         showConfirm(t('load_defaults_confirm', FALLBACK_GAMES.length), async () => {
             try {
                 const result = await api('POST', '/games/import', { games: FALLBACK_GAMES });
-                showToast(t('import_done', result.imported, result.skipped), 'success');
+                showToast(t('import_done', result.imported, result.updated), 'success');
                 state.games = await api('GET', '/games');
                 renderMatcher();
             } catch (e) { showToast('Fehler beim Importieren', 'error'); }
@@ -3233,7 +3233,7 @@ function getNowPlus10() {
                 if (!confirmed) return;
                 try {
                     const result = await api('POST', '/games/import', { games });
-                    showToast(t('import_done', result.imported, result.skipped), 'success');
+                    showToast(t('import_done', result.imported, result.updated), 'success');
                     state.games = await api('GET', '/games');
                     renderMatcher();
                 } catch (e) { showToast('Fehler beim Importieren', 'error'); }
