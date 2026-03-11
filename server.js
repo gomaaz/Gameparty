@@ -213,6 +213,8 @@ try { db.prepare("CREATE INDEX IF NOT EXISTS idx_history_player ON history(playe
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN duration_min INT DEFAULT 0").run(); } catch {}
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN coin_rate REAL DEFAULT 0").run(); } catch {}
 
+try { db.prepare("ALTER TABLE proposal_players ADD COLUMN slot_number INT").run(); } catch {}
+
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
     const result = db.prepare('DELETE FROM attendees WHERE player NOT IN (SELECT name FROM users)').run();
@@ -597,7 +599,7 @@ app.post('/api/sessions', (req, res) => {
 app.get('/api/proposals', (req, res) => {
     const proposals = db.prepare('SELECT * FROM proposals ORDER BY createdAt DESC').all();
     const result = proposals.map(p => {
-        const players = db.prepare('SELECT player FROM proposal_players WHERE proposal_id = ?').all(p.id).map(r => r.player);
+        const players = db.prepare('SELECT player, slot_number FROM proposal_players WHERE proposal_id = ? ORDER BY COALESCE(slot_number, 999) ASC').all(p.id);
         return { ...p, isNewGame: !!p.isNewGame, coinsApproved: p.coinsApproved === null ? null : !!p.coinsApproved, players };
     });
     res.json(result);
@@ -605,10 +607,10 @@ app.get('/api/proposals', (req, res) => {
 
 // POST /api/proposals
 app.post('/api/proposals', (req, res) => {
-    const { id, game, isNewGame, leader, message, scheduledDay, scheduledTime, medium, medium_account } = req.body;
+    const { id, game, isNewGame, leader, message, scheduledDay, scheduledTime, medium, medium_account, maxSlots } = req.body;
     const proposalId = id || 'p_' + Date.now();
-    db.prepare('INSERT INTO proposals (id, game, isNewGame, leader, status, scheduledTime, scheduledDay, message, createdAt, coinsApproved, medium, medium_account) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(proposalId, game, isNewGame ? 1 : 0, leader, 'pending', scheduledTime || '', scheduledDay || '', message || '', Date.now(), 0, medium || 'lan', medium_account || '');
-    db.prepare('INSERT INTO proposal_players (proposal_id, player) VALUES (?, ?)').run(proposalId, leader);
+    db.prepare('INSERT INTO proposals (id, game, isNewGame, leader, status, scheduledTime, scheduledDay, message, createdAt, coinsApproved, medium, medium_account, max_slots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(proposalId, game, isNewGame ? 1 : 0, leader, 'pending', scheduledTime || '', scheduledDay || '', message || '', Date.now(), 0, medium || 'lan', medium_account || '', parseInt(maxSlots) || 0);
+    db.prepare('INSERT INTO proposal_players (proposal_id, player, slot_number) VALUES (?, ?, 1)').run(proposalId, leader);
     res.json({ success: true, id: proposalId });
 });
 
@@ -677,12 +679,20 @@ app.delete('/api/proposals/:id', (req, res) => {
 // POST /api/proposals/:id/join
 app.post('/api/proposals/:id/join', (req, res) => {
     const { player } = req.body;
-    const proposal = db.prepare('SELECT status FROM proposals WHERE id = ?').get(req.params.id);
-    if (proposal && proposal.status === 'active') {
+    const proposal = db.prepare('SELECT status, max_slots FROM proposals WHERE id = ?').get(req.params.id);
+    if (!proposal) return res.status(404).json({ error: 'Nicht gefunden' });
+    if (proposal.status === 'active') {
         const activeGame = getActiveSessionForPlayer(player);
         if (activeGame) return res.status(400).json({ error: `Du bist bereits in einer laufenden Session: ${activeGame}` });
     }
-    db.prepare('INSERT OR IGNORE INTO proposal_players (proposal_id, player) VALUES (?, ?)').run(req.params.id, player);
+    const slots = parseInt(proposal.max_slots) || 0;
+    let slotNumber = null;
+    if (slots > 0) {
+        const taken = db.prepare('SELECT slot_number FROM proposal_players WHERE proposal_id = ?').all(req.params.id).map(r => r.slot_number);
+        slotNumber = Array.from({ length: slots }, (_, i) => i + 1).find(n => !taken.includes(n));
+        if (!slotNumber) return res.status(400).json({ error: 'Sitzung ist voll' });
+    }
+    db.prepare('INSERT OR IGNORE INTO proposal_players (proposal_id, player, slot_number) VALUES (?, ?, ?)').run(req.params.id, player, slotNumber);
     res.json({ success: true });
 });
 

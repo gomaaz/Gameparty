@@ -1793,7 +1793,7 @@ function getNowPlus10() {
     function renderProposalCard(p) {
         const player = state.currentPlayer;
         const isLeader = p.leader === player;
-        const isJoined = p.players.includes(player);
+        const isJoined = p.players.some(pp => pp.player === player);
         const admin = isAdmin();
 
         // Status badge like live-session-card
@@ -1862,7 +1862,7 @@ function getNowPlus10() {
 
         const actions = [];
 
-        if (!isJoined && ['pending', 'approved'].includes(p.status)) {
+        if (!isJoined && ['pending', 'approved'].includes(p.status) && (p.max_slots === 0 || p.players.length < p.max_slots)) {
             actions.push(`<button class="btn-session-join btn-join" data-id="${p.id}">${t('btn_join_session')}</button>`);
         }
         if (isJoined && !isLeader && ['pending', 'approved'].includes(p.status)) {
@@ -1904,7 +1904,20 @@ function getNowPlus10() {
                 ${coinStatusHTML}
                 ${coinRateHTML}
                 ${leaderEditHTML}
-                <div>${[p.leader, ...p.players.filter(n => n !== p.leader).sort()].map(n => `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${n}</span>`).join('')}</div>
+                ${(() => {
+                    const leaderBadge = `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>`;
+                    if (p.max_slots > 0) {
+                        const slotMap = {};
+                        p.players.forEach(pp => { if (pp.slot_number) slotMap[pp.slot_number] = pp.player; });
+                        const slotItems = [];
+                        for (let i = 1; i <= p.max_slots; i++) {
+                            const name = slotMap[i] || null;
+                            slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${name === p.leader ? leaderBadge : ''}${name}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
+                        }
+                        return `<div class="session-slots">${slotItems.join('')}</div>`;
+                    }
+                    return `<div>${[p.leader, ...p.players.filter(pp => pp.player !== p.leader).sort((a, b) => a.player.localeCompare(b.player))].map(pp => { const n = pp.player || pp; return `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? leaderBadge : ''}${n}</span>`; }).join('')}</div>`;
+                })()}
                 ${actionsHTML}
             </div>`;
     }
