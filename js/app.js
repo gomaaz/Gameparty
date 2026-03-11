@@ -3651,7 +3651,7 @@ function getNowPlus10() {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave ch-delete" data-id="${c.id}">${t('btn_delete_duel')}</button></div>`;
                 }
 
-                const winnerInfo = c.winner ? `<div class="game-meta" style="margin-top:0.3rem;">🏆 ${c.winner}</div>` : '';
+                const winnerInfo = c.winner ? `<div style="display:flex;justify-content:flex-end;margin-top:0.3rem;"><span style="font-size:1.1rem;color:var(--accent-gold,#ffd700);font-weight:700;">🏆 ${c.winner}</span></div>` : '';
 
                 const highlightClass = String(c.id) === String(focusChallengeId) ? ' highlight-challenge' : '';
                 let challengerStyle = '';
@@ -3766,7 +3766,7 @@ function getNowPlus10() {
                         <div class="game-meta">${tc.game}</div>
                         <div class="game-meta" style="line-height:1.6">${potStr}</div>
                         ${acceptanceHTML}
-                        ${winnerLabel ? `<div class="game-meta" style="margin-top:0.3rem;">🏆 ${winnerLabel}</div>` : ''}
+                        ${winnerLabel ? `<div style="display:flex;justify-content:flex-end;margin-top:0.3rem;"><span style="font-size:1.1rem;color:var(--accent-gold,#ffd700);font-weight:700;">🏆 ${winnerLabel}</span></div>` : ''}
                         ${actionsHTML}
                     </div>`;
             }
@@ -3822,11 +3822,11 @@ function getNowPlus10() {
             ` : '';
 
             const cardsHTML = challenges.length
-                ? challenges.map(renderCard).join('')
+                ? `<div class="proposal-list">${challenges.map(renderCard).join('')}</div>`
                 : `<div class="empty-state"><div class="empty-state-text">${t('no_duels')}</div></div>`;
 
             const teamCardsHTML = teamChallenges.length
-                ? teamChallenges.map(renderTeamCard).join('')
+                ? `<div class="proposal-list">${teamChallenges.map(renderTeamCard).join('')}</div>`
                 : `<div class="empty-state"><div class="empty-state-text">${t('no_team_duels')}</div></div>`;
 
             const oneVOneContentHTML = challengeActiveTab === '1v1' ? `
@@ -5136,7 +5136,7 @@ function getNowPlus10() {
             `<div class="shooting_star" style="top:${top}%;left:${left}%;--delay:${delay}s;--duration:${duration}s"></div>`
         ).join('')}</div>`;
 
-        const wiz = { coins: 0, players: [], game: '', genres: [], message: '' };
+        const wiz = { coins: 0, players: [], game: '', genres: [], message: '', adminName: '' };
 
         let currentStepFn = null;
 
@@ -5168,9 +5168,13 @@ function getNowPlus10() {
 
         function renderPlayerRows(rows) {
             return rows.map((r, i) => `
-                <div class="pw-row">
+                <div class="pw-row" style="align-items:center;gap:0.4rem;">
                     <input class="ls-input pw-name" data-idx="${i}" type="text" placeholder="Name" value="${r.name}" autocomplete="off">
                     <input class="ls-input pw-pin" data-idx="${i}" type="text" placeholder="PIN" value="${r.pin || '1111'}" maxlength="4" autocomplete="off" style="width:5.5rem;flex-shrink:0">
+                    <label style="display:flex;align-items:center;gap:0.25rem;font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;cursor:pointer;flex-shrink:0;">
+                        <input type="checkbox" class="pw-is-admin" data-idx="${i}" ${r.isAdmin ? 'checked' : ''} style="accent-color:var(--accent-purple,#6c63ff);width:0.9rem;height:0.9rem;cursor:pointer;">
+                        ${t('pw_player_admin_label')}
+                    </label>
                 </div>
             `).join('');
         }
@@ -5178,7 +5182,25 @@ function getNowPlus10() {
         function savePlayerRows() {
             const names = Array.from(screen.querySelectorAll('.pw-name'));
             const pins = Array.from(screen.querySelectorAll('.pw-pin'));
-            wiz.players = names.map((n, i) => ({ name: n.value, pin: pins[i]?.value || '1111' }));
+            const adminChecks = Array.from(screen.querySelectorAll('.pw-is-admin'));
+            wiz.players = names.map((n, i) => ({ name: n.value, pin: pins[i]?.value || '1111', isAdmin: adminChecks[i]?.checked || false }));
+        }
+
+        // Step 0: Intro
+        function showStep0() {
+            currentStepFn = showStep0;
+            buildScreen(`
+                <div class="ls-wizard-title" style="font-size:1.3rem;text-align:center;">${t('pw_intro_title')}</div>
+                <div style="margin:1rem 0;display:flex;flex-direction:column;gap:0.75rem;">
+                    <div class="ls-wizard-sub" style="text-align:center;">${t('pw_intro_p1')}</div>
+                    <div class="ls-wizard-sub" style="text-align:center;">${t('pw_intro_p2')}</div>
+                    <div class="ls-wizard-sub" style="text-align:center;font-style:italic;opacity:0.8;">${t('pw_intro_p3')}</div>
+                </div>
+                <button class="ls-btn" id="pw-step0-next">${t('pw_intro_next')}</button>
+            `);
+            screen.querySelector('#pw-step0-next').addEventListener('click', () => {
+                showStep1();
+            });
         }
 
         // Step 1: Players
@@ -5188,19 +5210,34 @@ function getNowPlus10() {
             buildScreen(`
                 <div class="ls-wizard-title">${t('pw_players_title')}</div>
                 <div class="ls-wizard-sub">${t('pw_players_sub')}</div>
+                <div style="margin-bottom:0.75rem;">
+                    <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.3rem;">${t('pw_admin_name_label')}</div>
+                    <input class="ls-input" id="pw-admin-name" type="text" value="${wiz.adminName || state.currentPlayer || ''}" autocomplete="off">
+                </div>
                 <div id="pw-player-list">${renderPlayerRows(wiz.players)}</div>
                 <button class="ls-btn-secondary" id="pw-add-player">${t('pw_add_player')}</button>
                 <button class="ls-btn" id="pw-step1-next">${t('pw_next')}</button>
             `);
             screen.querySelector('#pw-add-player').addEventListener('click', () => {
                 savePlayerRows();
+                wiz.adminName = screen.querySelector('#pw-admin-name')?.value.trim() || wiz.adminName;
                 wiz.players.push({ name: '', pin: '1111' });
                 const list = screen.querySelector('#pw-player-list');
                 list.innerHTML = renderPlayerRows(wiz.players);
                 list.querySelectorAll('.pw-name')[wiz.players.length - 1]?.focus();
             });
-            screen.querySelector('#pw-step1-next').addEventListener('click', () => {
+            screen.querySelector('#pw-step1-next').addEventListener('click', async () => {
                 savePlayerRows();
+                const newAdminName = screen.querySelector('#pw-admin-name')?.value.trim();
+                if (newAdminName && newAdminName !== state.currentPlayer) {
+                    try {
+                        await api('PUT', `/users/${encodeURIComponent(state.currentPlayer)}`, { newName: newAdminName });
+                        state.currentPlayer = newAdminName;
+                        wiz.adminName = newAdminName;
+                    } catch (e) {
+                        // ignore rename error, continue with old name
+                    }
+                }
                 showStep2();
             });
         }
@@ -5288,9 +5325,10 @@ function getNowPlus10() {
             try {
                 const filledPlayers = wiz.players.filter(r => r.name.trim());
                 for (const p of filledPlayers) {
-                    await api('POST', '/users', { name: p.name.trim(), pin: p.pin || '1111', role: 'player' });
+                    await api('POST', '/users', { name: p.name.trim(), pin: p.pin || '1111', role: p.isAdmin ? 'admin' : 'player' });
                     if (wiz.coins > 0) await api('POST', '/coins/add', { player: p.name.trim(), amount: wiz.coins, reason: 'Willkommens-Coins' });
                 }
+                if (wiz.coins > 0) await api('POST', '/coins/add', { player: state.currentPlayer, amount: wiz.coins, reason: 'Willkommens-Coins' });
                 if (wiz.game) {
                     try {
                         await api('POST', '/games/suggest', { name: wiz.game, genre: wiz.genres.join(', '), maxPlayers: 4, suggestedBy: state.currentPlayer });
@@ -5336,7 +5374,7 @@ function getNowPlus10() {
             }
         }
 
-        showStep1();
+        showStep0();
     }
 
     // ---- Login Modal (used for player switching from header) ----
