@@ -3690,7 +3690,8 @@ function getNowPlus10() {
 
             const myCoins = getPlayerCoins(state.currentPlayer);
             const myStars = getPlayerStars(state.currentPlayer);
-            const opponents = state.attendees.filter(p => p !== state.currentPlayer);
+            const attendeesOrAll = state.attendees.length ? state.attendees : state.players;
+            const opponents = attendeesOrAll.filter(p => p !== state.currentPlayer);
 
             const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt' };
 
@@ -3848,7 +3849,7 @@ function getNowPlus10() {
                     <button class="ch-tab-btn" data-tab="team" style="flex:1;padding:0.5rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:${challengeActiveTab === 'team' ? 'var(--accent-purple)' : 'var(--bg-input)'};color:${challengeActiveTab === 'team' ? '#fff' : 'var(--text-secondary)'};cursor:pointer;font-weight:${challengeActiveTab === 'team' ? '700' : '400'};">👥 ${t('tab_team')}</button>
                 </div>`;
 
-            const allPlayers = state.attendees;
+            const allPlayers = state.attendees.length ? state.attendees : state.players;
 
             const teamFormHTML = challengeActiveTab === 'team' ? `
                 <div class="proposal-form">
@@ -5423,6 +5424,7 @@ function getNowPlus10() {
                     state.allUsers = freshData.users || [];
                     state.coins = freshData.coins;
                     state.settings = freshData.settings || {};
+                    state.attendees = freshData.attendees || [];
                     hideLoginScreen();
                     updateHeader();
                     updateNavVisibility();
