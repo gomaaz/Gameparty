@@ -5215,11 +5215,15 @@ function getNowPlus10() {
                 <div class="pw-genre-grid">${GAME_GENRES.map(g =>
                     `<button class="pw-genre-chip${wiz.genres.includes(g) ? ' selected' : ''}" data-genre="${g}">${g}</button>`
                 ).join('')}</div>
+                <button class="ls-btn-secondary ls-btn-back" id="pw-step2-back">← ${t('pw_back')}</button>
                 <button class="ls-btn" id="pw-step2-next">${t('pw_next')}</button>
                 <button class="ls-btn-secondary" id="pw-step2-skip">${t('pw_skip')}</button>
             `);
             screen.querySelectorAll('.pw-genre-chip').forEach(btn => {
                 btn.addEventListener('click', () => btn.classList.toggle('selected'));
+            });
+            screen.querySelector('#pw-step2-back').addEventListener('click', () => {
+                showStep1();
             });
             screen.querySelector('#pw-step2-next').addEventListener('click', () => {
                 wiz.game = screen.querySelector('#pw-game-name').value.trim();
@@ -5239,9 +5243,13 @@ function getNowPlus10() {
                 <div class="ls-wizard-title">${t('pw_message_title')}</div>
                 <div class="ls-wizard-sub">${t('pw_message_sub')}</div>
                 <input class="ls-input" id="pw-message" type="text" placeholder="${t('pw_message_placeholder')}" value="${wiz.message}" autocomplete="off">
+                <button class="ls-btn-secondary ls-btn-back" id="pw-step3-back">← ${t('pw_back')}</button>
                 <button class="ls-btn" id="pw-step3-next">${t('pw_next')}</button>
                 <button class="ls-btn-secondary" id="pw-step3-skip">${t('pw_skip')}</button>
             `);
+            screen.querySelector('#pw-step3-back').addEventListener('click', () => {
+                showStep2();
+            });
             screen.querySelector('#pw-step3-next').addEventListener('click', () => {
                 wiz.message = screen.querySelector('#pw-message').value.trim();
                 showStep4();
@@ -5259,8 +5267,12 @@ function getNowPlus10() {
                 <div class="ls-wizard-title">${t('pw_coins_title')}</div>
                 <div class="ls-wizard-sub">${t('pw_coins_sub')}<br><span style="font-size:0.82rem;opacity:0.6">${t('pw_coins_recommended')}</span></div>
                 <input class="ls-input" id="pw-coins" type="number" min="0" max="9999" value="${wiz.coins}" placeholder="0">
+                <button class="ls-btn-secondary ls-btn-back" id="pw-step4-back">← ${t('pw_back')}</button>
                 <button class="ls-btn" id="pw-step4-finish">${t('pw_finish')}</button>
             `);
+            screen.querySelector('#pw-step4-back').addEventListener('click', () => {
+                showStep3();
+            });
             screen.querySelector('#pw-step4-finish').addEventListener('click', async () => {
                 wiz.coins = parseInt(screen.querySelector('#pw-coins').value) || 0;
                 await finishWizard();
@@ -5654,6 +5666,12 @@ function getNowPlus10() {
         updateNavVisibility();
         const savedView = localStorage.getItem(LOCAL_KEYS.VIEW) || 'dashboard';
         navigateTo(savedView);
+
+        // Wenn Admin eingeloggt aber Setup nicht abgeschlossen → Wizard erzwingen
+        if (state.currentPlayer && state.role === 'admin' && state.settings.setup_completed !== 'true' && state.players.length <= 1) {
+            showPostLoginWizard();
+            return;
+        }
 
         if (state.currentPlayer) {
             startChallengePoll();
