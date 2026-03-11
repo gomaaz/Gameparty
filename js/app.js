@@ -697,8 +697,9 @@ function getNowPlus10() {
             }
 
             let liveSessionsHTML = '';
+            let endedSessionsHTML = '';
             if (liveSessionsData.length > 0) {
-                liveSessionsHTML = liveSessionsData.map(s => {
+                const allRenderedSessions = liveSessionsData.map(s => {
                     const isLeader = s.leader === state.currentPlayer;
                     const isInSession = s.players.some(p => p.player === state.currentPlayer);
                     const sortedPlayerObjs = [
@@ -934,7 +935,7 @@ function getNowPlus10() {
                         }
                     }
 
-                    return `
+                    return { status: s.status, html: `
                         <div class="card live-session-card ${s.status}">
                             <div class="live-session-header">
                                 <span class="live-session-game">${renderLeaderIcons(s.leader, s.medium, s.medium_account)}${s.game}</span>
@@ -943,12 +944,14 @@ function getNowPlus10() {
                             ${coinInfoHTML}
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
-                        </div>`;
-                }).join('');
+                        </div>` };
+                });
+                liveSessionsHTML = allRenderedSessions.filter(r => r.status !== 'ended').map(r => r.html).join('');
+                endedSessionsHTML = allRenderedSessions.filter(r => r.status === 'ended').map(r => r.html).join('');
             }
 
             const activeProposalsHTML = activeProposals.map(renderProposalCard).join('');
-            const hasAnything = liveSessionsData.length > 0 || activeProposals.length > 0;
+            const hasAnything = liveSessionsData.filter(s => s.status !== 'ended').length > 0 || activeProposals.length > 0;
 
             // Detect new running duel sessions and show start modal
             liveSessionsData.filter(s =>
@@ -992,6 +995,10 @@ function getNowPlus10() {
                     </div>
                     ${plannedSessionsHTML}
                 </div>
+                ${endedSessionsHTML ? `<div class="card" id="ended-sessions-container">
+                    <div class="card-title">${t('sessions_pending_approval')}</div>
+                    ${endedSessionsHTML}
+                </div>` : ''}
                 ${nextGameHTML}
                 <div class="card">
                     <div class="card-title">${t('leaderboard')}</div>
