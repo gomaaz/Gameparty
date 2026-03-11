@@ -1,6 +1,6 @@
 {
   "name": "gameparty",
-  "version": "2.3.202",
+  "version": "2.3.203",
   "description": "Gameparty - LAN Party Gamification App",
   "main": "server.js",
   "scripts": {
