@@ -1170,9 +1170,15 @@ function getNowPlus10() {
                 e.preventDefault();
                 const r = results[i];
                 inputEl.value = r.name;
-                rawgSelected = { ...r, platforms: JSON.stringify(r.platforms || []), released: r.released || '' };
+                rawgSelected = { ...r, platforms: JSON.stringify(r.platforms || []), released: r.released || '', shops: [] };
                 hideRawgDropdown();
                 inputEl.dispatchEvent(new Event('rawg-selected'));
+                // Fetch full details including shop links and full description in background
+                api('GET', `/rawg/game/${r.id}`).then(detail => {
+                    if (detail && !detail.error) {
+                        rawgSelected = { ...rawgSelected, shops: detail.shops || [], description: detail.description || rawgSelected.description };
+                    }
+                }).catch(() => {});
             });
         });
     }
@@ -1447,7 +1453,8 @@ function getNowPlus10() {
                     hideRawgDropdown();
                     try {
                         await api('POST', '/games/suggest', {
-                            name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, shopLinks,
+                            name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer,
+                            shopLinks: (rawgSelected?.shops?.length ? rawgSelected.shops : shopLinks) || [],
                             coverUrl: rawgSelected?.cover || '',
                             description: rawgSelected?.description || '',
                             rating: rawgSelected?.metacritic || 0,

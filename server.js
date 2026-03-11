@@ -2048,6 +2048,43 @@ app.get('/api/rawg/status', (req, res) => {
     res.json({ enabled, configured: !!process.env.RAWG_API_KEY });
 });
 
+// GET /api/rawg/game/:id — full detail + store URLs for a single game (used by suggest autocomplete)
+app.get('/api/rawg/game/:id', async (req, res) => {
+    const enabled = db.prepare("SELECT value FROM settings WHERE key='rawg_enabled'").get()?.value === '1';
+    if (!enabled) return res.status(400).json({ error: 'RAWG nicht aktiviert' });
+    const key = process.env.RAWG_API_KEY;
+    if (!key) return res.status(500).json({ error: 'RAWG_API_KEY not set' });
+    try {
+        const [detailRes, storesRes] = await Promise.all([
+            fetch(`https://api.rawg.io/api/games/${req.params.id}?key=${key}`),
+            fetch(`https://api.rawg.io/api/games/${req.params.id}/stores?key=${key}`)
+        ]);
+        const d = await detailRes.json();
+        const storesData = await storesRes.json();
+        // Count 2 calls
+        const cc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
+        db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(cc+2), String(cc+2));
+        const storeNameMap = {};
+        (d.stores || []).forEach(s => { storeNameMap[s.store.id] = s.store.name; });
+        let shops = (storesData.results || []).filter(s => s.url).map(s => ({ platform: storeNameMap[s.store_id] || `Store ${s.store_id}`, url: s.url }));
+        if (d.website) shops = [{ platform: 'Website', url: d.website }, ...shops];
+        res.json({
+            id: d.id,
+            name: d.name,
+            cover: d.background_image || '',
+            genres: (d.genres || []).map(x => x.name).join(', '),
+            metacritic: d.metacritic || 0,
+            description: (d.description_raw || '').slice(0, 2000),
+            platforms: (d.platforms || []).map(p => p.platform.name),
+            released: d.released || '',
+            shops
+        });
+    } catch (e) {
+        logger.error('RAWG game detail error: ' + e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // POST /api/rawg/search
 app.post('/api/rawg/search', async (req, res) => {
     const enabled = db.prepare("SELECT value FROM settings WHERE key='rawg_enabled'").get()?.value === '1';
@@ -2135,8 +2172,29 @@ app.post('/api/games/enrich', async (req, res) => {
             const description = (d.description_raw || '').slice(0, 2000);
             const metacritic = d.metacritic || 0;
 
-            // Shop links from RAWG stores
-            const rawgStores = (d.stores || []).map(s => ({ platform: s.store.name, url: s.url })).filter(s => s.url);
+            // Shop links — fetch from sub-endpoint because d.stores[].url is always null in detail response
+            let rawgStores = [];
+            try {
+                const storesRes = await fetch(`https://api.rawg.io/api/games/${rawgId}/stores?key=${key}`);
+                const storesData = await storesRes.json();
+                // Count this call
+                const stc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
+                db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(stc+1), String(stc+1));
+                // Build store-name map from detail response (has names but no URLs)
+                const storeNameMap = {};
+                (d.stores || []).forEach(s => { storeNameMap[s.store.id] = s.store.name; });
+                rawgStores = (storesData.results || [])
+                    .filter(s => s.url)
+                    .map(s => ({ platform: storeNameMap[s.store_id] || `Store ${s.store_id}`, url: s.url }));
+                logger.debug(`[${g.name}] stores sub-call → ${rawgStores.length} store URLs`);
+            } catch (stErr) {
+                logger.debug(`[${g.name}] stores sub-call failed: ${stErr.message}`);
+            }
+            // Prepend official website if present
+            if (d.website) {
+                rawgStores = [{ platform: 'Website', url: d.website }, ...rawgStores];
+                logger.debug(`[${g.name}] website: ${d.website}`);
+            }
             logger.debug(`[${g.name}] shops=${rawgStores.map(s=>`${s.platform}(${s.url ? 'url✓' : 'no-url'})`).join(', ') || 'none'}`);
 
             // System requirements (prefer PC, fallback to first platform with requirements)
