@@ -212,6 +212,7 @@ try { db.prepare("CREATE INDEX IF NOT EXISTS idx_history_player ON history(playe
 
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN duration_min INT DEFAULT 0").run(); } catch {}
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN coin_rate REAL DEFAULT 0").run(); } catch {}
+try { db.prepare("ALTER TABLE sessions ADD COLUMN duration_min INT DEFAULT 0").run(); } catch {}
 
 try { db.prepare("ALTER TABLE proposal_players ADD COLUMN slot_number INT").run(); } catch {}
 
@@ -720,7 +721,8 @@ app.post('/api/proposals/:id/approve', (req, res) => {
         db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsPerPlayer, `Session: ${proposal.game} (${players.length} Spieler)`, Date.now());
     }
 
-    db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp) VALUES (?, ?, ?, ?)').run(proposal.game, JSON.stringify(players), coinsPerPlayer, Date.now());
+    const proposalDurationMin = (proposal.startedAt && proposal.completedAt) ? Math.ceil((proposal.completedAt - proposal.startedAt) / 60000) : 0;
+    db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp, duration_min) VALUES (?, ?, ?, ?, ?)').run(proposal.game, JSON.stringify(players), coinsPerPlayer, Date.now(), proposalDurationMin);
     db.prepare('UPDATE proposals SET coinsApproved = 1 WHERE id = ?').run(req.params.id);
 
     if (coinsPerPlayer > 0) {
@@ -1774,7 +1776,7 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
             db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, coinsPerPlayer, coinsPerPlayer);
             db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsPerPlayer, `Session: ${session.game} (${players.length} Spieler)`, now);
         }
-        db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp, medium) VALUES (?, ?, ?, ?, ?)').run(session.game, JSON.stringify(players), coinsPerPlayer, now, session.medium);
+        db.prepare('INSERT INTO sessions (game, players, coinsPerPlayer, timestamp, medium, duration_min) VALUES (?, ?, ?, ?, ?, ?)').run(session.game, JSON.stringify(players), coinsPerPlayer, now, session.medium, session.duration_min || 0);
         db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(req.params.id);
         db.prepare('DELETE FROM live_sessions WHERE id = ?').run(req.params.id);
     });

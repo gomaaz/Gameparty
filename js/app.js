@@ -686,7 +686,7 @@ function getNowPlus10() {
                                 <span class="session-history-time">${dateStr} ${timeStr}</span>
                             </div>
                             <div class="session-history-players">${playerChips}</div>
-                            ${s.coinsPerPlayer > 0 ? `<div class="session-history-coins">+${fmt(s.coinsPerPlayer)} ${coinSvgIcon('0.9em')} ${t('session_payout_players')}</div>` : ''}
+                            ${s.coinsPerPlayer > 0 ? `<div class="session-history-coins">+${fmt(s.coinsPerPlayer)} ${coinSvgIcon('0.9em')}${s.duration_min ? ` · ${s.duration_min} min.` : ''} · ${(s.players || []).length} ${t('session_payout_players')}</div>` : ''}
                         </div>`;
                 }).join('');
                 sessionsHTML = `
