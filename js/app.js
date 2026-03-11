@@ -939,8 +939,10 @@ function getNowPlus10() {
                         }
                     }
 
+                    const sessionCover = (state.games || []).find(g => g.name === s.game)?.cover_url || '';
                     return { status: s.status, html: `
                         <div class="card live-session-card ${s.status}">
+                            ${sessionCover ? `<div class="session-cover-bg" style="background-image:url('${sessionCover}')"></div>` : ''}
                             <div class="live-session-header">
                                 <span class="live-session-game">${renderLeaderIcons(s.leader, s.medium, s.medium_account)}${s.game}</span>
                                 ${statusBadge}
@@ -2168,8 +2170,10 @@ function getNowPlus10() {
         // Status-based CSS class like live-session-card
         const statusClass = { pending: 'proposal-pending', approved: 'proposal-approved', active: 'running', completed: 'ended', rejected: '' }[p.status] || '';
 
+        const proposalCover = (state.games || []).find(g => g.name === p.game)?.cover_url || '';
         return `
             <div class="card live-session-card ${statusClass}" data-proposal-id="${p.id}">
+                ${proposalCover ? `<div class="session-cover-bg" style="background-image:url('${proposalCover}')"></div>` : ''}
                 <div class="live-session-header">
                     <span class="live-session-game">${p.medium ? renderLeaderIcons(p.leader, p.medium, p.medium_account) : renderLeaderIcons(p.leader)}${p.game}</span>
                     ${statusBadge}
