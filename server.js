@@ -2220,7 +2220,6 @@ app.post('/api/games/enrich', async (req, res) => {
                 const ssc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
                 db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(ssc+1), String(ssc+1));
                 const remoteUrls = (ssData.results || []).slice(0, 6).map(s => s.image).filter(Boolean);
-                const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50);
                 for (let i = 0; i < remoteUrls.length; i++) {
                     const localPath = path.join(screenshotsDir, `${safeName}-${i}.jpg`);
                     const localUrl = `/gamefiles/screenshots/${safeName}-${i}.jpg`;
@@ -2246,14 +2245,14 @@ app.post('/api/games/enrich', async (req, res) => {
             const requirements = reqMin ? JSON.stringify({ minimum: reqMin }) : '';
             logger.debug(`[${g.name}] requirements=${reqMin ? 'found (PC=' + !!pcPlat + ')' : 'none'}`);
 
-            // Cover download
+            // Cover download — keep existing value on failure so DB is never cleared
+            const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50);
             let coverUrl = g.cover_url || '';
             if (d.background_image) {
                 logger.debug(`[${g.name}] cover → downloading ${d.background_image}`);
                 try {
                     const imgRes = await fetch(d.background_image);
                     const buf = await imgRes.arrayBuffer();
-                    const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 60);
                     const filePath = path.join(coversDir, `${safeName}.jpg`);
                     fs.writeFileSync(filePath, Buffer.from(buf));
                     coverUrl = `/gamefiles/covers/${safeName}.jpg`;
