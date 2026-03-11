@@ -75,6 +75,23 @@ CONFIG.SHOP_ITEMS.unshift({
     description: `Kaufe einen Controller-Punkt für ${CONFIG.STAR_PRICE} Coins. Das sind dauerhafte Siegpunkte!`
 });
 
+async function loadShopPrices() {
+    try {
+        const res = await fetch('/api/settings', { cache: 'no-store' });
+        const settings = await res.json();
+        CONFIG.SHOP_ITEMS.forEach(item => {
+            const key = `shop_price_${item.id}`;
+            if (settings[key] !== undefined) {
+                item.cost = parseInt(settings[key]) || item.cost;
+            }
+        });
+        const starItem = CONFIG.SHOP_ITEMS.find(i => i.id === 'buy_star');
+        if (starItem) CONFIG.STAR_PRICE = starItem.cost;
+    } catch (e) {
+        console.warn('Could not load shop prices from settings:', e);
+    }
+}
+
 // Fallback-Spieleliste (aus Google Sheet exportiert)
 const FALLBACK_GAMES = [
     { name: "63 Days", maxPlayers: 4, genre: "Strategie, Topdown", lanRating: 0, ready: false, players: {} },

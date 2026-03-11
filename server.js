@@ -275,6 +275,12 @@ function migrateStars() {
 
 migrateStars();
 
+// ---- Helper: Get shop price from settings (with fallback) ----
+function getShopPrice(itemId, defaultPrice) {
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(`shop_price_${itemId}`);
+    return row ? (parseInt(row.value) || defaultPrice) : defaultPrice;
+}
+
 // ---- Helper: Get game with players ----
 function getGameWithPlayers(game) {
     const players = db.prepare('SELECT player FROM game_players WHERE game_id = ?').all(game.id);
@@ -461,6 +467,8 @@ app.post('/api/coins/spend', (req, res) => {
 // POST /api/shop/rob-coins
 app.post('/api/shop/rob-coins', (req, res) => {
     const { thief, target, cost } = req.body;
+    const expectedCost = getShopPrice('rob_coins', 10);
+    if (cost !== expectedCost) return res.status(400).json({ error: 'Ungültiger Preis' });
     if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
 
     const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
@@ -499,6 +507,8 @@ app.get('/api/shop/cooldowns', (req, res) => res.json(shopCooldownTs));
 // POST /api/shop/rob-controller
 app.post('/api/shop/rob-controller', (req, res) => {
     const { thief, target, cost } = req.body;
+    const expectedCost = getShopPrice('rob_controller', 50);
+    if (cost !== expectedCost) return res.status(400).json({ error: 'Ungültiger Preis' });
     if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
 
     // Global cooldown check
@@ -540,6 +550,8 @@ app.get('/api/stars', (req, res) => {
 // POST /api/shop/buy-star — Spieler kauft 1 Controller-Punkt für Coins (kein Admin nötig)
 app.post('/api/shop/buy-star', (req, res) => {
     const { player, cost } = req.body;
+    const expectedCost = getShopPrice('buy_star', 20);
+    if (cost !== expectedCost) return res.status(400).json({ error: 'Ungültiger Preis' });
     if (!player || cost == null) return res.status(400).json({ error: 'player und cost erforderlich' });
     const coinRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(player);
     if (!coinRow || coinRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });

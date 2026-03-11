@@ -2856,6 +2856,24 @@ function getNowPlus10() {
                     </div>
                 </div>
 
+                <div class="card">
+                    <div class="card-title">🛒 ${t('shop_prices_title')}</div>
+                    <div style="display:flex;flex-direction:column;gap:0.5rem">
+                        ${CONFIG.SHOP_ITEMS.map(item => `
+                            <div style="display:flex;align-items:center;gap:0.75rem">
+                                <span style="font-size:0.85rem;color:var(--text-secondary);flex:1">${t('item_' + item.id + '_name')}</span>
+                                <input type="number"
+                                    class="shop-price-input modal-input"
+                                    data-item-id="${item.id}"
+                                    value="${parseInt(settingsData['shop_price_' + item.id]) || item.cost}"
+                                    min="0" max="9999" step="1"
+                                    style="width:5rem;text-align:right">
+                                <span style="font-size:0.8rem;color:var(--text-muted)">Coins</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
                 <div class="danger-zone">
                     <div class="card-title">${t('danger_zone')}</div>
                     <button class="btn-danger" id="ap-btn-reset-coins">${t('btn_reset_coins')}</button>
@@ -2924,6 +2942,22 @@ function getNowPlus10() {
             });
         }
         bindMultiplierInputs();
+
+        panel.querySelectorAll('.shop-price-input').forEach(inp => {
+            inp.addEventListener('change', async () => {
+                const itemId = inp.dataset.itemId;
+                const val = parseInt(inp.value);
+                if (isNaN(val) || val < 0) return;
+                try {
+                    await api('PUT', `/settings/shop_price_${itemId}`, { value: val });
+                    const item = CONFIG.SHOP_ITEMS.find(i => i.id === itemId);
+                    if (item) {
+                        item.cost = val;
+                        if (itemId === 'buy_star') CONFIG.STAR_PRICE = val;
+                    }
+                } catch { showToast('Fehler', 'error'); }
+            });
+        });
 
         panel.querySelector('#ap-btn-login-message')?.addEventListener('click', async () => {
             const val = panel.querySelector('#ap-login-message')?.value ?? '';
@@ -5970,6 +6004,8 @@ function getNowPlus10() {
             state.shopCooldowns = data.shopCooldowns || {};
             state.settings = data.settings || {};
             state._usersCache = data.users;
+
+            await loadShopPrices();
 
             // Validate that current player still exists
             if (state.currentPlayer && !data.players.includes(state.currentPlayer)) {

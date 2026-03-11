@@ -91,7 +91,7 @@ const TRANSLATIONS = {
 
         // --- Matcher ---
         games_title: 'Game List',
-        who_is_present: 'Who is at the LAN?',
+        who_is_present: 'Who is playing?',
         present: 'Present',
         suggest_game: 'Suggest a Game',
         select_genre: 'Select genre...',
@@ -171,6 +171,7 @@ const TRANSLATIONS = {
         off: 'Off',
         settings_title: '⚙️ Settings',
         session_coins_title: 'Session Coins',
+        shop_prices_title: 'Shop Prices',
         label_max_player_limit: 'Max. Player Limit:',
         session_coins_formula: 'Formula: Minutes × Coinrate(Players)',
         session_coins_rate_label: 'Coinrate per player count (Coins/min):',
@@ -623,7 +624,7 @@ const TRANSLATIONS = {
 
         // --- Matcher ---
         games_title: 'Spieleliste',
-        who_is_present: 'Wer ist auf der LAN?',
+        who_is_present: 'Wer spielt mit?',
         present: 'Anwesend',
         suggest_game: 'Spiel vorschlagen',
         select_genre: 'Genre waehlen...',
@@ -703,6 +704,7 @@ const TRANSLATIONS = {
         off: 'Aus',
         settings_title: '⚙️ Einstellungen',
         session_coins_title: 'Sitzungs-Coins',
+        shop_prices_title: 'Shop-Preise',
         label_max_player_limit: 'Max. Spieler-Limit:',
         session_coins_formula: 'Formel: Minuten × Coinrate(Spieler)',
         session_coins_rate_label: 'Coinrate pro Spieleranzahl (Coins/min):',
