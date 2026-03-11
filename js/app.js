@@ -6070,6 +6070,8 @@ function getNowPlus10() {
         // Close modal on overlay click
         $('#modal-overlay').addEventListener('click', (e) => {
             if (e.target === e.currentTarget && state.currentPlayer) {
+                const iframe = e.currentTarget.querySelector('iframe');
+                if (iframe) iframe.src = '';
                 e.currentTarget.classList.remove('show');
             }
         });
