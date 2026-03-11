@@ -1947,8 +1947,9 @@ function getNowPlus10() {
                     ${checkbox}
                     <div class="game-info">
                         <div class="game-name ${g.previewUrl ? 'game-name-link' : ''}" ${g.previewUrl ? `data-preview="${g.previewUrl}"` : ''}>
-                            ${g.name}${shopLinksHTML}
+                            ${g.name}
                         </div>
+                        ${shopLinksHTML ? `<div class="game-shop-links-row">${shopLinksHTML}</div>` : ''}
                         <div class="game-meta">
                             <span>${g.genre || '?'}</span>
                             <span>Max ${g.maxPlayers}</span>
