@@ -92,27 +92,53 @@ A live panel in the header (⚔️ badge) collects all pending actions for the c
 - Badge count combines all pending items across types
 
 ### Game Library
-- Large game library with genre filtering and LAN ratings
-- Players can mark their interest in games
-- **Game Matcher** shows which game has the most interested players right now
-- Game titles are clickable — opens a **YouTube preview** for quick orientation
-- Admin can add per-game **shop links** (Steam, Epic Games, etc.) for easy purchase access
-- Admin can add, approve, or edit games
+
+The game list shows all approved games with cover art, metadata, and quick access to external links.
+
+- **Cover backgrounds** — each game card shows its cover image faded in from the right (35% opacity) for a visual at-a-glance overview
+- **Game detail modal** — click any game title to open a full detail view with:
+  - **Screenshot slider** — cover image plus up to 6 in-game screenshots with prev/next navigation and dot indicators
+  - Release date, genres, supported platforms, Metacritic score
+  - Shop links (Steam, GOG, Epic, official website, …)
+  - Full game description and PC system requirements (minimum)
+- **YouTube badge** — a red YT badge per game links directly to a YouTube search for that title
+- **Shop links** — displayed below the game title as clickable badges; sourced from RAWG or set manually by the admin
+- Players can mark their **interest** in games; the **Game Matcher** shows which game has the most interested players right now
+- Admin can add, approve, edit, and delete games; bulk-clear all shop links from the danger zone
+
+### RAWG API Integration
+
+Connect to [RAWG.io](https://rawg.io) to automatically enrich your game library with metadata. Enable it in the admin panel under *Game Data* and enter your free API key in `docker-compose.yml`.
+
+**What gets fetched:**
+- Cover image (downloaded locally to `gamefiles/covers/`)
+- Description, Metacritic score, genres, release date
+- Supported platforms and PC system requirements
+- Store links (Steam, GOG, Epic, Xbox, PlayStation Store, …) + official website
+- Up to 6 in-game screenshots
+
+**How it works:**
+- Toggle RAWG on/off in the admin panel — all game suggestion flows work with or without it
+- "Load game data" button enriches all approved games that are still missing metadata (skips already-complete entries to minimize API calls)
+- The admin panel shows total API requests made and how many games have been enriched
+- When suggesting a new game, an **autocomplete dropdown** appears with RAWG results (cover, genres, score preview) — selecting one pre-fills all metadata including shop links
+
+**Minimal API calls:** Games that already have full metadata (cover, platforms, release date, shop links, screenshots) are skipped on subsequent enrich runs.
 
 ### Game Import & Export
 The admin panel includes a **Game Data** card for bulk management:
 
 | Action | Description |
 |---|---|
-| **Export CSV** | Download all approved games as a CSV file (name, genre, maxPlayers, lanRating, previewUrl, shop links) |
+| **Export CSV** | Download all approved games as a CSV file |
 | **Import CSV** | Upload a CSV to add or update games — existing entries are overwritten, player interests are preserved |
 | **Import via URL** | Paste a public Google Sheets link or direct CSV URL — the server fetches and parses it automatically |
 | **Load Default Games** | One-click import of ~100 pre-configured games — ideal for a fresh setup |
 
 All imports show a **preview modal** before committing. The CSV format uses flat columns for shop links:
 ```
-name,genre,maxPlayers,lanRating,previewUrl,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2
-"Mario Kart 8","Racing",4,1,"","Steam","https://store.steampowered.com/app/...","",""
+name,genre,maxPlayers,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2
+"Mario Kart 8","Racing",4,"Steam","https://store.steampowered.com/app/...","",""
 ```
 
 > **Tip (Excel):** Save as *CSV UTF-8 (comma delimited)* — not the default semicolon-separated format used in some locales.
@@ -122,6 +148,7 @@ Two session types, same unified interface:
 
 - **Spontaneous sessions** — start immediately, players join the lobby
 - **Planned sessions** — scheduled for a specific date/time, visible to all players; can be created even while already in a running session
+- Session cards show the **cover image** of the game faded in from the right for quick recognition
 - The **Group Leader (GL)** is always shown first with a gold GL badge
 - Optional **player slots** — the GL can set a fixed number of slots when creating a session; slots are numbered, the lowest free slot is always filled next, and a freed slot becomes available again immediately
 - Admin can end any session and trigger Coin payout
@@ -134,6 +161,18 @@ Sorted by Controller Points, then by Coins. Controller Points are permanent vict
 
 ### Live Updates
 All clients update in real time via Server-Sent Events (SSE). No refresh needed — everyone sees the same state instantly.
+
+### Server Logs
+Gameparty logs all server-side activity to a ring buffer (last 500 entries). View logs live in the admin panel under *Logs*:
+
+- Filter by level: **ALL / INFO / ERROR / DEBUG**
+- Auto-refreshes every 4 seconds
+- RAWG API calls are logged in detail at DEBUG level (search queries, HTTP status, fields found, cover download size, store URLs, etc.)
+
+Set the log level via `docker-compose.yml`:
+```yaml
+LOG_LEVEL=INFO   # OFF | INFO | DEBUG
+```
 
 ---
 
@@ -161,6 +200,7 @@ All devices on the same network can connect via **http://\<HOST-IP\>:3000**.
 > You can change the default credentials before the first start by editing `SEED_ADMIN_NAME` / `SEED_ADMIN_PIN` in `docker-compose.yml`.
 
 > Data is persisted in a Docker named volume (`gameparty-data`) and survives container restarts and updates.
+> Cover images downloaded via RAWG are stored in `./gamefiles/covers/` (bind-mounted from the host).
 
 **Update to the latest version:**
 ```bash
@@ -169,6 +209,9 @@ docker compose pull && docker compose up -d
 
 **Custom port (e.g. 8080):**
 Edit `docker-compose.yml` and change `"3000:3000"` to `"8080:3000"`.
+
+**RAWG API key (optional):**
+Edit `docker-compose.yml` and set `RAWG_API_KEY=your_key_here`. Get a free key at [rawg.io/apidocs](https://rawg.io/apidocs).
 
 ---
 
@@ -214,6 +257,7 @@ The server runs on `http://localhost:3000`.
 - **Frontend:** Vanilla JS, HTML5, CSS3 – no framework
 - **Database:** SQLite with WAL mode
 - **Realtime:** Server-Sent Events (SSE)
+- **External API:** RAWG.io (optional, game metadata)
 - **Deployment:** Docker / Docker Compose
 
 ## Internationalization
@@ -237,6 +281,8 @@ gameparty/
 ├── css/
 │   └── style.css    # Dark gaming theme
 ├── svg/             # SVG icons (coins, controller, platform logos)
+├── gamefiles/
+│   └── covers/      # Cover images downloaded from RAWG (bind-mounted)
 ├── Dockerfile       # Multi-stage Docker build
 └── docker-compose.yml
 ```
@@ -246,7 +292,7 @@ gameparty/
 | Role | Permissions |
 |---|---|
 | `player` | Earn Coins, use Shop, create and accept Duels & Team Duels, mark game interest, join sessions |
-| `admin` | + Start/end sessions, manage players, adjust Coins, configure coin rates, pay out duel pots |
+| `admin` | + Start/end sessions, manage players, adjust Coins, configure coin rates, pay out duel pots, manage game library, run RAWG enrichment |
 
 ---
 
@@ -257,6 +303,16 @@ The admin panel includes a **Session Coins** configuration card:
 - **Coinrate per player count** — set individual Coins/min rates for 2, 3, 4, … players
 - **Max player limit** — sessions with more players than the limit use the cap's rate
 - All settings save automatically on input change (no save button needed)
+
+**Game Data card:**
+- Import / export games via CSV or URL
+- Run RAWG enrichment to load metadata for all approved games
+- Toggle RAWG on/off; view API call count and enrichment progress
+- Danger zone: reset all player data, clear all shop links, wipe the game list
+
+**Logs card:**
+- Live log viewer with level filter (ALL / INFO / ERROR / DEBUG)
+- Auto-refreshes every 4 seconds
 
 ---
 
