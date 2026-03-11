@@ -541,7 +541,7 @@ app.post('/api/coins/add', (req, res) => {
         const ts = Date.now();
         const tx = db.transaction(() => {
             allPlayers.forEach(u => {
-                db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(u.name, amount, amount);
+                db.prepare('INSERT INTO coins (player, amount) VALUES (?, MAX(0, ?)) ON CONFLICT(player) DO UPDATE SET amount = MAX(0, amount + ?)').run(u.name, amount, amount);
                 db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(u.name, amount, reason || '', ts);
             });
         });
@@ -549,7 +549,7 @@ app.post('/api/coins/add', (req, res) => {
         broadcast({ type: 'update' });
         return res.json({ affectedPlayers: allPlayers.length });
     }
-    db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, amount, amount);
+    db.prepare('INSERT INTO coins (player, amount) VALUES (?, MAX(0, ?)) ON CONFLICT(player) DO UPDATE SET amount = MAX(0, amount + ?)').run(player, amount, amount);
     db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, amount, reason || '', Date.now());
     const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(player);
     res.json({ newBalance: row ? row.amount : 0 });
