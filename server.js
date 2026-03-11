@@ -292,7 +292,6 @@ function getGameWithPlayers(game) {
         maxPlayers: game.maxPlayers,
         genre: game.genre || '',
         lanRating: game.lanRating,
-        previewUrl: game.previewUrl || '',
         ready: !!game.ready,
         status: game.status,
         suggestedBy: game.suggestedBy,
@@ -341,13 +340,13 @@ app.get('/api/games', (req, res) => {
 
 // POST /api/games/suggest
 app.post('/api/games/suggest', (req, res) => {
-    const { name, genre, maxPlayers, suggestedBy, previewUrl, shopLinks } = req.body;
+    const { name, genre, maxPlayers, suggestedBy, shopLinks } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
 
     const existing = db.prepare('SELECT id FROM games WHERE LOWER(name) = LOWER(?)').get(name);
     if (existing) return res.status(409).json({ error: 'Spiel existiert bereits' });
 
-    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, previewUrl, shop_links) VALUES (?, ?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, previewUrl || '', JSON.stringify(shopLinks || []));
+    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, shop_links) VALUES (?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, JSON.stringify(shopLinks || []));
     if (suggestedBy) {
         db.prepare('INSERT OR IGNORE INTO game_players (game_id, player) VALUES (?, ?)').run(result.lastInsertRowid, suggestedBy);
     }
@@ -411,13 +410,12 @@ app.delete('/api/games/:name', (req, res) => {
 app.put('/api/games/:name', (req, res) => {
     const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
-    const { newName, genre, maxPlayers, previewUrl, shopLinks } = req.body;
+    const { newName, genre, maxPlayers, shopLinks } = req.body;
     const updates = [];
     const params = [];
     if (newName !== undefined) { updates.push('name = ?'); params.push(newName); }
     if (genre !== undefined) { updates.push('genre = ?'); params.push(genre); }
     if (maxPlayers !== undefined) { updates.push('maxPlayers = ?'); params.push(maxPlayers); }
-    if (previewUrl !== undefined) { updates.push('previewUrl = ?'); params.push(previewUrl); }
     if (shopLinks !== undefined) { updates.push('shop_links = ?'); params.push(JSON.stringify(shopLinks)); }
     if (updates.length > 0) {
         params.push(game.id);
@@ -491,7 +489,6 @@ function parseGameCSVServer(text) {
         }
         row.shopLinks = shopLinks;
         // Normalize lowercased headers back to camelCase
-        if ('previewurl' in row) { row.previewUrl = row.previewurl; delete row.previewurl; }
         if ('maxplayers' in row) { row.maxPlayers = row.maxplayers; delete row.maxplayers; }
         return row;
     }).filter(r => r.name && r.name.trim());
@@ -504,11 +501,10 @@ app.post('/api/games/import', (req, res) => {
         return res.status(400).json({ error: 'games array required' });
     let imported = 0, updated = 0;
     const upsertStmt = db.prepare(
-        `INSERT INTO games (name, maxPlayers, genre, previewUrl, status, shop_links) VALUES (?, ?, ?, ?, ?, ?)
+        `INSERT INTO games (name, maxPlayers, genre, status, shop_links) VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(name) DO UPDATE SET
              maxPlayers = excluded.maxPlayers,
              genre = excluded.genre,
-             previewUrl = excluded.previewUrl,
              shop_links = excluded.shop_links`
     );
     const tx = db.transaction(() => {
@@ -520,7 +516,6 @@ app.post('/api/games/import', (req, res) => {
                 g.name.trim(),
                 parseInt(g.maxPlayers) || 4,
                 g.genre?.trim() || '',
-                g.previewUrl?.trim() || '',
                 'approved',
                 shopLinks
             );

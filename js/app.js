@@ -1193,7 +1193,6 @@ function getNowPlus10() {
                                 </div>
                             </div>
                             <button type="button" id="btn-add-shop-link" class="ls-btn-secondary">+ Shop-Link</button>
-                            <input type="url" id="suggest-preview-url" placeholder="YouTube Preview-Link" inputmode="url">
                         </div>
                         <button class="btn-propose" id="btn-suggest-game" disabled>${t('btn_suggest')}</button>
                     </div>
@@ -1319,14 +1318,13 @@ function getNowPlus10() {
                 suggestBtn.addEventListener('click', async () => {
                     const name = suggestNameEl.value.trim();
                     const maxPlayers = parseInt((document.getElementById('suggest-maxplayers') || {}).value) || 4;
-                    const previewUrl = (document.getElementById('suggest-preview-url') || {}).value || '';
                     const shopLinks = [...document.querySelectorAll('.suggest-shop-link-row')].map(row => ({
                         platform: row.querySelector('.suggest-shop-platform').value.trim(),
                         url: row.querySelector('.suggest-shop-url').value.trim()
                     })).filter(l => l.platform && l.url);
                     if (!name || !selectedGenre) return;
                     try {
-                        await api('POST', '/games/suggest', { name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, previewUrl, shopLinks });
+                        await api('POST', '/games/suggest', { name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, shopLinks });
                         if (isAdmin()) {
                             await api('PUT', `/games/${encodeURIComponent(name)}/approve`);
                         }
@@ -1464,20 +1462,6 @@ function getNowPlus10() {
             if (bulkDeselect) {
                 selectedGames.clear();
                 filterGames();
-                return;
-            }
-
-            const previewBtn = e.target.closest('.game-preview-btn');
-            if (previewBtn && previewBtn.dataset.preview) {
-                e.stopPropagation();
-                showPreviewModal(previewBtn.dataset.preview);
-                return;
-            }
-
-            const nameLink = e.target.closest('.game-name-link');
-            if (nameLink && nameLink.dataset.preview && !e.target.closest('a')) {
-                e.stopPropagation();
-                showPreviewModal(nameLink.dataset.preview);
                 return;
             }
 
@@ -1633,10 +1617,6 @@ function getNowPlus10() {
                         <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_max_players')}</label>
                         <input type="number" id="edit-game-maxplayers" value="${game.maxPlayers}" min="2" max="64" inputmode="numeric">
                     </div>
-                    <div>
-                        <label style="font-size:0.75rem;color:var(--text-secondary)">${t('label_preview_url')}</label>
-                        <input type="url" id="edit-game-previewurl" value="${game.previewUrl || ''}" placeholder="https://www.youtube.com/watch?v=...">
-                    </div>
                 </div>
                 <label style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.5rem;display:block">Shop-Links</label>
                 <div id="shop-links-list"></div>
@@ -1673,7 +1653,6 @@ function getNowPlus10() {
                     newName,
                     genre: modal.querySelector('#edit-game-genre').value.trim(),
                     maxPlayers: parseInt(modal.querySelector('#edit-game-maxplayers').value) || game.maxPlayers,
-                    previewUrl: modal.querySelector('#edit-game-previewurl').value.trim(),
                     shopLinks
                 });
                 overlay.classList.remove('show');
@@ -1693,13 +1672,13 @@ function getNowPlus10() {
         const maxLinks = Math.max(1, ...games.map(g => (g.shopLinks || []).length));
         const linkHeaders = [];
         for (let i = 1; i <= maxLinks; i++) { linkHeaders.push(`shoplink_label_${i}`, `shoplink_url_${i}`); }
-        const headers = ['name','genre','maxPlayers','previewUrl', ...linkHeaders];
+        const headers = ['name','genre','maxPlayers', ...linkHeaders];
         const rows = [headers];
         games.forEach(g => {
             const links = g.shopLinks || [];
             const linkCols = [];
             for (let i = 0; i < maxLinks; i++) { linkCols.push(links[i]?.platform || '', links[i]?.url || ''); }
-            rows.push([g.name, g.genre || '', g.maxPlayers || 4, g.previewUrl || '', ...linkCols]);
+            rows.push([g.name, g.genre || '', g.maxPlayers || 4, ...linkCols]);
         });
         const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1710,7 +1689,7 @@ function getNowPlus10() {
 
     function downloadGameTemplate() {
         const csv = [
-            'name,genre,maxPlayers,previewUrl,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2',
+            'name,genre,maxPlayers,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2',
             '"Mario Kart 8","Racing",4,"","Steam","https://store.steampowered.com/app/1234","",""',
             '"Rocket League","Sport",8,"","Epic Games","https://store.epicgames.com/p/rocket-league","Steam","https://store.steampowered.com/app/252950"',
             '"Among Us","Party",15,"","","","",""',
@@ -1755,7 +1734,6 @@ function getNowPlus10() {
             }
             row.shopLinks = shopLinks;
             // Normalize lowercased header names back to camelCase
-            if ('previewurl' in row) { row.previewUrl = row.previewurl; delete row.previewurl; }
             if ('maxplayers' in row) { row.maxPlayers = row.maxplayers; delete row.maxplayers; }
             return row;
         }).filter(r => r.name && r.name.trim());
@@ -1810,35 +1788,6 @@ function getNowPlus10() {
                 state.games = await api('GET', '/games');
                 renderMatcher();
             } catch (e) { showToast('Fehler beim Importieren', 'error'); }
-        });
-    }
-
-    function extractYouTubeId(url) {
-        const match = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
-        return match ? match[1] : null;
-    }
-
-    function showPreviewModal(url) {
-        const videoId = extractYouTubeId(url);
-        if (!videoId) {
-            window.open(url, '_blank', 'noopener,noreferrer');
-            return;
-        }
-        const overlay = $('#modal-overlay');
-        const modal = overlay.querySelector('.modal');
-        modal.innerHTML = `
-            <div class="modal-title">${t('modal_preview_title')}</div>
-            <div class="video-container">
-                <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1"
-                    frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-            </div>
-            <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
-        `;
-        overlay.classList.add('show');
-        $('#modal-cancel').addEventListener('click', () => {
-            const iframe = modal.querySelector('iframe');
-            if (iframe) iframe.src = '';
-            overlay.classList.remove('show');
         });
     }
 
@@ -1927,7 +1876,6 @@ function getNowPlus10() {
                 </div>` : '';
 
             const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '<span></span>';
-            const previewBtn = g.previewUrl ? `<button class="game-preview-btn" data-preview="${g.previewUrl}" title="Vorschau">▶️</button>` : '';
 
             const shopLinksHTML = (g.shopLinks && g.shopLinks.length)
                 ? g.shopLinks.map(l => {
@@ -1937,7 +1885,7 @@ function getNowPlus10() {
                 }).join('')
                 : '';
             const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(g.name)}`;
-            const ytBadge = `<a class="game-yt-link" href="${ytUrl}" target="_blank" rel="noopener" title="YouTube-Suche">YouTube</a>`;
+            const ytBadge = `<a class="game-yt-link" href="${ytUrl}" target="_blank" rel="noopener" title="YouTube-Suche">YT</a>`;
 
             const checkbox = admin ? `<input type="checkbox" class="game-checkbox" data-game="${g.name}" ${selectedGames.has(g.name) ? 'checked' : ''}>` : '';
 
@@ -1948,7 +1896,7 @@ function getNowPlus10() {
                 <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}">
                     ${checkbox}
                     <div class="game-info">
-                        <div class="game-name ${g.previewUrl ? 'game-name-link' : ''}" ${g.previewUrl ? `data-preview="${g.previewUrl}"` : ''}>
+                        <div class="game-name">
                             ${g.name}
                         </div>
                         <div class="game-shop-links-row">${ytBadge}${shopLinksHTML}</div>
@@ -1959,7 +1907,6 @@ function getNowPlus10() {
                         </div>
                         <div class="game-players-row">${playerDots}</div>
                     </div>
-                    ${previewBtn}
                     ${createRoomBtn}
                     ${interestBtn}
                     ${adminBtns}

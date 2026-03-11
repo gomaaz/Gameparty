@@ -605,13 +605,6 @@ body {
     text-overflow: ellipsis;
 }
 
-.game-name-link {
-    cursor: pointer;
-    transition: color 0.15s;
-}
-.game-name-link:hover {
-    color: var(--accent-blue);
-}
 
 .game-name .game-coins-tag {
     color: var(--accent-gold);
@@ -3155,18 +3148,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .game-create-room-btn:hover { background: rgba(102,153,255,0.25); }
 
-.game-preview-btn {
-    background: rgba(255,180,0,0.12);
-    color: #ffb400;
-    border: 1px solid rgba(255,180,0,0.3);
-    border-radius: var(--radius-sm);
-    font-size: 1rem;
-    padding: 0.25rem 0.45rem;
-    cursor: pointer;
-    transition: var(--transition);
-    flex-shrink: 0;
-}
-.game-preview-btn:hover { background: rgba(255,180,0,0.25); }
 
 /* ---- Session IP in room card ---- */
 .session-ip {
