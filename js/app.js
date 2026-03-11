@@ -2581,7 +2581,7 @@ function getNowPlus10() {
         if (!panel) return;
         const sections = [
             { title: t('help_leaderboard_title'),                                        body: t('help_leaderboard_body') },
-            { title: t('help_group_leader_title'),                                        body: t('help_group_leader_body') },
+            { title: `<span class="session-leader-badge" style="font-size:0.85em;vertical-align:middle;margin-right:0.3em">GL</span>${t('help_group_leader_title')}`, body: t('help_group_leader_body') },
             { title: `${coinSvgIcon('1em')} Coins`,                                      body: t('help_coins_body') },
             { title: `${controllerSvgIcon('1em')} ${t('help_stars_title')}`,             body: t('help_stars_body') },
             { title: t('help_challenges_title'),                                          body: t('help_challenges_body') },
