@@ -2674,7 +2674,24 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-session-leave { background:none; border:1px solid var(--accent-red-dim); color:var(--accent-red); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .btn-session-start { background:none; border:1px solid var(--accent-blue-dim,#2255aa); color:#6699ff; border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; font-weight:600; }
 .btn-session-end { background:none; border:1px solid var(--border-bright); color:var(--text-secondary); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
-.session-leader-badge { font-size:0.62rem; color:var(--accent-gold); border:1px solid var(--accent-gold-dim); border-radius:4px; padding:1px 5px; margin-right:0.3rem; vertical-align:middle; }
+.session-leader-badge { font-size:0.62rem; color:var(--accent-gold); border:1px solid var(--accent-gold-dim); border-radius:4px; padding:1px 5px; margin-right:0.3rem; vertical-align:middle; position:relative; cursor:default; }
+.session-leader-badge[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-sm);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    color: var(--text-primary);
+    z-index: 20;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
 .pending-approval-badge { font-size:0.75rem; color:#ff9800; padding:0.2rem 0; display:block; margin-top:0.3rem; }
 
 /* Session Slot List */
