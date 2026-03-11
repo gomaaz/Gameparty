@@ -2031,18 +2031,11 @@ function getNowPlus10() {
             const matchPlayerNames = state.attendees.filter(p => g.players && g.players[p]);
             const likesTooltip = matchPlayerNames.length ? matchPlayerNames.join(', ') : '';
 
-            const coverHTML = `<div class="game-cover">${
-                g.cover_url
-                    ? `<img src="${g.cover_url}" alt="" loading="lazy">`
-                    : '<div class="game-cover-placeholder"></div>'
-            }</div>`;
-
             const ratingBadge = g.rating ? `<span class="game-rating ${g.rating >= 75 ? 'good' : g.rating >= 50 ? 'ok' : 'bad'}">${g.rating}</span>` : '';
 
             return `
                 <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}"${g.cover_url ? ` style="background-image:url('${g.cover_url}')"` : ''}>
                     ${checkbox}
-                    ${coverHTML}
                     <div class="game-info">
                         <div class="game-name" data-game="${g.name}"${g.description ? ` title="${g.description.replace(/"/g, '&quot;').slice(0, 200)}"` : ''}>
                             ${g.name}
