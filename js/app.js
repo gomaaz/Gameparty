@@ -5254,7 +5254,7 @@ function getNowPlus10() {
                 ).join('')}</div>
                 <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
                     <button class="ls-btn-secondary ls-btn-back" id="pw-step2-back" style="flex:1">← ${t('pw_back')}</button>
-                    <button class="ls-btn" id="pw-step2-next" style="flex:2">${t('pw_next')} →</button>
+                    <button class="ls-btn" id="pw-step2-next" style="flex:1">${t('pw_next')}</button>
                 </div>
             `);
             screen.querySelectorAll('.pw-genre-chip').forEach(btn => {
@@ -5279,7 +5279,7 @@ function getNowPlus10() {
                 <input class="ls-input" id="pw-message" type="text" placeholder="${t('pw_message_placeholder')}" value="${wiz.message}" autocomplete="off">
                 <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
                     <button class="ls-btn-secondary ls-btn-back" id="pw-step3-back" style="flex:1">← ${t('pw_back')}</button>
-                    <button class="ls-btn" id="pw-step3-next" style="flex:2">${t('pw_next')} →</button>
+                    <button class="ls-btn" id="pw-step3-next" style="flex:1">${t('pw_next')}</button>
                 </div>
             `);
             screen.querySelector('#pw-step3-back').addEventListener('click', () => {
@@ -5300,7 +5300,7 @@ function getNowPlus10() {
                 <input class="ls-input" id="pw-coins" type="number" min="0" max="9999" value="${wiz.coins}" placeholder="0">
                 <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
                     <button class="ls-btn-secondary ls-btn-back" id="pw-step4-back" style="flex:1">← ${t('pw_back')}</button>
-                    <button class="ls-btn" id="pw-step4-finish" style="flex:2">${t('pw_finish')}</button>
+                    <button class="ls-btn" id="pw-step4-finish" style="flex:1">${t('pw_finish')}</button>
                 </div>
             `);
             screen.querySelector('#pw-step4-back').addEventListener('click', () => {
