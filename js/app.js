@@ -2565,11 +2565,13 @@ function getNowPlus10() {
         const panel = $('#help-panel');
         if (!panel) return;
         const sections = [
-            { title: t('help_coins_title'),      body: t('help_coins_body') },
-            { title: t('help_challenges_title'),  body: t('help_challenges_body') },
-            { title: t('help_sessions_title'),    body: t('help_sessions_body') },
-            { title: t('help_shop_title'),        body: t('help_shop_body') },
-            { title: t('help_accounts_title'),    body: t('help_accounts_body') },
+            { title: t('help_leaderboard_title'),                                        body: t('help_leaderboard_body') },
+            { title: `${coinSvgIcon('1em')} Coins`,                                      body: t('help_coins_body') },
+            { title: `${controllerSvgIcon('1em')} ${t('help_stars_title')}`,             body: t('help_stars_body') },
+            { title: t('help_challenges_title'),                                          body: t('help_challenges_body') },
+            { title: t('help_sessions_title'),                                            body: t('help_sessions_body') },
+            { title: t('help_shop_title'),                                                body: t('help_shop_body') },
+            { title: t('help_accounts_title'),                                            body: t('help_accounts_body') },
             ...(isAdmin() ? [{ title: t('help_admin_title'), body: t('help_admin_body') }] : []),
         ];
         panel.innerHTML = `

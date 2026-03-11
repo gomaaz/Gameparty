@@ -466,8 +466,11 @@ const TRANSLATIONS = {
 
         // --- Help Panel ---
         help_panel_title: '❓ Help',
-        help_coins_title: '🪙 Coins',
+        help_leaderboard_title: '🏆 How to climb the Leaderboard',
+        help_leaderboard_body: 'Gameparty tracks two things: <b>Coins</b> and <b>Controller Points</b> (Stars).<br><br>The more coins you earn and the more challenges you win, the higher you climb. Play sessions to earn coins — win duels and team challenges to earn controller points. Both together determine your rank on the leaderboard.',
         help_coins_body: 'Coins are earned by completing game sessions. An admin approves sessions and determines how many coins each player receives. You can spend coins in the Shop on special actions.',
+        help_stars_title: 'Controller Points',
+        help_stars_body: 'Controller Points (Stars) are earned by winning <b>1v1 Duels</b> and <b>Team Challenges</b>. They appear in your profile and on the leaderboard alongside your coins. The more you win, the more stars you collect.',
         help_challenges_title: '⚔️ Challenges',
         help_challenges_body: '<b>1v1 Duel:</b> Challenge another present player. Both sides accept, then play the match and report the result.<br><br><b>Team Challenge:</b> Form two teams and compete. The winning team earns stars (controller points).',
         help_sessions_title: '🎮 Sessions',
@@ -986,8 +989,11 @@ const TRANSLATIONS = {
 
         // --- Help Panel ---
         help_panel_title: '❓ Hilfe',
-        help_coins_title: '🪙 Coins',
+        help_leaderboard_title: '🏆 So steigst du im Leaderboard auf',
+        help_leaderboard_body: 'Gameparty verfolgt zwei Dinge: <b>Coins</b> und <b>Controller-Punkte</b> (Stars).<br><br>Je mehr Coins du verdienst und je mehr Challenges du gewinnst, desto höher steigst du auf. Spiele Sessions, um Coins zu verdienen – gewinne Duelle und Team-Challenges, um Controller-Punkte zu sammeln. Beides zusammen bestimmt deinen Rang im Leaderboard.',
         help_coins_body: 'Coins verdienst du durch abgeschlossene Spielsessions. Ein Admin genehmigt Sessions und legt fest, wie viele Coins jeder Teilnehmer erhält. Im Shop kannst du Coins für besondere Aktionen ausgeben.',
+        help_stars_title: 'Controller-Punkte',
+        help_stars_body: 'Controller-Punkte (Stars) verdienst du durch gewonnene <b>1v1 Duelle</b> und <b>Team-Challenges</b>. Sie erscheinen in deinem Profil und im Leaderboard neben deinen Coins. Je mehr du gewinnst, desto mehr Stars sammelst du.',
         help_challenges_title: '⚔️ Challenges',
         help_challenges_body: '<b>1v1 Duell:</b> Fordere einen anwesenden Spieler heraus. Beide nehmen an, spielen die Partie und melden das Ergebnis.<br><br><b>Team-Challenge:</b> Bilde zwei Teams und tretet gegeneinander an. Das Siegerteam erhält Stars (Controller-Punkte).',
         help_sessions_title: '🎮 Sessions',
