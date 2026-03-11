@@ -1331,7 +1331,6 @@ function getNowPlus10() {
                             await api('PUT', `/games/${encodeURIComponent(name)}/approve`, { sessionCoins: 0 });
                         }
                         showToast(t('game_suggested', name), 'success');
-                        playSound('coin');
                         renderMatcher();
                     } catch (e) {
                         showToast(t('game_already_exists'), 'error');
@@ -1392,7 +1391,6 @@ function getNowPlus10() {
                 try {
                     await api('PUT', `/games/${encodeURIComponent(gameName)}/approve`, { sessionCoins: 0 });
                     showToast(`"${gameName}" ${t('btn_release')}!`, 'success');
-                    playSound('coin');
                     renderMatcher();
                 } catch (e) { console.error(e); }
             });
@@ -2053,7 +2051,6 @@ function getNowPlus10() {
                 try {
                     await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'approved', approvedAt: Date.now() });
                     showToast(t('proposal_approved'), 'success');
-                    playSound('coin');
                     renderProposals();
                 } catch (e) { console.error(e); }
             });
@@ -2351,7 +2348,6 @@ function getNowPlus10() {
                     pinNew2.value = '';
                     pinBtn.disabled = true;
                     showToast(t('pin_changed'), 'success');
-                    playSound('coin');
                 } catch (e) {
                     pinError.textContent = t('pin_wrong_old');
                     playSound('error');
@@ -3023,7 +3019,6 @@ function getNowPlus10() {
             try {
                 await api('POST', '/users', { name, pin, role });
                 showToast(t('player_added', name), 'success');
-                playSound('coin');
                 await refreshPlayers();
                 renderAdminPanel();
             } catch (e) { showToast(t('player_exists', name), 'error'); playSound('error'); }
@@ -4304,7 +4299,6 @@ function getNowPlus10() {
                     try {
                         await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars });
                         showToast(t('duel_created', opponent), 'success');
-                        playSound('coin');
                         v1FormState = { opponent: '', coins: '', stars: '' };
                         renderChallenges();
                     } catch (e) {
@@ -4319,7 +4313,6 @@ function getNowPlus10() {
                         try {
                             const result = await api('PUT', `/challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
                             showToast(t('duel_accepted'), 'success');
-                            playSound('coin');
                             if (result.sessionId) {
                                 shownDuelStartSessions.add(result.sessionId);
                                 try {
@@ -4363,7 +4356,6 @@ function getNowPlus10() {
                         try {
                             await api('PUT', `/challenges/${btn.dataset.id}/complete`, { player: state.currentPlayer, winner });
                             showToast(t('winner_set', winner), 'success');
-                            playSound('coin');
                             renderChallenges();
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -4536,7 +4528,6 @@ function getNowPlus10() {
                         try {
                             await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB });
                             showToast(t('team_duel_created'), 'success');
-                            playSound('coin');
                             tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '' };
                             renderChallenges();
                         } catch (e) {
@@ -4552,7 +4543,6 @@ function getNowPlus10() {
                         try {
                             const result = await api('PUT', `/team-challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
                             showToast(t('team_duel_accepted'), 'success');
-                            playSound('coin');
                             if (result.allAccepted) {
                                 navigateTo('dashboard');
                             } else {
@@ -4588,7 +4578,6 @@ function getNowPlus10() {
                         try {
                             await api('PUT', `/team-challenges/${btn.dataset.id}/complete`, { player: state.currentPlayer, winnerTeam });
                             showToast(t('team_winner_set', winnerTeam === 'A' ? t('team_a_wins') : t('team_b_wins')), 'success');
-                            playSound('coin');
                             renderChallenges();
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -4846,14 +4835,12 @@ function getNowPlus10() {
                         const result = await api('PUT', `/team-challenges/${id.slice(3)}/accept`, { player: state.currentPlayer });
                         removeNotification(id);
                         showToast(t('team_duel_accepted'), 'success');
-                        playSound('coin');
                         if (result.allAccepted) navigateTo('dashboard');
                         else if ($('#view-challenges').classList.contains('active')) renderChallenges();
                     } else {
                         await api('PUT', `/challenges/${id}/accept`, { player: state.currentPlayer });
                         removeNotification(id);
                         showToast(t('duel_accepted'), 'success');
-                        playSound('coin');
                         navigateTo('dashboard');
                     }
                 } catch { showToast('Fehler beim Annehmen', 'error'); }
@@ -4903,7 +4890,6 @@ function getNowPlus10() {
                     if (fromPlayer) await api('POST', '/player-events', { target: fromPlayer, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
                     await api('DELETE', `/player-events/${btn.dataset.id}`);
                     showToast('Aufgabe erledigt!', 'success');
-                    playSound('coin');
                     renderNotifPanel();
                 } catch {}
             });
@@ -5963,7 +5949,6 @@ function getNowPlus10() {
                 await api('PUT', `/users/${encodeURIComponent(playerName)}/pin`, { newPin });
                 overlay.classList.remove('show');
                 showToast(t('pin_reset_done', playerName), 'gold');
-                playSound('coin');
             } catch (e) { console.error(e); }
         });
 
