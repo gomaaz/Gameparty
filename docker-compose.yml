@@ -12,6 +12,7 @@ services:
     environment:
       - PORT=3000
       - DB_PATH=/data/gameparty.db
+      - GAMEFILES_PATH=/app/gamefiles
       - NODE_ENV=production
       - TZ=Europe/Berlin
       - RAWG_API_KEY=

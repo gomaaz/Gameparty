@@ -51,11 +51,12 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname)));
 
 // ---- RAWG: Static file serving for downloaded covers + screenshots ----
-const coversDir = path.join(__dirname, 'gamefiles', 'covers');
-const screenshotsDir = path.join(__dirname, 'gamefiles', 'screenshots');
+const gamefilesDir = process.env.GAMEFILES_PATH || path.join(__dirname, 'gamefiles');
+const coversDir = path.join(gamefilesDir, 'covers');
+const screenshotsDir = path.join(gamefilesDir, 'screenshots');
 fs.mkdirSync(coversDir, { recursive: true });
 fs.mkdirSync(screenshotsDir, { recursive: true });
-app.use('/gamefiles', express.static(path.join(__dirname, 'gamefiles')));
+app.use('/gamefiles', express.static(gamefilesDir));
 
 // ---- Server-Sent Events ----
 const sseClients = new Set();
