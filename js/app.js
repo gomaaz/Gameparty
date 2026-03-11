@@ -4997,6 +4997,116 @@ function getNowPlus10() {
         if (screen) screen.classList.add('hidden');
     }
 
+    function showSetupWizard() {
+        const screen = $('#login-screen');
+        if (!screen) return;
+
+        const starData = [
+            [0,  24, 1.0, 6],  [15, 78, 4.2, 10], [3,  48, 6.1, 8],
+            [61, 86, 2.3, 7],  [9,  60, 0.4, 9],  [38, 12, 5.7, 11],
+            [72, 35, 3.1, 8],  [22, 52, 7.8, 6],  [50, 70, 1.5, 10],
+            [84, 8,  4.9, 7],  [5,  90, 8.3, 9],  [43, 30, 0.9, 8],
+            [67, 55, 6.5, 11], [29, 15, 3.7, 6],  [78, 44, 2.1, 9],
+            [11, 72, 9.2, 7],  [54, 18, 5.3, 10], [35, 65, 7.1, 8],
+            [90, 80, 1.8, 6],  [20, 40, 4.4, 9],
+        ];
+        const starsHtml = `<div class="ls-stars">${starData.map(([top, left, delay, duration]) =>
+            `<div class="shooting_star" style="top:${top}%;left:${left}%;--delay:${delay}s;--duration:${duration}s"></div>`
+        ).join('')}</div>`;
+
+        function renderStep(step, data = {}) {
+            let formHtml = '';
+            if (step === 1) {
+                formHtml = `
+                    <div class="ls-wizard-title">Willkommen bei Gameparty!</div>
+                    <div class="ls-wizard-sub">Richte deinen ersten Admin-Account ein, um loszulegen.</div>
+                    <button class="ls-btn" id="sw-next">Einrichten →</button>
+                `;
+            } else if (step === 2) {
+                formHtml = `
+                    <div class="ls-wizard-title">Admin-Account erstellen</div>
+                    <input class="ls-input" id="sw-name" type="text" placeholder="Admin-Name" maxlength="32" autocomplete="off">
+                    <div class="ls-pin-section" id="sw-pin-section" style="display:none">
+                        <div class="ls-selected-name" id="sw-selected-name"></div>
+                        <div class="pin-input-row">
+                            <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="0" autocomplete="off">
+                            <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="1" autocomplete="off">
+                            <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="2" autocomplete="off">
+                            <input class="pin-digit" type="number" inputmode="numeric" maxlength="1" data-idx="3" autocomplete="off">
+                        </div>
+                        <div class="pin-error" id="sw-pin-error"></div>
+                    </div>
+                `;
+            } else if (step === 3) {
+                formHtml = `
+                    <div class="ls-wizard-title">✅ Bereit!</div>
+                    <div class="ls-wizard-sub">Admin <strong>${data.name}</strong> wurde angelegt.</div>
+                    <div class="ls-wizard-sub" style="font-size:0.85rem;opacity:0.6">Du wirst automatisch angemeldet…</div>
+                `;
+            }
+
+            screen.innerHTML = `
+                ${starsHtml}
+                <div class="ls-logo">
+                    <span class="ls-logo-icon">🎮</span>
+                    <span class="ls-logo-text">Gameparty</span>
+                </div>
+                <div class="ls-form">${formHtml}</div>
+                <div class="ls-version">v${state.version || ''}</div>
+            `;
+            screen.classList.remove('hidden');
+
+            if (step === 1) {
+                screen.querySelector('#sw-next').addEventListener('click', () => renderStep(2));
+            } else if (step === 2) {
+                const nameInput = screen.querySelector('#sw-name');
+                const pinSection = screen.querySelector('#sw-pin-section');
+                const selectedName = screen.querySelector('#sw-selected-name');
+                const errorEl = screen.querySelector('#sw-pin-error');
+
+                nameInput.focus();
+                nameInput.addEventListener('input', () => {
+                    const name = nameInput.value.trim();
+                    if (name.length >= 2) {
+                        selectedName.textContent = name;
+                        pinSection.style.display = 'flex';
+                        errorEl.textContent = '';
+                        const digits = Array.from(pinSection.querySelectorAll('.pin-digit'));
+                        digits.forEach(d => { d.value = ''; const c = d.cloneNode(true); d.parentNode.replaceChild(c, d); });
+                        const freshDigits = Array.from(pinSection.querySelectorAll('.pin-digit'));
+                        freshDigits[0].focus();
+                        freshDigits.forEach((input, idx) => {
+                            input.addEventListener('input', async (e) => {
+                                if (e.target.value.length > 1) e.target.value = e.target.value.slice(-1);
+                                if (e.target.value && idx < 3) freshDigits[idx + 1].focus();
+                                const pin = freshDigits.map(d => d.value).join('');
+                                if (pin.length === 4) {
+                                    const adminName = nameInput.value.trim();
+                                    try {
+                                        await api('POST', '/users', { name: adminName, pin, role: 'admin' });
+                                        renderStep(3, { name: adminName });
+                                        setTimeout(() => attemptLogin(adminName, pin), 1500);
+                                    } catch (err) {
+                                        errorEl.textContent = err.message || 'Fehler beim Anlegen';
+                                        freshDigits.forEach(d => { d.value = ''; });
+                                        freshDigits[0].focus();
+                                    }
+                                }
+                            });
+                            input.addEventListener('keydown', (e) => {
+                                if (e.key === 'Backspace' && !e.target.value && idx > 0) freshDigits[idx - 1].focus();
+                            });
+                        });
+                    } else {
+                        pinSection.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        renderStep(1);
+    }
+
     // ---- Login Modal (used for player switching from header) ----
     async function showLoginModal() {
         const overlay = $('#modal-overlay');
@@ -5320,6 +5430,8 @@ function getNowPlus10() {
 
         if (state.currentPlayer) {
             startChallengePoll();
+        } else if (state.players.length === 0) {
+            showSetupWizard();
         } else {
             showLoginScreen();
         }
