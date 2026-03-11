@@ -4876,7 +4876,6 @@ function getNowPlus10() {
                     try {
                         const data = JSON.parse(ev.message);
                         showSessionPayoutModal(data);
-                        if (getNotifPref('sound')) playSound('coin');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                     continue;
