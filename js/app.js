@@ -5460,7 +5460,9 @@ function getNowPlus10() {
             try {
                 const filledPlayers = wiz.players.filter(r => r.name.trim());
                 for (const p of filledPlayers) {
-                    await api('POST', '/users', { name: p.name.trim(), pin: p.pin || '1111', role: p.isAdmin ? 'admin' : 'player' });
+                    try {
+                        await api('POST', '/users', { name: p.name.trim(), pin: p.pin || '1111', role: p.isAdmin ? 'admin' : 'player' });
+                    } catch (e) { /* skip if user already exists (e.g. admin added to player list) */ }
                     if (wiz.coins > 0) await api('POST', '/coins/add', { player: p.name.trim(), amount: wiz.coins, reason: 'Willkommens-Coins' });
                 }
                 if (wiz.coins > 0) await api('POST', '/coins/add', { player: state.currentPlayer, amount: wiz.coins, reason: 'Willkommens-Coins' });
