@@ -1948,7 +1948,6 @@ function getNowPlus10() {
                 try {
                     await api('PUT', `/proposals/${btn.dataset.id}`, { status: 'active', startedAt: Date.now() });
                     showToast(t('session_started'), 'success');
-                    playSound('coin');
                     renderProposals();
                 } catch (e) { showToast(e.message || t('save_error'), 'error'); }
             });
