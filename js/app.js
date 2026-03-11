@@ -680,7 +680,7 @@ function getNowPlus10() {
                         ...s.players.filter(p => p.player !== s.leader).sort((a, b) => a.player.localeCompare(b.player))
                     ];
                     let playersHTML = sortedPlayerObjs.map(p =>
-                        `<span class="player-chip player-name-clickable" data-player-info="${p.player}">${p.player === s.leader ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p.player}</span>`
+                        `<span class="player-chip player-name-clickable" data-player-info="${p.player}">${p.player === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p.player}</span>`
                     ).join('');
                     if (s.max_slots > 0) {
                         const slotMap = {};
@@ -688,7 +688,7 @@ function getNowPlus10() {
                         const slotItems = [];
                         for (let i = 1; i <= s.max_slots; i++) {
                             const name = slotMap[i] || null;
-                            const leaderBadge = name === s.leader ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>` : '';
+                            const leaderBadge = name === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : '';
                             slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${leaderBadge}${name}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
                         }
                         playersHTML = `<div class="session-slots">${slotItems.join('')}</div>`;
@@ -754,7 +754,7 @@ function getNowPlus10() {
                                     const tA = Array.isArray(chRun2.teamA) ? chRun2.teamA : JSON.parse(chRun2.teamA || '[]');
                                     const tB = Array.isArray(chRun2.teamB) ? chRun2.teamB : JSON.parse(chRun2.teamB || '[]');
                                     const glName = chRun2.createdBy;
-                                    const renderTName = name => name === glName ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>${name}` : name;
+                                    const renderTName = name => name === glName ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>${name}` : name;
                                     const sortGL = arr => [...arr].sort((a, b) => a === glName ? -1 : b === glName ? 1 : 0);
                                     playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0;flex-wrap:wrap">
                                         <div style="text-align:right;color:var(--accent-purple);font-weight:600;font-size:0.9rem">${sortGL(tA).map(renderTName).join('<br>')}</div>
@@ -763,7 +763,7 @@ function getNowPlus10() {
                                     </div>`;
                                 } else {
                                     playersHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin:0.25rem 0">
-                                        <span style="color:var(--accent-purple);font-weight:600;font-size:0.9rem"><span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>${chRun2.challenger}</span>
+                                        <span style="color:var(--accent-purple);font-weight:600;font-size:0.9rem"><span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>${chRun2.challenger}</span>
                                         <span style="color:var(--accent-gold);font-weight:900;font-size:1.1rem">vs</span>
                                         <span style="color:var(--accent-blue);font-weight:600;font-size:0.9rem">${chRun2.opponent}</span>
                                     </div>`;
@@ -1904,7 +1904,7 @@ function getNowPlus10() {
                 ${coinStatusHTML}
                 ${coinRateHTML}
                 ${leaderEditHTML}
-                <div>${[p.leader, ...p.players.filter(n => n !== p.leader).sort()].map(n => `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${n}</span>`).join('')}</div>
+                <div>${[p.leader, ...p.players.filter(n => n !== p.leader).sort()].map(n => `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${n}</span>`).join('')}</div>
                 ${actionsHTML}
             </div>`;
     }
@@ -2581,6 +2581,7 @@ function getNowPlus10() {
         if (!panel) return;
         const sections = [
             { title: t('help_leaderboard_title'),                                        body: t('help_leaderboard_body') },
+            { title: t('help_group_leader_title'),                                        body: t('help_group_leader_body') },
             { title: `${coinSvgIcon('1em')} Coins`,                                      body: t('help_coins_body') },
             { title: `${controllerSvgIcon('1em')} ${t('help_stars_title')}`,             body: t('help_stars_body') },
             { title: t('help_challenges_title'),                                          body: t('help_challenges_body') },
@@ -3885,7 +3886,7 @@ function getNowPlus10() {
                 return `
                     <div class="proposal-card${highlightClass}" data-id="${c.id}">
                         <div class="proposal-card-header">
-                            <span><span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span><span style="${challengerStyle}">${c.challenger}</span> ⚔️ <span style="${opponentStyle}">${c.opponent}</span></span>
+                            <span><span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span><span style="${challengerStyle}">${c.challenger}</span> ⚔️ <span style="${opponentStyle}">${c.opponent}</span></span>
                             <span class="status-badge ${c.status}">${statusLabels[c.status] || c.status}</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -3962,7 +3963,7 @@ function getNowPlus10() {
                 // Sort creator first in their team; render GL badge for creator
                 const sortCreatorFirst = (arr) => [...arr].sort((a, b) => a === tc.createdBy ? -1 : b === tc.createdBy ? 1 : 0);
                 const renderPlayerName = (name) => name === tc.createdBy
-                    ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>${name}`
+                    ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>${name}`
                     : name;
                 const teamADisplay = sortCreatorFirst(teamA).map(renderPlayerName).join(', ');
                 const teamBDisplay = sortCreatorFirst(teamB).map(renderPlayerName).join(', ');
@@ -4082,7 +4083,7 @@ function getNowPlus10() {
                     <div id="ch-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;margin-bottom:0.25rem;"></div>
                     <button class="btn-propose" id="ch-create">${t('btn_challenge')}</button>
                 </div>
-                ${cardsHTML}
+                <div style="margin-top:1rem">${cardsHTML}</div>
             ` : '';
 
             // Save form state before re-render
@@ -4102,7 +4103,7 @@ function getNowPlus10() {
                 v1FormState.stars = container.querySelector('#ch-stars')?.value || v1FormState.stars;
             }
 
-            container.innerHTML = tabToggleHTML + (challengeActiveTab === '1v1' ? oneVOneContentHTML : teamFormHTML + teamCardsHTML);
+            container.innerHTML = tabToggleHTML + (challengeActiveTab === '1v1' ? oneVOneContentHTML : teamFormHTML + `<div style="margin-top:1rem">${teamCardsHTML}</div>`);
 
             // Wire tab buttons
             container.querySelectorAll('.ch-tab-btn').forEach(btn => {
