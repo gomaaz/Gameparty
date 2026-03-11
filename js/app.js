@@ -1170,7 +1170,7 @@ function getNowPlus10() {
                 e.preventDefault();
                 const r = results[i];
                 inputEl.value = r.name;
-                rawgSelected = r;
+                rawgSelected = { ...r, platforms: JSON.stringify(r.platforms || []), released: r.released || '' };
                 hideRawgDropdown();
                 inputEl.dispatchEvent(new Event('rawg-selected'));
             });
@@ -1180,6 +1180,39 @@ function getNowPlus10() {
     function hideRawgDropdown() {
         const existing = document.getElementById('rawg-dropdown');
         if (existing) existing.remove();
+    }
+
+    function showGameDetailModal(g) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+        let platforms = [];
+        try { platforms = JSON.parse(g.platforms || '[]'); } catch {}
+        let requirements = {};
+        try { requirements = JSON.parse(g.requirements || '{}'); } catch {}
+
+        const shopLinksHtml = (g.shopLinks && g.shopLinks.length)
+            ? g.shopLinks.map(l => {
+                const url = typeof l === 'string' ? l : l.url;
+                const label = typeof l === 'string' ? l : l.platform;
+                return `<a class="game-shop-link" href="${url}" target="_blank" rel="noopener">${label}</a>`;
+            }).join('')
+            : '';
+
+        modal.innerHTML = `
+            <div class="game-detail-modal">
+                ${g.cover_url ? `<img class="game-detail-cover" src="${g.cover_url}" alt="">` : ''}
+                <div class="game-detail-title">${g.name}</div>
+                ${g.released ? `<div class="game-detail-meta-row"><span class="game-detail-label">Release:</span> ${g.released}</div>` : ''}
+                ${g.genre ? `<div class="game-detail-meta-row"><span class="game-detail-label">Genres:</span> ${g.genre}</div>` : ''}
+                ${platforms.length ? `<div class="game-detail-meta-row"><span class="game-detail-label">Plattformen:</span> ${platforms.join(', ')}</div>` : ''}
+                ${g.rating ? `<div class="game-detail-meta-row"><span class="game-detail-label">Metacritic:</span> <span class="game-rating ${g.rating >= 75 ? 'good' : g.rating >= 50 ? 'ok' : 'bad'}">${g.rating}</span></div>` : ''}
+                ${shopLinksHtml ? `<div class="game-detail-meta-row"><span class="game-detail-label">Shop:</span> ${shopLinksHtml}</div>` : ''}
+                ${g.description ? `<div class="game-detail-description">${g.description}</div>` : ''}
+                ${requirements.minimum ? `<div class="game-detail-requirements"><div class="game-detail-label" style="margin-bottom:0.3rem">Systemanforderungen (Minimum):</div><pre>${requirements.minimum}</pre></div>` : ''}
+                <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
+            </div>`;
+        overlay.classList.add('show');
+        modal.querySelector('#modal-cancel').addEventListener('click', () => overlay.classList.remove('show'));
     }
 
     // ---- Render: Matcher ----
@@ -1418,7 +1451,9 @@ function getNowPlus10() {
                             coverUrl: rawgSelected?.cover || '',
                             description: rawgSelected?.description || '',
                             rating: rawgSelected?.metacritic || 0,
-                            rawgId: rawgSelected?.id || 0
+                            rawgId: rawgSelected?.id || 0,
+                            platforms: rawgSelected?.platforms || '',
+                            released: rawgSelected?.released || ''
                         });
                         if (isAdmin()) {
                             await api('PUT', `/games/${encodeURIComponent(name)}/approve`);
@@ -1558,6 +1593,14 @@ function getNowPlus10() {
             if (bulkDeselect) {
                 selectedGames.clear();
                 filterGames();
+                return;
+            }
+
+            const nameEl = e.target.closest('.game-name[data-game]');
+            if (nameEl && !e.target.closest('a')) {
+                e.stopPropagation();
+                const game = state.games.find(g => g.name === nameEl.dataset.game);
+                if (game) showGameDetailModal(game);
                 return;
             }
 
@@ -2001,7 +2044,7 @@ function getNowPlus10() {
                     ${checkbox}
                     ${coverHTML}
                     <div class="game-info">
-                        <div class="game-name"${g.description ? ` title="${g.description.replace(/"/g, '&quot;').slice(0, 200)}"` : ''}>
+                        <div class="game-name" data-game="${g.name}"${g.description ? ` title="${g.description.replace(/"/g, '&quot;').slice(0, 200)}"` : ''}>
                             ${g.name}
                         </div>
                         <div class="game-shop-links-row">${ytBadge}${shopLinksHTML}</div>
@@ -3096,6 +3139,9 @@ function getNowPlus10() {
                         <span class="info-tooltip" data-tooltip="Legen Sie einen kostenlosen API-Key auf rawg.io an und tragen Sie ihn als Docker-Umgebungsvariable RAWG_API_KEY ein.">(?)</span>
                     </div>
                     <button class="ls-btn-secondary" id="btn-enrich-games" ${!rawgStatus?.enabled ? 'disabled' : ''} style="margin-top:0.4rem">🎮 Spielinfos von RAWG laden</button>
+                    <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.3rem">
+                        API-Requests: ${state.settings?.rawg_calls_total || '0'} · Angereichert: ${state.games.filter(g => g.cover_url).length}/${state.games.filter(g => g.status !== 'suggested').length}
+                    </div>
                 </div>
 
                 <div class="danger-zone">

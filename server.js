@@ -189,6 +189,9 @@ try { db.prepare("ALTER TABLE games ADD COLUMN cover_url TEXT DEFAULT ''").run()
 try { db.prepare("ALTER TABLE games ADD COLUMN description TEXT DEFAULT ''").run(); } catch {}
 try { db.prepare("ALTER TABLE games ADD COLUMN rating INT DEFAULT 0").run(); } catch {}
 try { db.prepare("ALTER TABLE games ADD COLUMN rawg_id INT DEFAULT 0").run(); } catch {}
+try { db.prepare("ALTER TABLE games ADD COLUMN platforms TEXT DEFAULT ''").run(); } catch {}
+try { db.prepare("ALTER TABLE games ADD COLUMN released TEXT DEFAULT ''").run(); } catch {}
+try { db.prepare("ALTER TABLE games ADD COLUMN requirements TEXT DEFAULT ''").run(); } catch {}
 
 // ---- Migration: pending_coins Feld in live_sessions ----
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN pending_coins INT DEFAULT 0").run(); } catch {}
@@ -311,6 +314,9 @@ function getGameWithPlayers(game) {
         description: game.description || '',
         rating: game.rating || 0,
         rawg_id: game.rawg_id || 0,
+        platforms: game.platforms || '',
+        released: game.released || '',
+        requirements: game.requirements || '',
         players: playersObj
     };
 }
@@ -355,13 +361,13 @@ app.get('/api/games', (req, res) => {
 
 // POST /api/games/suggest
 app.post('/api/games/suggest', (req, res) => {
-    const { name, genre, maxPlayers, suggestedBy, shopLinks, coverUrl, description, rating, rawgId } = req.body;
+    const { name, genre, maxPlayers, suggestedBy, shopLinks, coverUrl, description, rating, rawgId, platforms, released, requirements } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
 
     const existing = db.prepare('SELECT id FROM games WHERE LOWER(name) = LOWER(?)').get(name);
     if (existing) return res.status(409).json({ error: 'Spiel existiert bereits' });
 
-    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, shop_links, cover_url, description, rating, rawg_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, JSON.stringify(shopLinks || []), coverUrl || '', description || '', rating || 0, rawgId || 0);
+    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, shop_links, cover_url, description, rating, rawg_id, platforms, released, requirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, JSON.stringify(shopLinks || []), coverUrl || '', description || '', rating || 0, rawgId || 0, platforms || '', released || '', requirements || '');
     if (suggestedBy) {
         db.prepare('INSERT OR IGNORE INTO game_players (game_id, player) VALUES (?, ?)').run(result.lastInsertRowid, suggestedBy);
     }
@@ -425,7 +431,7 @@ app.delete('/api/games/:name', (req, res) => {
 app.put('/api/games/:name', (req, res) => {
     const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
-    const { newName, genre, maxPlayers, shopLinks, rawgId, coverUrl, description, rating } = req.body;
+    const { newName, genre, maxPlayers, shopLinks, rawgId, coverUrl, description, rating, platforms, released, requirements } = req.body;
     const updates = [];
     const params = [];
     if (newName !== undefined) { updates.push('name = ?'); params.push(newName); }
@@ -436,6 +442,9 @@ app.put('/api/games/:name', (req, res) => {
     if (coverUrl !== undefined) { updates.push('cover_url = ?'); params.push(coverUrl); }
     if (description !== undefined) { updates.push('description = ?'); params.push(description); }
     if (rating !== undefined) { updates.push('rating = ?'); params.push(rating); }
+    if (platforms !== undefined) { updates.push('platforms = ?'); params.push(platforms); }
+    if (released !== undefined) { updates.push('released = ?'); params.push(released); }
+    if (requirements !== undefined) { updates.push('requirements = ?'); params.push(requirements); }
     if (updates.length > 0) {
         params.push(game.id);
         db.prepare(`UPDATE games SET ${updates.join(', ')} WHERE id = ?`).run(...params);
@@ -2014,6 +2023,8 @@ app.post('/api/rawg/search', async (req, res) => {
             genres: (g.genres || []).map(x => x.name).join(', '),
             metacritic: g.metacritic || 0,
             description: (g.description_raw || '').slice(0, 400),
+            platforms: (g.platforms || []).map(p => p.platform.name),
+            released: g.released || '',
         })), configured: true });
     } catch (e) {
         res.json({ results: [], configured: true });
@@ -2026,41 +2037,89 @@ app.post('/api/games/enrich', async (req, res) => {
     if (!enabled) return res.status(400).json({ error: 'RAWG nicht aktiviert' });
     const key = process.env.RAWG_API_KEY;
     if (!key) return res.status(500).json({ error: 'RAWG_API_KEY not set' });
-    const games = db.prepare("SELECT name, rawg_id FROM games WHERE (cover_url = '' OR cover_url IS NULL) AND status = 'approved'").all();
-    let enriched = 0;
+
+    // Only process games missing at least one enrichable field
+    const games = db.prepare(`
+        SELECT name, rawg_id FROM games
+        WHERE status = 'approved'
+        AND (cover_url = '' OR cover_url IS NULL
+             OR platforms = '' OR platforms IS NULL
+             OR released = '' OR released IS NULL)
+    `).all();
+
+    let enriched = 0, skipped = 0;
+
     for (const g of games) {
         try {
-            let gameData;
-            if (g.rawg_id > 0) {
-                const r = await fetch(`https://api.rawg.io/api/games/${g.rawg_id}?key=${key}`);
-                gameData = await r.json();
-            } else {
-                const r = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(g.name)}&key=${key}&page_size=1`);
-                const data = await r.json();
-                gameData = data.results?.[0];
+            let rawgId = g.rawg_id;
+
+            // Step 1: If no rawg_id, search by name first
+            if (!rawgId) {
+                const searchRes = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(g.name)}&key=${key}&page_size=1`);
+                const searchData = await searchRes.json();
+                rawgId = searchData.results?.[0]?.id;
+                if (!rawgId) { skipped++; continue; }
+                // Count search call
+                const sc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
+                db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(sc+1), String(sc+1));
             }
-            if (!gameData || !gameData.background_image) continue;
-            // Download cover image
-            const imgRes = await fetch(gameData.background_image);
-            const buf = await imgRes.arrayBuffer();
-            const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 60);
-            const filePath = path.join(coversDir, `${safeName}.jpg`);
-            fs.writeFileSync(filePath, Buffer.from(buf));
-            const coverUrl = `/gamefiles/covers/${safeName}.jpg`;
-            const rawgId = gameData.id || g.rawg_id;
-            db.prepare("UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=? WHERE name=?").run(
-                coverUrl,
-                (gameData.description_raw || '').slice(0, 500),
-                gameData.metacritic || 0,
-                rawgId,
-                g.name
-            );
+
+            // Step 2: Detail call
+            const detailRes = await fetch(`https://api.rawg.io/api/games/${rawgId}?key=${key}`);
+            const d = await detailRes.json();
+
+            // Count detail call
+            const dc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
+            db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(dc+1), String(dc+1));
+
+            // Build fields
+            const genres = (d.genres || []).map(x => x.name).join(', ');
+            const platforms = JSON.stringify((d.platforms || []).map(p => p.platform.name));
+            const released = d.released || '';
+            const description = (d.description_raw || '').slice(0, 2000);
+            const metacritic = d.metacritic || 0;
+
+            // Shop links from RAWG stores
+            const rawgStores = (d.stores || []).map(s => ({ platform: s.store.name, url: s.url })).filter(s => s.url);
+
+            // System requirements (prefer PC, fallback to first platform with requirements)
+            const pcPlat = (d.platforms || []).find(p => p.platform.name === 'PC');
+            const anyReq = (d.platforms || []).find(p => p.requirements_en?.minimum || p.requirements?.minimum);
+            const reqSource = pcPlat || anyReq;
+            const reqMin = reqSource?.requirements_en?.minimum || reqSource?.requirements?.minimum || '';
+            const requirements = reqMin ? JSON.stringify({ minimum: reqMin }) : '';
+
+            // Cover download
+            let coverUrl = '';
+            if (d.background_image) {
+                try {
+                    const imgRes = await fetch(d.background_image);
+                    const buf = await imgRes.arrayBuffer();
+                    const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 60);
+                    const filePath = path.join(coversDir, `${safeName}.jpg`);
+                    fs.writeFileSync(filePath, Buffer.from(buf));
+                    coverUrl = `/gamefiles/covers/${safeName}.jpg`;
+                } catch {}
+            }
+
+            // Update DB
+            if (rawgStores.length > 0) {
+                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=?, shop_links=? WHERE name=?`)
+                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, JSON.stringify(rawgStores), g.name);
+            } else {
+                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=? WHERE name=?`)
+                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, g.name);
+            }
+
             enriched++;
             await new Promise(r => setTimeout(r, 250));
-        } catch (e) { /* skip failed game */ }
+        } catch (e) {
+            skipped++;
+        }
     }
+
     broadcast();
-    res.json({ enriched });
+    res.json({ enriched, skipped });
 });
 
 // ---- Start Server ----
