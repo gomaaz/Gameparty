@@ -161,7 +161,9 @@
 
     function getNotifPref(type) {
         if (!state.currentPlayer) return false;
-        return localStorage.getItem(`gameparty_notif_${type}_${state.currentPlayer}`) === 'true';
+        const stored = localStorage.getItem(`gameparty_notif_${type}_${state.currentPlayer}`);
+        if (stored === null) return type === 'sound'; // sound enabled by default
+        return stored === 'true';
     }
     function setNotifPref(type, value) {
         localStorage.setItem(`gameparty_notif_${type}_${state.currentPlayer}`, value ? 'true' : 'false');
