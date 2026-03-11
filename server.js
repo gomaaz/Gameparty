@@ -32,6 +32,11 @@ app.get('/', (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
+// ---- RAWG: Static file serving for downloaded covers ----
+const coversDir = path.join(__dirname, 'gamefiles', 'covers');
+fs.mkdirSync(coversDir, { recursive: true });
+app.use('/gamefiles', express.static(path.join(__dirname, 'gamefiles')));
+
 // ---- Server-Sent Events ----
 const sseClients = new Set();
 
@@ -179,6 +184,12 @@ try {
 // ---- Migration: shop_links Feld in games ----
 try { db.prepare("ALTER TABLE games ADD COLUMN shop_links TEXT DEFAULT '[]'").run(); } catch {}
 
+// ---- Migration: RAWG fields in games ----
+try { db.prepare("ALTER TABLE games ADD COLUMN cover_url TEXT DEFAULT ''").run(); } catch {}
+try { db.prepare("ALTER TABLE games ADD COLUMN description TEXT DEFAULT ''").run(); } catch {}
+try { db.prepare("ALTER TABLE games ADD COLUMN rating INT DEFAULT 0").run(); } catch {}
+try { db.prepare("ALTER TABLE games ADD COLUMN rawg_id INT DEFAULT 0").run(); } catch {}
+
 // ---- Migration: pending_coins Feld in live_sessions ----
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN pending_coins INT DEFAULT 0").run(); } catch {}
 
@@ -296,6 +307,10 @@ function getGameWithPlayers(game) {
         status: game.status,
         suggestedBy: game.suggestedBy,
         shopLinks: JSON.parse(game.shop_links || '[]'),
+        cover_url: game.cover_url || '',
+        description: game.description || '',
+        rating: game.rating || 0,
+        rawg_id: game.rawg_id || 0,
         players: playersObj
     };
 }
@@ -340,13 +355,13 @@ app.get('/api/games', (req, res) => {
 
 // POST /api/games/suggest
 app.post('/api/games/suggest', (req, res) => {
-    const { name, genre, maxPlayers, suggestedBy, shopLinks } = req.body;
+    const { name, genre, maxPlayers, suggestedBy, shopLinks, coverUrl, description, rating, rawgId } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
 
     const existing = db.prepare('SELECT id FROM games WHERE LOWER(name) = LOWER(?)').get(name);
     if (existing) return res.status(409).json({ error: 'Spiel existiert bereits' });
 
-    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, shop_links) VALUES (?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, JSON.stringify(shopLinks || []));
+    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, shop_links, cover_url, description, rating, rawg_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, JSON.stringify(shopLinks || []), coverUrl || '', description || '', rating || 0, rawgId || 0);
     if (suggestedBy) {
         db.prepare('INSERT OR IGNORE INTO game_players (game_id, player) VALUES (?, ?)').run(result.lastInsertRowid, suggestedBy);
     }
@@ -410,13 +425,17 @@ app.delete('/api/games/:name', (req, res) => {
 app.put('/api/games/:name', (req, res) => {
     const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
-    const { newName, genre, maxPlayers, shopLinks } = req.body;
+    const { newName, genre, maxPlayers, shopLinks, rawgId, coverUrl, description, rating } = req.body;
     const updates = [];
     const params = [];
     if (newName !== undefined) { updates.push('name = ?'); params.push(newName); }
     if (genre !== undefined) { updates.push('genre = ?'); params.push(genre); }
     if (maxPlayers !== undefined) { updates.push('maxPlayers = ?'); params.push(maxPlayers); }
     if (shopLinks !== undefined) { updates.push('shop_links = ?'); params.push(JSON.stringify(shopLinks)); }
+    if (rawgId !== undefined) { updates.push('rawg_id = ?'); params.push(rawgId); }
+    if (coverUrl !== undefined) { updates.push('cover_url = ?'); params.push(coverUrl); }
+    if (description !== undefined) { updates.push('description = ?'); params.push(description); }
+    if (rating !== undefined) { updates.push('rating = ?'); params.push(rating); }
     if (updates.length > 0) {
         params.push(game.id);
         db.prepare(`UPDATE games SET ${updates.join(', ')} WHERE id = ?`).run(...params);
@@ -1969,6 +1988,79 @@ app.delete('/api/live-sessions/:id', (req, res) => {
     db.prepare('DELETE FROM live_session_players WHERE session_id = ?').run(req.params.id);
     db.prepare('DELETE FROM live_sessions WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+});
+
+// GET /api/rawg/status
+app.get('/api/rawg/status', (req, res) => {
+    const enabled = db.prepare("SELECT value FROM settings WHERE key='rawg_enabled'").get()?.value === '1';
+    res.json({ enabled, configured: !!process.env.RAWG_API_KEY });
+});
+
+// POST /api/rawg/search
+app.post('/api/rawg/search', async (req, res) => {
+    const enabled = db.prepare("SELECT value FROM settings WHERE key='rawg_enabled'").get()?.value === '1';
+    if (!enabled) return res.json({ results: [], configured: false });
+    const key = process.env.RAWG_API_KEY;
+    if (!key) return res.json({ results: [], configured: false });
+    const { query } = req.body;
+    if (!query) return res.json({ results: [] });
+    try {
+        const r = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${key}&page_size=5`);
+        const data = await r.json();
+        res.json({ results: (data.results || []).map(g => ({
+            id: g.id,
+            name: g.name,
+            cover: g.background_image || '',
+            genres: (g.genres || []).map(x => x.name).join(', '),
+            metacritic: g.metacritic || 0,
+            description: (g.description_raw || '').slice(0, 400),
+        })), configured: true });
+    } catch (e) {
+        res.json({ results: [], configured: true });
+    }
+});
+
+// POST /api/games/enrich
+app.post('/api/games/enrich', async (req, res) => {
+    const enabled = db.prepare("SELECT value FROM settings WHERE key='rawg_enabled'").get()?.value === '1';
+    if (!enabled) return res.status(400).json({ error: 'RAWG nicht aktiviert' });
+    const key = process.env.RAWG_API_KEY;
+    if (!key) return res.status(500).json({ error: 'RAWG_API_KEY not set' });
+    const games = db.prepare("SELECT name, rawg_id FROM games WHERE (cover_url = '' OR cover_url IS NULL) AND status = 'approved'").all();
+    let enriched = 0;
+    for (const g of games) {
+        try {
+            let gameData;
+            if (g.rawg_id > 0) {
+                const r = await fetch(`https://api.rawg.io/api/games/${g.rawg_id}?key=${key}`);
+                gameData = await r.json();
+            } else {
+                const r = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(g.name)}&key=${key}&page_size=1`);
+                const data = await r.json();
+                gameData = data.results?.[0];
+            }
+            if (!gameData || !gameData.background_image) continue;
+            // Download cover image
+            const imgRes = await fetch(gameData.background_image);
+            const buf = await imgRes.arrayBuffer();
+            const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 60);
+            const filePath = path.join(coversDir, `${safeName}.jpg`);
+            fs.writeFileSync(filePath, Buffer.from(buf));
+            const coverUrl = `/gamefiles/covers/${safeName}.jpg`;
+            const rawgId = gameData.id || g.rawg_id;
+            db.prepare("UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=? WHERE name=?").run(
+                coverUrl,
+                (gameData.description_raw || '').slice(0, 500),
+                gameData.metacritic || 0,
+                rawgId,
+                g.name
+            );
+            enriched++;
+            await new Promise(r => setTimeout(r, 250));
+        } catch (e) { /* skip failed game */ }
+    }
+    broadcast();
+    res.json({ enriched });
 });
 
 // ---- Start Server ----

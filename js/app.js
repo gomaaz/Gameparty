@@ -18,7 +18,9 @@
         version: '',
         allUsers: [],
         settings: {},
-        shopCooldowns: {}
+        shopCooldowns: {},
+        rawgEnabled: false,
+        rawgConfig: null
     };
 
     // ---- Medium Options ----
@@ -56,6 +58,8 @@
     let challengeActiveTab = '1v1'; // '1v1' | 'team'
     let tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '' };
     let v1FormState = { opponent: '', coins: '', stars: '' };
+    let rawgTimeout = null;
+    let rawgSelected = null;
 
     // ---- Coin Rate Helper ----
     function getPlayerRate(playerCount) {
@@ -1140,6 +1144,44 @@ function getNowPlus10() {
         }
     }
 
+    // ---- RAWG Autocomplete Helpers ----
+    function showRawgDropdown(results, inputEl) {
+        hideRawgDropdown();
+        if (!results || results.length === 0) return;
+        const wrapper = inputEl.closest('.rawg-dropdown-wrapper') || inputEl.parentElement;
+        wrapper.style.position = 'relative';
+        const dropdown = document.createElement('div');
+        dropdown.className = 'rawg-dropdown';
+        dropdown.id = 'rawg-dropdown';
+        dropdown.innerHTML = results.map((r, i) => `
+            <div class="rawg-item" data-index="${i}">
+                ${r.cover ? `<img src="${r.cover}" alt="" loading="lazy">` : '<div style="width:54px;height:32px;background:rgba(255,255,255,0.04);border-radius:2px;flex-shrink:0"></div>'}
+                <div class="rawg-item-info">
+                    <div class="rawg-item-name">${r.name}</div>
+                    <div class="rawg-item-meta">${r.genres || ''}</div>
+                </div>
+                ${r.metacritic ? `<span class="rawg-item-score">${r.metacritic}</span>` : ''}
+            </div>
+        `).join('');
+        wrapper.appendChild(dropdown);
+
+        dropdown.querySelectorAll('.rawg-item').forEach((el, i) => {
+            el.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const r = results[i];
+                inputEl.value = r.name;
+                rawgSelected = r;
+                hideRawgDropdown();
+                inputEl.dispatchEvent(new Event('rawg-selected'));
+            });
+        });
+    }
+
+    function hideRawgDropdown() {
+        const existing = document.getElementById('rawg-dropdown');
+        if (existing) existing.remove();
+    }
+
     // ---- Render: Matcher ----
     async function renderMatcher() {
         const container = $('#view-matcher');
@@ -1171,7 +1213,7 @@ function getNowPlus10() {
                 <div class="card">
                     <div class="card-title">${t('suggest_game')}</div>
                     <div class="proposal-form" id="suggest-form">
-                        <div>
+                        <div class="rawg-dropdown-wrapper">
                             <input type="text" id="suggest-name" placeholder="${t('label_name')}" autocomplete="off">
                             <div id="suggest-similar" class="suggest-similar" style="display:none"></div>
                         </div>
@@ -1270,8 +1312,10 @@ function getNowPlus10() {
 
                 suggestNameEl.addEventListener('input', () => {
                     const val = suggestNameEl.value.trim();
+                    // Clear rawg selection on manual input
+                    rawgSelected = null;
                     stepGenre.style.display = val ? '' : 'none';
-                    if (!val) { stepMaxPlayers.style.display = 'none'; stepOptional.style.display = 'none'; }
+                    if (!val) { stepMaxPlayers.style.display = 'none'; stepOptional.style.display = 'none'; hideRawgDropdown(); }
                     if (val.length >= 2) {
                         const similar = state.games.filter(g =>
                             g.name.toLowerCase().includes(val.toLowerCase()) &&
@@ -1287,6 +1331,50 @@ function getNowPlus10() {
                         similarEl.style.display = 'none';
                     }
                     updateSuggestBtn();
+                    // RAWG debounced search
+                    if (state.rawgEnabled && val.length >= 2) {
+                        clearTimeout(rawgTimeout);
+                        rawgTimeout = setTimeout(async () => {
+                            try {
+                                const result = await api('POST', '/rawg/search', { query: val });
+                                if (result.results && result.results.length > 0) {
+                                    showRawgDropdown(result.results, suggestNameEl);
+                                } else {
+                                    hideRawgDropdown();
+                                }
+                            } catch (e) { hideRawgDropdown(); }
+                        }, 300);
+                    } else {
+                        clearTimeout(rawgTimeout);
+                        hideRawgDropdown();
+                    }
+                });
+
+                // When RAWG result is selected, fill genre if available
+                suggestNameEl.addEventListener('rawg-selected', () => {
+                    if (rawgSelected && rawgSelected.genres) {
+                        const firstGenre = rawgSelected.genres.split(',')[0].trim();
+                        const chip = document.querySelector(`#suggest-genre-chips .pw-genre-chip[data-genre="${firstGenre}"]`);
+                        if (chip) {
+                            document.querySelectorAll('#suggest-genre-chips .pw-genre-chip').forEach(c => c.classList.remove('selected'));
+                            chip.classList.add('selected');
+                            selectedGenre = firstGenre;
+                            stepGenre.style.display = '';
+                            stepMaxPlayers.style.display = '';
+                            updateSuggestBtn();
+                        } else {
+                            stepGenre.style.display = '';
+                        }
+                    }
+                    updateSuggestBtn();
+                });
+
+                // Close dropdown on outside click or ESC
+                document.addEventListener('click', (e) => {
+                    if (!suggestNameEl.contains(e.target)) hideRawgDropdown();
+                }, { capture: false });
+                suggestNameEl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') hideRawgDropdown();
                 });
 
                 document.getElementById('suggest-genre-chips').addEventListener('click', e => {
@@ -1323,11 +1411,19 @@ function getNowPlus10() {
                         url: row.querySelector('.suggest-shop-url').value.trim()
                     })).filter(l => l.platform && l.url);
                     if (!name || !selectedGenre) return;
+                    hideRawgDropdown();
                     try {
-                        await api('POST', '/games/suggest', { name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, shopLinks });
+                        await api('POST', '/games/suggest', {
+                            name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, shopLinks,
+                            coverUrl: rawgSelected?.cover || '',
+                            description: rawgSelected?.description || '',
+                            rating: rawgSelected?.metacritic || 0,
+                            rawgId: rawgSelected?.id || 0
+                        });
                         if (isAdmin()) {
                             await api('PUT', `/games/${encodeURIComponent(name)}/approve`);
                         }
+                        rawgSelected = null;
                         showToast(t('game_suggested', name), 'success');
                         renderMatcher();
                     } catch (e) {
@@ -1892,11 +1988,20 @@ function getNowPlus10() {
             const matchPlayerNames = state.attendees.filter(p => g.players && g.players[p]);
             const likesTooltip = matchPlayerNames.length ? matchPlayerNames.join(', ') : '';
 
+            const coverHTML = `<div class="game-cover">${
+                g.cover_url
+                    ? `<img src="${g.cover_url}" alt="" loading="lazy">`
+                    : '<div class="game-cover-placeholder"></div>'
+            }</div>`;
+
+            const ratingBadge = g.rating ? `<span class="game-rating ${g.rating >= 75 ? 'good' : g.rating >= 50 ? 'ok' : 'bad'}">${g.rating}</span>` : '';
+
             return `
                 <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}">
                     ${checkbox}
+                    ${coverHTML}
                     <div class="game-info">
-                        <div class="game-name">
+                        <div class="game-name"${g.description ? ` title="${g.description.replace(/"/g, '&quot;').slice(0, 200)}"` : ''}>
                             ${g.name}
                         </div>
                         <div class="game-shop-links-row">${ytBadge}${shopLinksHTML}</div>
@@ -1904,6 +2009,7 @@ function getNowPlus10() {
                             <span>${g.genre || '?'}</span>
                             <span>Max ${g.maxPlayers}</span>
                             <span class="game-likes-count"${likesTooltip ? ` data-tooltip="${likesTooltip}"` : ''}>${g.matchCount} Likes</span>
+                            ${ratingBadge}
                         </div>
                         <div class="game-players-row">${playerDots}</div>
                     </div>
@@ -2774,14 +2880,17 @@ function getNowPlus10() {
         const panel = $('#admin-panel');
         if (!panel) return;
 
-        let usersData, liveSessionsData, allProposals, settingsData;
+        let usersData, liveSessionsData, allProposals, settingsData, rawgStatus;
         try {
-            [usersData, liveSessionsData, allProposals, settingsData] = await Promise.all([
+            [usersData, liveSessionsData, allProposals, settingsData, rawgStatus] = await Promise.all([
                 api('GET', '/users'),
                 api('GET', '/live-sessions'),
                 api('GET', '/proposals'),
-                api('GET', '/settings')
+                api('GET', '/settings'),
+                api('GET', '/rawg/status')
             ]);
+            state.rawgConfig = rawgStatus;
+            state.rawgEnabled = rawgStatus.enabled && rawgStatus.configured;
         } catch (e) {
             panel.innerHTML = `<div class="admin-panel-header"><span class="admin-panel-title">⚙️ Admin</span><button class="admin-panel-close" id="ap-close">✕</button></div><div class="admin-panel-body"><p class="text-muted">${t('error_loading')}</p></div>`;
             $('#ap-close').addEventListener('click', closeAdminPanel);
@@ -2979,6 +3088,14 @@ function getNowPlus10() {
                         <button class="ls-btn-secondary" id="btn-import-url">${t('btn_import_url')}</button>
                     </div>
                     <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem">${t('game_data_hint')}</div>
+                    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem">
+                        <label class="toggle-label" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer">
+                            <input type="checkbox" id="toggle-rawg" ${rawgStatus?.enabled ? 'checked' : ''}>
+                            <span>Abgleich mit RAWG</span>
+                        </label>
+                        <span class="info-tooltip" data-tooltip="Legen Sie einen kostenlosen API-Key auf rawg.io an und tragen Sie ihn als Docker-Umgebungsvariable RAWG_API_KEY ein.">(?)</span>
+                    </div>
+                    <button class="ls-btn-secondary" id="btn-enrich-games" ${!rawgStatus?.enabled ? 'disabled' : ''} style="margin-top:0.4rem">🎮 Spielinfos von RAWG laden</button>
                 </div>
 
                 <div class="danger-zone">
@@ -3226,6 +3343,29 @@ function getNowPlus10() {
                     } catch (e) { showToast('Fehler beim Importieren', 'error'); }
                 });
             } catch (e) { showToast('Fehler beim Laden der URL', 'error'); }
+        });
+
+        // RAWG toggle
+        panel.querySelector('#toggle-rawg')?.addEventListener('change', async (e) => {
+            await api('PUT', '/settings/rawg_enabled', { value: e.target.checked ? '1' : '0' });
+            state.rawgEnabled = e.target.checked && !!state.rawgConfig?.configured;
+            panel.querySelector('#btn-enrich-games')?.toggleAttribute('disabled', !e.target.checked);
+        });
+
+        // RAWG enrich button
+        panel.querySelector('#btn-enrich-games')?.addEventListener('click', async () => {
+            const btn = panel.querySelector('#btn-enrich-games');
+            btn.disabled = true; btn.textContent = '⏳ Lädt...';
+            try {
+                const result = await api('POST', '/games/enrich', {});
+                showToast(`${result.enriched} Spiele mit RAWG-Daten angereichert`, 'success');
+                state.games = await api('GET', '/games');
+                renderMatcher();
+            } catch (e) {
+                showToast(e.message || 'Fehler beim RAWG-Abgleich', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = '🎮 Spielinfos von RAWG laden';
+            }
         });
 
         // Danger zone
@@ -6183,6 +6323,12 @@ function getNowPlus10() {
             console.error('Init error - Server nicht erreichbar?', e);
             showToast(t('server_unreachable'), 'error');
         }
+
+        // Load RAWG status
+        api('GET', '/rawg/status').then(s => {
+            state.rawgConfig = s;
+            state.rawgEnabled = s.enabled && s.configured;
+        }).catch(() => {});
 
         // Setup navigation
         $$('.nav-item').forEach(nav => {
