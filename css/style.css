@@ -515,8 +515,8 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 40%);
-    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 40%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.20) 100%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.20) 100%);
     pointer-events: none;
     z-index: 0;
 }
