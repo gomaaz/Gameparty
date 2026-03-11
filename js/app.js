@@ -1187,7 +1187,10 @@ function getNowPlus10() {
                         <div id="suggest-step-optional" class="sg-step" style="display:none">
                             <div class="suggest-step-label">${t('optional') || 'Optional'}</div>
                             <div id="suggest-shop-links">
-                                <input type="url" class="suggest-shop-link" placeholder="Shop-Link (z.B. Steam, GOG)" inputmode="url">
+                                <div class="suggest-shop-link-row" style="display:flex;gap:0.4rem;margin-bottom:0.3rem">
+                                    <input type="text" class="suggest-shop-platform" placeholder="Steam, GOG…" style="flex:1">
+                                    <input type="url" class="suggest-shop-url" placeholder="https://…" inputmode="url" style="flex:2">
+                                </div>
                             </div>
                             <button type="button" id="btn-add-shop-link" class="ls-btn-secondary">+ Shop-Link</button>
                             <input type="url" id="suggest-preview-url" placeholder="YouTube Preview-Link" inputmode="url">
@@ -1306,20 +1309,21 @@ function getNowPlus10() {
                 }
 
                 document.getElementById('btn-add-shop-link').addEventListener('click', () => {
-                    const inp = document.createElement('input');
-                    inp.type = 'url';
-                    inp.className = 'suggest-shop-link';
-                    inp.placeholder = 'Shop-Link';
-                    inp.inputMode = 'url';
-                    inp.style.marginTop = '0.4rem';
-                    document.getElementById('suggest-shop-links').appendChild(inp);
+                    const row = document.createElement('div');
+                    row.className = 'suggest-shop-link-row';
+                    row.style.cssText = 'display:flex;gap:0.4rem;margin-bottom:0.3rem';
+                    row.innerHTML = '<input type="text" class="suggest-shop-platform" placeholder="Steam, GOG…" style="flex:1"><input type="url" class="suggest-shop-url" placeholder="https://…" inputmode="url" style="flex:2">';
+                    document.getElementById('suggest-shop-links').appendChild(row);
                 });
 
                 suggestBtn.addEventListener('click', async () => {
                     const name = suggestNameEl.value.trim();
                     const maxPlayers = parseInt((document.getElementById('suggest-maxplayers') || {}).value) || 4;
                     const previewUrl = (document.getElementById('suggest-preview-url') || {}).value || '';
-                    const shopLinks = [...document.querySelectorAll('.suggest-shop-link')].map(i => i.value.trim()).filter(Boolean);
+                    const shopLinks = [...document.querySelectorAll('.suggest-shop-link-row')].map(row => ({
+                        platform: row.querySelector('.suggest-shop-platform').value.trim(),
+                        url: row.querySelector('.suggest-shop-url').value.trim()
+                    })).filter(l => l.platform && l.url);
                     if (!name || !selectedGenre) return;
                     try {
                         await api('POST', '/games/suggest', { name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, previewUrl, shopLinks });
@@ -1792,7 +1796,11 @@ function getNowPlus10() {
             const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '<span></span>';
 
             const shopLinksHTML = (g.shopLinks && g.shopLinks.length)
-                ? g.shopLinks.map(l => `<a class="game-shop-link" href="${l.url}" target="_blank" rel="noopener" title="${l.platform}">${l.platform}</a>`).join('')
+                ? g.shopLinks.map(l => {
+                    const url = typeof l === 'string' ? l : l.url;
+                    const label = typeof l === 'string' ? l : l.platform;
+                    return `<a class="game-shop-link" href="${url}" target="_blank" rel="noopener" title="${label}">${label}</a>`;
+                }).join('')
                 : '';
 
             const checkbox = admin ? `<input type="checkbox" class="game-checkbox" data-game="${g.name}" ${selectedGames.has(g.name) ? 'checked' : ''}>` : '';
