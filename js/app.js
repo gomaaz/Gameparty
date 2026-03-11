@@ -1754,6 +1754,9 @@ function getNowPlus10() {
                 delete row.shoplinks;
             }
             row.shopLinks = shopLinks;
+            // Normalize lowercased header names back to camelCase
+            if ('previewurl' in row) { row.previewUrl = row.previewurl; delete row.previewurl; }
+            if ('maxplayers' in row) { row.maxPlayers = row.maxplayers; delete row.maxplayers; }
             return row;
         }).filter(r => r.name && r.name.trim());
     }
