@@ -395,13 +395,13 @@ app.get('/api/games', (req, res) => {
 
 // POST /api/games/suggest
 app.post('/api/games/suggest', (req, res) => {
-    const { name, genre, maxPlayers, suggestedBy, shopLinks, coverUrl, description, rating, rawgId, platforms, released, requirements } = req.body;
+    const { name, genre, maxPlayers, suggestedBy, shopLinks, coverUrl, description, rating, rawgId, platforms, released, requirements, screenshots } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
 
     const existing = db.prepare('SELECT id FROM games WHERE LOWER(name) = LOWER(?)').get(name);
     if (existing) return res.status(409).json({ error: 'Spiel existiert bereits' });
 
-    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, shop_links, cover_url, description, rating, rawg_id, platforms, released, requirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, JSON.stringify(shopLinks || []), coverUrl || '', description || '', rating || 0, rawgId || 0, platforms || '', released || '', requirements || '');
+    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, shop_links, cover_url, description, rating, rawg_id, platforms, released, requirements, screenshots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, JSON.stringify(shopLinks || []), coverUrl || '', description || '', rating || 0, rawgId || 0, platforms || '', released || '', requirements || '', JSON.stringify(screenshots || []));
     if (suggestedBy) {
         db.prepare('INSERT OR IGNORE INTO game_players (game_id, player) VALUES (?, ?)').run(result.lastInsertRowid, suggestedBy);
     }
@@ -2059,19 +2059,35 @@ app.get('/api/rawg/game/:id', async (req, res) => {
     const key = process.env.RAWG_API_KEY;
     if (!key) return res.status(500).json({ error: 'RAWG_API_KEY not set' });
     try {
-        const [detailRes, storesRes] = await Promise.all([
+        const [detailRes, storesRes, ssRes] = await Promise.all([
             fetch(`https://api.rawg.io/api/games/${req.params.id}?key=${key}`),
-            fetch(`https://api.rawg.io/api/games/${req.params.id}/stores?key=${key}`)
+            fetch(`https://api.rawg.io/api/games/${req.params.id}/stores?key=${key}`),
+            fetch(`https://api.rawg.io/api/games/${req.params.id}/screenshots?key=${key}&page_size=6`)
         ]);
         const d = await detailRes.json();
         const storesData = await storesRes.json();
-        // Count 2 calls
+        const ssData = await ssRes.json();
+        // Count 3 calls
         const cc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
-        db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(cc+2), String(cc+2));
+        db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(cc+3), String(cc+3));
         const storeNameMap = {};
         (d.stores || []).forEach(s => { storeNameMap[s.store.id] = s.store.name; });
         let shops = (storesData.results || []).filter(s => s.url).map(s => ({ platform: storeNameMap[s.store_id] || `Store ${s.store_id}`, url: s.url }));
         if (d.website) shops = [{ platform: 'Website', url: d.website }, ...shops];
+        // Download screenshots locally
+        const safeName = d.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50);
+        const remoteUrls = (ssData.results || []).slice(0, 6).map(s => s.image).filter(Boolean);
+        const screenshots = [];
+        for (let i = 0; i < remoteUrls.length; i++) {
+            const localPath = path.join(screenshotsDir, `${safeName}-${i}.jpg`);
+            const localUrl = `/gamefiles/screenshots/${safeName}-${i}.jpg`;
+            try {
+                const imgRes = await fetch(remoteUrls[i]);
+                const buf = await imgRes.arrayBuffer();
+                fs.writeFileSync(localPath, Buffer.from(buf));
+                screenshots.push(localUrl);
+            } catch { screenshots.push(remoteUrls[i]); } // fallback to remote URL
+        }
         res.json({
             id: d.id,
             name: d.name,
@@ -2081,7 +2097,8 @@ app.get('/api/rawg/game/:id', async (req, res) => {
             description: (d.description_raw || '').slice(0, 2000),
             platforms: (d.platforms || []).map(p => p.platform.name),
             released: d.released || '',
-            shops
+            shops,
+            screenshots
         });
     } catch (e) {
         logger.error('RAWG game detail error: ' + e.message);

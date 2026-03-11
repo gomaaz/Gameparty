@@ -1172,13 +1172,13 @@ function getNowPlus10() {
                 e.preventDefault();
                 const r = results[i];
                 inputEl.value = r.name;
-                rawgSelected = { ...r, platforms: JSON.stringify(r.platforms || []), released: r.released || '', shops: [] };
+                rawgSelected = { ...r, platforms: JSON.stringify(r.platforms || []), released: r.released || '', shops: [], screenshots: [] };
                 hideRawgDropdown();
                 inputEl.dispatchEvent(new Event('rawg-selected'));
-                // Fetch full details including shop links and full description in background
+                // Fetch full details including shop links, screenshots and full description in background
                 api('GET', `/rawg/game/${r.id}`).then(detail => {
                     if (detail && !detail.error) {
-                        rawgSelected = { ...rawgSelected, shops: detail.shops || [], description: detail.description || rawgSelected.description };
+                        rawgSelected = { ...rawgSelected, shops: detail.shops || [], screenshots: detail.screenshots || [], description: detail.description || rawgSelected.description };
                     }
                 }).catch(() => {});
             });
@@ -1495,7 +1495,8 @@ function getNowPlus10() {
                             rating: rawgSelected?.metacritic || 0,
                             rawgId: rawgSelected?.id || 0,
                             platforms: rawgSelected?.platforms || '',
-                            released: rawgSelected?.released || ''
+                            released: rawgSelected?.released || '',
+                            screenshots: rawgSelected?.screenshots || []
                         });
                         if (isAdmin()) {
                             await api('PUT', `/games/${encodeURIComponent(name)}/approve`);
