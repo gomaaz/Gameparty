@@ -5368,6 +5368,16 @@ function getNowPlus10() {
             screen.querySelector('#pw-step1-next').addEventListener('click', async () => {
                 savePlayerRows();
                 const newAdminName = screen.querySelector('#pw-admin-name')?.value.trim();
+
+                // Duplicate name check (admin + all filled players)
+                const adminNameForCheck = newAdminName || state.currentPlayer;
+                const allNames = [adminNameForCheck, ...wiz.players.filter(r => r.name.trim()).map(r => r.name.trim())];
+                const lowerNames = allNames.map(n => n.toLowerCase());
+                if (lowerNames.some((n, i) => lowerNames.indexOf(n) !== i)) {
+                    showToast(getLang() === 'en' ? 'Duplicate names are not allowed.' : 'Doppelte Namen sind nicht erlaubt.', 'error');
+                    return;
+                }
+
                 if (newAdminName && newAdminName !== state.currentPlayer) {
                     try {
                         await api('PUT', `/users/${encodeURIComponent(state.currentPlayer)}`, { newName: newAdminName });
@@ -5479,8 +5489,9 @@ function getNowPlus10() {
                 await api('PUT', '/settings/setup_completed', { value: 'true' });
                 state.settings.setup_completed = 'true';
 
+                const totalPlayers = new Set([state.currentPlayer, ...filledPlayers.map(p => p.name.trim())]).size;
                 const parts = [];
-                if (filledPlayers.length) parts.push(`${filledPlayers.length} ${getLang() === 'en' ? 'players' : 'Spieler'}`);
+                if (totalPlayers) parts.push(`${totalPlayers} ${getLang() === 'en' ? 'players' : 'Spieler'}`);
                 if (wiz.coins > 0) parts.push(`${wiz.coins} Coins`);
                 if (wiz.game) parts.push(wiz.game);
 
