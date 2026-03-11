@@ -2077,11 +2077,12 @@ app.post('/api/games/enrich', async (req, res) => {
 
     // Only process games missing at least one enrichable field
     const games = db.prepare(`
-        SELECT name, rawg_id FROM games
+        SELECT name, rawg_id, cover_url FROM games
         WHERE status = 'approved'
         AND (cover_url = '' OR cover_url IS NULL
              OR platforms = '' OR platforms IS NULL
-             OR released = '' OR released IS NULL)
+             OR released = '' OR released IS NULL
+             OR shop_links = '' OR shop_links IS NULL OR shop_links = '[]')
     `).all();
 
     logger.info('RAWG enrich started: ' + games.length + ' games to process');
@@ -2128,8 +2129,8 @@ app.post('/api/games/enrich', async (req, res) => {
             const requirements = reqMin ? JSON.stringify({ minimum: reqMin }) : '';
 
             // Cover download
-            let coverUrl = '';
-            if (d.background_image) {
+            let coverUrl = g.cover_url || '';
+            if (d.background_image && !coverUrl) {
                 try {
                     const imgRes = await fetch(d.background_image);
                     const buf = await imgRes.arrayBuffer();
