@@ -356,20 +356,54 @@ app.post('/api/games/suggest', (req, res) => {
 
 // PUT /api/games/:name/approve
 app.put('/api/games/:name/approve', (req, res) => {
-    const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
+    const game = db.prepare('SELECT id, name, suggestedBy FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
     db.prepare('UPDATE games SET status = ? WHERE id = ?').run('approved', game.id);
+
+    // Notify interested players
+    const interested = db.prepare('SELECT player FROM game_players WHERE game_id = ?').all(game.id).map(r => r.player);
+    const toNotify = new Set(interested);
+    if (game.suggestedBy) toNotify.add(game.suggestedBy);
+    const payload = JSON.stringify({ game: game.name });
+    const now = Date.now();
+    toNotify.forEach(player => {
+        db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+            .run(player, 'game_approved', '', payload, now, 'active');
+    });
+
+    broadcast({ type: 'update' });
     res.json({ success: true });
 });
 
 // DELETE /api/games/:name
 app.delete('/api/games/:name', (req, res) => {
-    const game = db.prepare('SELECT id FROM games WHERE name = ?').get(req.params.name);
+    const game = db.prepare('SELECT id, name, suggestedBy, status FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
+
+    // Collect players to notify BEFORE deletion
+    const toNotify = new Set();
+    if (game.status === 'suggested') {
+        const interested = db.prepare('SELECT player FROM game_players WHERE game_id = ?').all(game.id).map(r => r.player);
+        interested.forEach(p => toNotify.add(p));
+        if (game.suggestedBy) toNotify.add(game.suggestedBy);
+    }
+
     db.transaction(() => {
         db.prepare('DELETE FROM game_players WHERE game_id = ?').run(game.id);
         db.prepare('DELETE FROM games WHERE id = ?').run(game.id);
     })();
+
+    // Send rejection notifications
+    if (toNotify.size > 0) {
+        const payload = JSON.stringify({ game: game.name });
+        const now = Date.now();
+        toNotify.forEach(player => {
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
+                .run(player, 'game_rejected', '', payload, now, 'active');
+        });
+    }
+
+    broadcast({ type: 'update' });
     res.json({ success: true });
 });
 

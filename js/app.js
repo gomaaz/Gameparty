@@ -2968,11 +2968,11 @@ function getNowPlus10() {
                             <div style="display:flex;align-items:center;gap:0.75rem">
                                 <span style="font-size:0.85rem;color:var(--text-secondary);flex:1">${t('item_' + item.id + '_name')}</span>
                                 <input type="number"
-                                    class="shop-price-input modal-input"
+                                    class="shop-price-input"
                                     data-item-id="${item.id}"
                                     value="${parseInt(settingsData['shop_price_' + item.id]) || item.cost}"
                                     min="0" max="9999" step="1"
-                                    style="width:5rem;text-align:right">
+                                    style="width:5rem;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.85rem">
                                 <span style="font-size:0.8rem;color:var(--text-muted)">Coins</span>
                             </div>
                         `).join('')}
@@ -4915,20 +4915,23 @@ function getNowPlus10() {
         const sorted = [...pendingNotifications].sort((a, b) => (b.ts || 0) - (a.ts || 0));
         const itemsHtml = [
             ...sorted.map(n => {
-                const isRob    = n.type === 'rob';
-                const isReview = n.type === 'review';
-                const isTeam   = n.isTeam;
-                const icon   = isRob ? '🥷' : isReview ? '🏆' : isTeam ? '👥' : '⚔️';
-                const accent = isRob ? 'red' : isReview ? 'gold' : null;
-                const title  = (isRob || isReview) ? n.title
+                const isRob       = n.type === 'rob';
+                const isReview    = n.type === 'review';
+                const isTeam      = n.isTeam;
+                const isGameEvent = n.type === 'game_approved' || n.type === 'game_rejected';
+                const icon   = isGameEvent ? (n.type === 'game_approved' ? '✅' : '❌')
+                             : isRob ? '🥷' : isReview ? '🏆' : isTeam ? '👥' : '⚔️';
+                const accent = isGameEvent ? (n.type === 'game_approved' ? 'gold' : 'red')
+                             : isRob ? 'red' : isReview ? 'gold' : null;
+                const title  = (isRob || isReview || isGameEvent) ? n.title
                              : isTeam ? (n.title || t('notif_team_challenge', n.challenger))
                              : t('notif_challenge_from', n.challenger);
-                const sub    = (!isRob && !isReview && (n.game || n.stakeStr))
+                const sub    = (!isRob && !isReview && !isGameEvent && (n.game || n.stakeStr))
                              ? `${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}` : '';
-                const navigate = !isRob ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : 'duel') : null;
+                const navigate = (!isRob && !isGameEvent) ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : 'duel') : null;
                 let actions = '';
-                if (isRob)         actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
-                else if (!isReview) actions = btnOk('notif-accept', `data-id="${n.id}"`) + btnNo('notif-reject', `data-id="${n.id}"`);
+                if (isRob || isGameEvent) actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
+                else if (!isReview)        actions = btnOk('notif-accept', `data-id="${n.id}"`) + btnNo('notif-reject', `data-id="${n.id}"`);
                 return itemHtml({ id: n.id, icon, title, sub, actions, accent, navigate, ts: n.ts });
             }),
             ...incomingActivities.map(a => {
@@ -5149,6 +5152,20 @@ function getNowPlus10() {
                             if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                         }
                         if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
+                    } catch {}
+                    continue; // Event bleibt bis Nutzer bestätigt
+                }
+                if (ev.type === 'game_approved' || ev.type === 'game_rejected') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        const notifId = 'game_ev_' + ev.id;
+                        if (!pendingNotifications.find(n => n.id === notifId)) {
+                            const titleKey = ev.type === 'game_approved' ? 'notif_game_approved' : 'notif_game_rejected';
+                            pendingNotifications.push({ id: notifId, evId: ev.id, type: ev.type, title: t(titleKey, data.game || ''), ts: ev.createdAt });
+                            showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                            updateBadge();
+                            if (getNotifPref('sound')) playSound(ev.type === 'game_approved' ? 'coin' : 'error');
+                        }
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
                 }

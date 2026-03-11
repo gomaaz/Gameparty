@@ -381,6 +381,8 @@ const TRANSLATIONS = {
         tc_payout_breakdown: 'Statement',
         tc_payout_stake: 'Stake per person',
         notif_tc_winner_review: '🏆 Winner set!',
+        notif_game_approved: 'Proposal for "{0}" was approved! 🎮',
+        notif_game_rejected: 'Proposal for "{0}" was rejected.',
 
         // --- Pickpocket Shop Items ---
         item_rob_coins_name: 'Coin Pickpocket',
@@ -925,6 +927,8 @@ const TRANSLATIONS = {
         tc_payout_breakdown: 'Abrechnung',
         tc_payout_stake: 'Einsatz/Person',
         notif_tc_winner_review: '🏆 Gewinner gesetzt!',
+        notif_game_approved: 'Vorschlag für "{0}" wurde angenommen! 🎮',
+        notif_game_rejected: 'Vorschlag für "{0}" wurde abgelehnt.',
 
         // --- Taschendieb Shop-Items ---
         item_rob_coins_name: 'Taschendieb Münzen',
