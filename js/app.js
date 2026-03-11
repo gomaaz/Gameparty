@@ -5657,7 +5657,6 @@ function getNowPlus10() {
                     updateHeader();
                     updateNavVisibility();
                     showToast(t('welcome', state.currentPlayer), 'gold');
-                    playSound('coin');
                     navigateTo('dashboard');
                     startChallengePoll();
                     if (!localStorage.getItem(`gameparty_firstlogin_${state.currentPlayer}`)) {
@@ -5784,7 +5783,6 @@ function getNowPlus10() {
             updateHeader();
             updateNavVisibility();
             showToast(t('welcome', playerName), result.role === 'admin' ? 'gold' : 'success');
-            playSound('coin');
 
             if (!localStorage.getItem(`gameparty_firstlogin_${playerName}`)) {
                 setTimeout(() => showFirstLoginModal(), 400);
