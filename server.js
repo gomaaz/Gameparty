@@ -189,6 +189,11 @@ try { db.prepare("ALTER TABLE team_challenges ADD COLUMN acceptances TEXT DEFAUL
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN challenge_id TEXT").run(); } catch {}
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN challenge_type TEXT").run(); } catch {}
 
+// ---- Migration: player slots for live_sessions ----
+try { db.prepare("ALTER TABLE live_sessions ADD COLUMN max_slots INT DEFAULT 0").run(); } catch {}
+try { db.prepare("ALTER TABLE proposals ADD COLUMN max_slots INT DEFAULT 0").run(); } catch {}
+try { db.prepare("ALTER TABLE live_session_players ADD COLUMN slot_number INT").run(); } catch {}
+
 // ---- Tabelle: duel_votes ----
 db.exec(`CREATE TABLE IF NOT EXISTS duel_votes (
     session_id TEXT,
@@ -1606,20 +1611,21 @@ app.put('/api/settings/:key', (req, res) => {
 app.get('/api/live-sessions', (req, res) => {
     const sessions = db.prepare('SELECT * FROM live_sessions ORDER BY startedAt DESC').all();
     sessions.forEach(s => {
-        s.players = db.prepare('SELECT player FROM live_session_players WHERE session_id = ? ORDER BY joinedAt ASC').all(s.id).map(r => r.player);
+        s.players = db.prepare('SELECT player, slot_number FROM live_session_players WHERE session_id = ? ORDER BY COALESCE(slot_number, 999) ASC, joinedAt ASC').all(s.id);
     });
     res.json(sessions);
 });
 
 // POST /api/live-sessions — Raum erstellen (status: lobby)
 app.post('/api/live-sessions', (req, res) => {
-    const { game, leader, medium = 'lan', account = null } = req.body;
+    const { game, leader, medium = 'lan', account = null, maxSlots = 0 } = req.body;
     if (!game || !leader) return res.status(400).json({ error: 'game und leader erforderlich' });
     const activeGame = getActiveSessionForPlayer(leader);
     if (activeGame) return res.status(400).json({ error: `Du bist bereits in einer laufenden Session: ${activeGame}` });
     const id = 'ls_' + Date.now();
-    db.prepare("INSERT INTO live_sessions (id, game, leader, status, medium, medium_account) VALUES (?, ?, ?, 'lobby', ?, ?)").run(id, game, leader, medium, account);
-    db.prepare('INSERT INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(id, leader, Date.now());
+    const slots = parseInt(maxSlots) || 0;
+    db.prepare("INSERT INTO live_sessions (id, game, leader, status, medium, medium_account, max_slots) VALUES (?, ?, ?, 'lobby', ?, ?, ?)").run(id, game, leader, medium, account, slots);
+    db.prepare('INSERT INTO live_session_players (session_id, player, joinedAt, slot_number) VALUES (?, ?, ?, 1)').run(id, leader, Date.now());
     res.json({ id });
 });
 
@@ -1652,14 +1658,21 @@ app.put('/api/live-sessions/:id/start', (req, res) => {
 // POST /api/live-sessions/:id/join — nur im lobby-Status möglich
 app.post('/api/live-sessions/:id/join', (req, res) => {
     const { player } = req.body;
-    const session = db.prepare('SELECT status, game, leader FROM live_sessions WHERE id = ?').get(req.params.id);
+    const session = db.prepare('SELECT status, game, leader, max_slots FROM live_sessions WHERE id = ?').get(req.params.id);
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
     if (session.status !== 'lobby') return res.status(400).json({ error: 'Session läuft bereits, kein Beitritt möglich' });
     if (session.leader === player) return res.status(400).json({ error: 'Leader kann nicht dem eigenen Raum beitreten' });
     const activeGame = getActiveSessionForPlayer(player);
     if (activeGame) return res.status(400).json({ error: `Du bist bereits in einer laufenden Session: ${activeGame}` });
+    const slots = parseInt(session.max_slots) || 0;
+    let slotNumber = null;
+    if (slots > 0) {
+        const taken = db.prepare('SELECT slot_number FROM live_session_players WHERE session_id = ?').all(req.params.id).map(r => r.slot_number);
+        slotNumber = Array.from({ length: slots }, (_, i) => i + 1).find(n => !taken.includes(n));
+        if (!slotNumber) return res.status(400).json({ error: 'Sitzung ist voll' });
+    }
     try {
-        db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(req.params.id, player, Date.now());
+        db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt, slot_number) VALUES (?, ?, ?, ?)').run(req.params.id, player, Date.now(), slotNumber);
     } catch {}
     res.json({ success: true });
 });

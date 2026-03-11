@@ -430,6 +430,36 @@ body {
     font-weight: 600;
 }
 
+/* ---- Session Slots ---- */
+.session-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.25rem 0;
+}
+
+.session-slot {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.slot-number {
+    min-width: 1.4rem;
+    text-align: right;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.slot-empty {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.35;
+    letter-spacing: 0.05em;
+}
+
 /* ---- Game Matcher ---- */
 .filter-bar {
     display: flex;
@@ -2646,6 +2676,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-session-end { background:none; border:1px solid var(--border-bright); color:var(--text-secondary); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .session-leader-badge { font-size:0.62rem; color:var(--accent-gold); border:1px solid var(--accent-gold-dim); border-radius:4px; padding:1px 5px; margin-right:0.3rem; vertical-align:middle; }
 .pending-approval-badge { font-size:0.75rem; color:#ff9800; padding:0.2rem 0; display:block; margin-top:0.3rem; }
+
+/* Session Slot List */
+.session-slots { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.4rem 0; }
+.session-slot  { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.slot-number   { color: var(--text-secondary); min-width: 1.5rem; font-size: 0.75rem; opacity: 0.6; }
+.slot-empty    { color: var(--text-secondary); opacity: 0.35; font-style: italic; font-size: 0.82rem; }
 
 .duel-vote-section {
     margin-top: 0.5rem;

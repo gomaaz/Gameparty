@@ -674,11 +674,25 @@ function getNowPlus10() {
             if (liveSessionsData.length > 0) {
                 liveSessionsHTML = liveSessionsData.map(s => {
                     const isLeader = s.leader === state.currentPlayer;
-                    const isInSession = s.players.includes(state.currentPlayer);
-                    const sortedPlayers = [s.leader, ...s.players.filter(p => p !== s.leader).sort()];
-                    let playersHTML = sortedPlayers.map(p =>
-                        `<span class="player-chip player-name-clickable" data-player-info="${p}">${p === s.leader ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p}</span>`
+                    const isInSession = s.players.some(p => p.player === state.currentPlayer);
+                    const sortedPlayerObjs = [
+                        s.players.find(p => p.player === s.leader) || { player: s.leader, slot_number: 1 },
+                        ...s.players.filter(p => p.player !== s.leader).sort((a, b) => a.player.localeCompare(b.player))
+                    ];
+                    let playersHTML = sortedPlayerObjs.map(p =>
+                        `<span class="player-chip player-name-clickable" data-player-info="${p.player}">${p.player === s.leader ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p.player}</span>`
                     ).join('');
+                    if (s.max_slots > 0) {
+                        const slotMap = {};
+                        s.players.forEach(p => { if (p.slot_number) slotMap[p.slot_number] = p.player; });
+                        const slotItems = [];
+                        for (let i = 1; i <= s.max_slots; i++) {
+                            const name = slotMap[i] || null;
+                            const leaderBadge = name === s.leader ? `<span class="session-leader-badge" title="${t('session_group_leader').replace(':','')}">GL</span>` : '';
+                            slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${leaderBadge}${name}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
+                        }
+                        playersHTML = `<div class="session-slots">${slotItems.join('')}</div>`;
+                    }
 
                     let statusBadge = '';
                     let actionsHTML = '';
@@ -692,7 +706,7 @@ function getNowPlus10() {
                         if (rate > 0) {
                             coinInfoHTML = `<div class="session-coin-rate">${rate} ${coinSvgIcon()} / min</div>`;
                         }
-                        if (!isInSession) {
+                        if (!isInSession && (s.max_slots === 0 || s.players.length < s.max_slots)) {
                             actionsHTML += `<button class="btn-session-join" data-sid="${s.id}" data-action="join">${t('btn_join')}</button>`;
                         } else if (!isLeader) {
                             actionsHTML += `<button class="btn-session-leave" data-sid="${s.id}" data-action="leave">${t('btn_leave')}</button>`;
@@ -770,14 +784,15 @@ function getNowPlus10() {
                         const isPaid = challengeStatus === 'paid';
                         const voterStatusHTML = !isPaid ? `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin:0.3rem 0;">${
                             (s.players || []).map(p => {
-                                const hasVoted = duelVotes.some(v => v.player === p);
-                                return `<span style="display:inline-flex;align-items:center;gap:0.25rem;font-size:0.8rem;padding:0.15rem 0.4rem;border-radius:var(--radius-sm);background:${hasVoted ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.05)'};color:${hasVoted ? 'var(--accent-green,#00e676)' : 'var(--text-secondary)'};border:1px solid ${hasVoted ? 'rgba(0,230,118,0.3)' : 'var(--border)'};">${p}${hasVoted ? ' ✓' : ' ⏳'}</span>`;
+                                const pName = p.player || p;
+                                const hasVoted = duelVotes.some(v => v.player === pName);
+                                return `<span style="display:inline-flex;align-items:center;gap:0.25rem;font-size:0.8rem;padding:0.15rem 0.4rem;border-radius:var(--radius-sm);background:${hasVoted ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.05)'};color:${hasVoted ? 'var(--accent-green,#00e676)' : 'var(--text-secondary)'};border:1px solid ${hasVoted ? 'rgba(0,230,118,0.3)' : 'var(--border)'};">${pName}${hasVoted ? ' ✓' : ' ⏳'}</span>`;
                             }).join('')
                         }</div>` : '';
 
                         let options;
                         if (s.challenge_type === '1v1') {
-                            options = s.players;
+                            options = s.players.map(p => p.player || p);
                         } else {
                             options = ['A', 'B'];
                         }
@@ -913,7 +928,7 @@ function getNowPlus10() {
             liveSessionsData.filter(s =>
                 s.status === 'running' &&
                 s.challenge_id &&
-                s.players && s.players.includes(state.currentPlayer) &&
+                s.players && s.players.some(p => (p.player || p) === state.currentPlayer) &&
                 !shownDuelStartSessions.has(s.id)
             ).forEach(s => {
                 shownDuelStartSessions.add(s.id);
@@ -3666,6 +3681,10 @@ function getNowPlus10() {
         const sortedGames = [...gamesData].sort((a, b) => getMatchCount(b) - getMatchCount(a));
         modal.innerHTML = `
             <div class="modal-title">${t('modal_create_room_title')}</div>
+            <div class="leader-edit-row" style="margin-bottom:0.5rem;align-items:center">
+                <span class="datetime-label" style="min-width:auto;margin-right:0.5rem">${t('slots_label') || 'Slots'}:</span>
+                <input type="number" id="ss-slots" min="1" max="99" placeholder="${t('slots_placeholder') || '∞'}" class="datetime-input" style="width:5rem;text-align:center">
+            </div>
             <input type="text" id="ss-search" class="search-input" placeholder="${t('search_game_placeholder')}" style="margin-bottom:0.5rem">
             <div class="game-select-grid" id="ss-game-grid" style="max-height:50vh;overflow-y:auto">
                 ${sortedGames.map(g => `<div class="game-select-item" data-game="${g.name}">${g.name}</div>`).join('')}
@@ -3681,10 +3700,11 @@ function getNowPlus10() {
         });
         modal.querySelectorAll('.game-select-item').forEach(el => {
             el.addEventListener('click', async () => {
+                const maxSlots = parseInt($('#ss-slots')?.value) || 0;
                 overlay.classList.remove('show');
                 showMediumSelectModal(el.dataset.game, async (medium, account) => {
                     try {
-                        await api('POST', '/live-sessions', { game: el.dataset.game, leader: state.currentPlayer, medium, account });
+                        await api('POST', '/live-sessions', { game: el.dataset.game, leader: state.currentPlayer, medium, account, maxSlots });
                         showToast(t('room_created', el.dataset.game), 'success');
                         renderDashboard();
                     } catch (e) { showToast(e.message || t('room_error'), 'error'); }
@@ -3711,6 +3731,10 @@ function getNowPlus10() {
                 <span class="datetime-label">${t('start_time_label')}</span>
                 <input type="date" id="ps-day" class="datetime-input" value="${defaultDate}" min="${defaultDate}" required style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
                 <input type="time" id="ps-time" class="datetime-input" value="${defaultTime}" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary)">
+            </div>
+            <div class="leader-edit-row" style="margin-top:0.5rem;align-items:center">
+                <span class="datetime-label" style="min-width:auto;margin-right:0.5rem">${t('slots_label') || 'Slots'}:</span>
+                <input type="number" id="ps-slots" min="1" max="99" placeholder="${t('slots_placeholder') || '∞'}" class="datetime-input" style="width:5rem;text-align:center">
             </div>
             <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
                 <button class="btn-propose" id="ps-confirm" disabled>${t('btn_plan')}</button>
@@ -3753,7 +3777,8 @@ function getNowPlus10() {
                         scheduledTime: time,
                         isNewGame: 0,
                         medium,
-                        medium_account: account
+                        medium_account: account,
+                        maxSlots: parseInt($('#ps-slots')?.value) || 0
                     });
                     showToast(t('session_planned', selectedGame), 'success');
                     renderDashboard();
