@@ -2093,7 +2093,7 @@ app.post('/api/games/enrich', async (req, res) => {
              OR shop_links = '' OR shop_links IS NULL OR shop_links = '[]')
     `).all();
 
-    logger.info('RAWG enrich started: ' + games.length + ' games to process');
+    logger.info(`RAWG enrich started: ${games.length} games to process`);
     let enriched = 0, skipped = 0;
 
     for (const g of games) {
@@ -2102,18 +2102,27 @@ app.post('/api/games/enrich', async (req, res) => {
 
             // Step 1: If no rawg_id, search by name first
             if (!rawgId) {
+                const searchUrl = `https://api.rawg.io/api/games?search=${encodeURIComponent(g.name)}&key=***&page_size=1`;
+                logger.debug(`[${g.name}] SEARCH → GET ${searchUrl.replace(/key=[^&]+/, 'key=***')}`);
                 const searchRes = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(g.name)}&key=${key}&page_size=1`);
                 const searchData = await searchRes.json();
                 rawgId = searchData.results?.[0]?.id;
-                if (!rawgId) { skipped++; continue; }
-                // Count search call
                 const sc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
                 db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(sc+1), String(sc+1));
+                if (!rawgId) {
+                    logger.debug(`[${g.name}] SEARCH → no results, skipping`);
+                    skipped++; continue;
+                }
+                logger.debug(`[${g.name}] SEARCH → found RAWG id=${rawgId} (${searchData.results[0]?.name}), HTTP ${searchRes.status}`);
+            } else {
+                logger.debug(`[${g.name}] rawg_id=${rawgId} already known, skipping search`);
             }
 
             // Step 2: Detail call
+            logger.debug(`[${g.name}] DETAIL → GET /api/games/${rawgId}`);
             const detailRes = await fetch(`https://api.rawg.io/api/games/${rawgId}?key=${key}`);
             const d = await detailRes.json();
+            logger.debug(`[${g.name}] DETAIL → HTTP ${detailRes.status}, slug="${d.slug}", metacritic=${d.metacritic ?? 'n/a'}, genres=${(d.genres||[]).map(x=>x.name).join('/')}, stores=${(d.stores||[]).length}, platforms=${(d.platforms||[]).length}`);
 
             // Count detail call
             const dc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
@@ -2128,6 +2137,7 @@ app.post('/api/games/enrich', async (req, res) => {
 
             // Shop links from RAWG stores
             const rawgStores = (d.stores || []).map(s => ({ platform: s.store.name, url: s.url })).filter(s => s.url);
+            logger.debug(`[${g.name}] shops=${rawgStores.map(s=>`${s.platform}(${s.url ? 'url✓' : 'no-url'})`).join(', ') || 'none'}`);
 
             // System requirements (prefer PC, fallback to first platform with requirements)
             const pcPlat = (d.platforms || []).find(p => p.platform.name === 'PC');
@@ -2135,10 +2145,12 @@ app.post('/api/games/enrich', async (req, res) => {
             const reqSource = pcPlat || anyReq;
             const reqMin = reqSource?.requirements_en?.minimum || reqSource?.requirements?.minimum || '';
             const requirements = reqMin ? JSON.stringify({ minimum: reqMin }) : '';
+            logger.debug(`[${g.name}] requirements=${reqMin ? 'found (PC=' + !!pcPlat + ')' : 'none'}`);
 
             // Cover download
             let coverUrl = g.cover_url || '';
             if (d.background_image && !coverUrl) {
+                logger.debug(`[${g.name}] cover → downloading ${d.background_image}`);
                 try {
                     const imgRes = await fetch(d.background_image);
                     const buf = await imgRes.arrayBuffer();
@@ -2146,7 +2158,14 @@ app.post('/api/games/enrich', async (req, res) => {
                     const filePath = path.join(coversDir, `${safeName}.jpg`);
                     fs.writeFileSync(filePath, Buffer.from(buf));
                     coverUrl = `/gamefiles/covers/${safeName}.jpg`;
-                } catch {}
+                    logger.debug(`[${g.name}] cover → saved ${coverUrl} (${buf.byteLength} bytes)`);
+                } catch (imgErr) {
+                    logger.debug(`[${g.name}] cover → download failed: ${imgErr.message}`);
+                }
+            } else if (coverUrl) {
+                logger.debug(`[${g.name}] cover → already have ${coverUrl}, skipping download`);
+            } else {
+                logger.debug(`[${g.name}] cover → no background_image in RAWG response`);
             }
 
             // Update DB
@@ -2158,11 +2177,11 @@ app.post('/api/games/enrich', async (req, res) => {
                     .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, g.name);
             }
 
-            logger.debug('RAWG enriched: ' + g.name);
+            logger.debug(`[${g.name}] ✓ enriched: genre="${genres}", released="${released}", cover=${coverUrl ? '✓' : '✗'}, shops=${rawgStores.length}`);
             enriched++;
             await new Promise(r => setTimeout(r, 250));
         } catch (e) {
-            logger.debug('RAWG no match: ' + g.name);
+            logger.debug(`RAWG error for "${g.name}": ${e.message}`);
             skipped++;
         }
     }
