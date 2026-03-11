@@ -2040,7 +2040,7 @@ function getNowPlus10() {
             const ratingBadge = g.rating ? `<span class="game-rating ${g.rating >= 75 ? 'good' : g.rating >= 50 ? 'ok' : 'bad'}">${g.rating}</span>` : '';
 
             return `
-                <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}">
+                <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}"${g.cover_url ? ` style="background-image:url('${g.cover_url}')"` : ''}>
                     ${checkbox}
                     ${coverHTML}
                     <div class="game-info">
