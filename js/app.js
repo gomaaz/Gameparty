@@ -1052,20 +1052,30 @@ function getNowPlus10() {
                     </div>
                 </div>`;
 
-            // Genre-Dropdown fuer Suggest-Form
-            const genreSelectHTML = `<select id="suggest-genre" class="genre-select">
-                <option value="">${t('select_genre')}</option>
-                ${genresData.map(g => `<option value="${g}">${g}</option>`).join('')}
-            </select>`;
-
             const suggestFormHTML = state.currentPlayer ? `
                 <div class="card">
                     <div class="card-title">${t('suggest_game')}</div>
-                    <div class="proposal-form">
-                        <input type="text" id="suggest-name" placeholder="${t('label_name')}">
-                        ${genreSelectHTML}
-                        <div class="proposal-row">
+                    <div class="proposal-form" id="suggest-form">
+                        <div>
+                            <input type="text" id="suggest-name" placeholder="${t('label_name')}" autocomplete="off">
+                            <div id="suggest-similar" class="suggest-similar" style="display:none"></div>
+                        </div>
+                        <div id="suggest-step-genre" class="sg-step" style="display:none">
+                            <div class="suggest-step-label">Genre</div>
+                            <div class="pw-genre-grid" id="suggest-genre-chips">
+                                ${genresData.map(g => `<button class="pw-genre-chip" data-genre="${g}">${g}</button>`).join('')}
+                            </div>
+                        </div>
+                        <div id="suggest-step-maxplayers" class="sg-step" style="display:none">
                             <input type="number" id="suggest-maxplayers" placeholder="${t('label_max_players')}" min="2" max="64" inputmode="numeric">
+                        </div>
+                        <div id="suggest-step-optional" class="sg-step" style="display:none">
+                            <div class="suggest-step-label">${t('optional') || 'Optional'}</div>
+                            <div id="suggest-shop-links">
+                                <input type="url" class="suggest-shop-link" placeholder="Shop-Link (z.B. Steam, GOG)" inputmode="url">
+                            </div>
+                            <button type="button" id="btn-add-shop-link" class="ls-btn-secondary">+ Shop-Link</button>
+                            <input type="url" id="suggest-preview-url" placeholder="YouTube Preview-Link" inputmode="url">
                         </div>
                         <button class="btn-propose" id="btn-suggest-game" disabled>${t('btn_suggest')}</button>
                     </div>
@@ -1128,17 +1138,76 @@ function getNowPlus10() {
             // --- Suggest Game ---
             const suggestNameEl = $('#suggest-name');
             if (suggestNameEl) {
+                let selectedGenre = '';
                 const suggestBtn = $('#btn-suggest-game');
+                const stepGenre = document.getElementById('suggest-step-genre');
+                const stepMaxPlayers = document.getElementById('suggest-step-maxplayers');
+                const stepOptional = document.getElementById('suggest-step-optional');
+                const similarEl = document.getElementById('suggest-similar');
+
+                function updateSuggestBtn() {
+                    const name = suggestNameEl.value.trim();
+                    const mp = (document.getElementById('suggest-maxplayers') || {}).value;
+                    suggestBtn.disabled = !(name && selectedGenre && mp);
+                }
+
                 suggestNameEl.addEventListener('input', () => {
-                    suggestBtn.disabled = !suggestNameEl.value.trim();
+                    const val = suggestNameEl.value.trim();
+                    stepGenre.style.display = val ? '' : 'none';
+                    if (!val) { stepMaxPlayers.style.display = 'none'; stepOptional.style.display = 'none'; }
+                    if (val.length >= 2) {
+                        const similar = state.games.filter(g =>
+                            g.name.toLowerCase().includes(val.toLowerCase()) &&
+                            g.name.toLowerCase() !== val.toLowerCase()
+                        );
+                        if (similar.length) {
+                            similarEl.textContent = `Ähnlich: ${similar.slice(0, 3).map(g => g.name).join(', ')}`;
+                            similarEl.style.display = '';
+                        } else {
+                            similarEl.style.display = 'none';
+                        }
+                    } else {
+                        similarEl.style.display = 'none';
+                    }
+                    updateSuggestBtn();
                 });
+
+                document.getElementById('suggest-genre-chips').addEventListener('click', e => {
+                    const chip = e.target.closest('.pw-genre-chip');
+                    if (!chip) return;
+                    document.querySelectorAll('#suggest-genre-chips .pw-genre-chip').forEach(c => c.classList.remove('selected'));
+                    chip.classList.add('selected');
+                    selectedGenre = chip.dataset.genre;
+                    stepMaxPlayers.style.display = '';
+                    updateSuggestBtn();
+                });
+
+                const maxPlayersEl = document.getElementById('suggest-maxplayers');
+                if (maxPlayersEl) {
+                    maxPlayersEl.addEventListener('input', () => {
+                        stepOptional.style.display = maxPlayersEl.value ? '' : 'none';
+                        updateSuggestBtn();
+                    });
+                }
+
+                document.getElementById('btn-add-shop-link').addEventListener('click', () => {
+                    const inp = document.createElement('input');
+                    inp.type = 'url';
+                    inp.className = 'suggest-shop-link';
+                    inp.placeholder = 'Shop-Link';
+                    inp.inputMode = 'url';
+                    inp.style.marginTop = '0.4rem';
+                    document.getElementById('suggest-shop-links').appendChild(inp);
+                });
+
                 suggestBtn.addEventListener('click', async () => {
                     const name = suggestNameEl.value.trim();
-                    const genre = ($('#suggest-genre') || {}).value || '';
-                    const maxPlayers = parseInt(($('#suggest-maxplayers') || {}).value) || 4;
-                    if (!name) return;
+                    const maxPlayers = parseInt((document.getElementById('suggest-maxplayers') || {}).value) || 4;
+                    const previewUrl = (document.getElementById('suggest-preview-url') || {}).value || '';
+                    const shopLinks = [...document.querySelectorAll('.suggest-shop-link')].map(i => i.value.trim()).filter(Boolean);
+                    if (!name || !selectedGenre) return;
                     try {
-                        await api('POST', '/games/suggest', { name, genre, maxPlayers, suggestedBy: state.currentPlayer });
+                        await api('POST', '/games/suggest', { name, genre: selectedGenre, maxPlayers, suggestedBy: state.currentPlayer, previewUrl, shopLinks });
                         if (isAdmin()) {
                             await api('PUT', `/games/${encodeURIComponent(name)}/approve`, { sessionCoins: 0 });
                         }

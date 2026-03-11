@@ -325,13 +325,13 @@ app.get('/api/games', (req, res) => {
 
 // POST /api/games/suggest
 app.post('/api/games/suggest', (req, res) => {
-    const { name, genre, maxPlayers, suggestedBy } = req.body;
+    const { name, genre, maxPlayers, suggestedBy, previewUrl, shopLinks } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
 
     const existing = db.prepare('SELECT id FROM games WHERE LOWER(name) = LOWER(?)').get(name);
     if (existing) return res.status(409).json({ error: 'Spiel existiert bereits' });
 
-    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy) VALUES (?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null);
+    const result = db.prepare('INSERT INTO games (name, maxPlayers, genre, status, suggestedBy, previewUrl, shop_links) VALUES (?, ?, ?, ?, ?, ?, ?)').run(name, maxPlayers || 4, genre || '', 'suggested', suggestedBy || null, previewUrl || '', JSON.stringify(shopLinks || []));
     if (suggestedBy) {
         db.prepare('INSERT OR IGNORE INTO game_players (game_id, player) VALUES (?, ?)').run(result.lastInsertRowid, suggestedBy);
     }

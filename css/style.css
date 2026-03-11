@@ -1985,6 +1985,40 @@ body {
     flex: 1;
 }
 
+/* Suggest game: progressive steps */
+.sg-step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.suggest-step-label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.suggest-similar {
+    font-size: 0.78rem;
+    color: var(--accent-gold);
+    padding: 0.2rem 0 0;
+    line-height: 1.4;
+}
+.suggest-shop-link {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    width: 100%;
+}
+.suggest-shop-link:focus {
+    outline: none;
+    border-color: var(--accent-purple);
+}
+
 .btn-propose {
     background: linear-gradient(135deg, var(--accent-purple), #8855dd);
     color: #fff;
