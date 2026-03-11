@@ -2124,17 +2124,8 @@ app.post('/api/games/enrich', async (req, res) => {
     const key = process.env.RAWG_API_KEY;
     if (!key) return res.status(500).json({ error: 'RAWG_API_KEY not set' });
 
-    // Only process games missing at least one enrichable field
-    const games = db.prepare(`
-        SELECT name, rawg_id, cover_url FROM games
-        WHERE status = 'approved'
-        AND (cover_url = '' OR cover_url IS NULL
-             OR platforms = '' OR platforms IS NULL
-             OR released = '' OR released IS NULL
-             OR description = '' OR description IS NULL
-             OR shop_links = '' OR shop_links IS NULL OR shop_links = '[]'
-             OR screenshots = '' OR screenshots IS NULL OR screenshots = '[]')
-    `).all();
+    // Process all approved games — full re-fetch and overwrite
+    const games = db.prepare(`SELECT name, rawg_id, cover_url FROM games WHERE status = 'approved'`).all();
 
     logger.info(`RAWG enrich started: ${games.length} games to process`);
     let enriched = 0, skipped = 0;
@@ -2215,11 +2206,6 @@ app.post('/api/games/enrich', async (req, res) => {
                 for (let i = 0; i < remoteUrls.length; i++) {
                     const localPath = path.join(screenshotsDir, `${safeName}-${i}.jpg`);
                     const localUrl = `/gamefiles/screenshots/${safeName}-${i}.jpg`;
-                    // Skip download if already exists
-                    if (fs.existsSync(localPath)) {
-                        screenshotUrls.push(localUrl);
-                        continue;
-                    }
                     try {
                         const imgRes = await fetch(remoteUrls[i]);
                         const buf = await imgRes.arrayBuffer();
@@ -2244,7 +2230,7 @@ app.post('/api/games/enrich', async (req, res) => {
 
             // Cover download
             let coverUrl = g.cover_url || '';
-            if (d.background_image && !coverUrl) {
+            if (d.background_image) {
                 logger.debug(`[${g.name}] cover → downloading ${d.background_image}`);
                 try {
                     const imgRes = await fetch(d.background_image);
@@ -2257,8 +2243,6 @@ app.post('/api/games/enrich', async (req, res) => {
                 } catch (imgErr) {
                     logger.debug(`[${g.name}] cover → download failed: ${imgErr.message}`);
                 }
-            } else if (coverUrl) {
-                logger.debug(`[${g.name}] cover → already have ${coverUrl}, skipping download`);
             } else {
                 logger.debug(`[${g.name}] cover → no background_image in RAWG response`);
             }
