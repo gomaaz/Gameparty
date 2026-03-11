@@ -463,6 +463,21 @@ const TRANSLATIONS = {
         btn_save_accounts: 'Save',
         btn_later: 'Later',
         firstlogin_title: 'Your Gaming Accounts',
+
+        // --- Help Panel ---
+        help_panel_title: '❓ Help',
+        help_coins_title: '🪙 Coins',
+        help_coins_body: 'Coins are earned by completing game sessions. An admin approves sessions and determines how many coins each player receives. You can spend coins in the Shop on special actions.',
+        help_challenges_title: '⚔️ Challenges',
+        help_challenges_body: '<b>1v1 Duel:</b> Challenge another present player. Both sides accept, then play the match and report the result.<br><br><b>Team Challenge:</b> Form two teams and compete. The winning team earns stars (controller points).',
+        help_sessions_title: '🎮 Sessions',
+        help_sessions_body: 'Go to <b>Games</b> and select a game. Start a session — other players can join. When the session ends, an admin closes it and distributes coins to all participants.',
+        help_shop_title: '🛒 Shop',
+        help_shop_body: 'Spend your earned coins on special actions — for example steal coins from other players or trigger special effects. Some items have a cooldown.',
+        help_accounts_title: '👤 Accounts',
+        help_accounts_body: 'Enter your gaming usernames (Steam, Discord, Battle.net, etc.) in your <b>Profile</b>. Other players can then copy your account names to add you in games.',
+        help_admin_title: '⚙️ Admin',
+        help_admin_body: 'As admin you can: manage players, approve game sessions, add/remove games, grant coins manually, view the full log, and configure settings via the gear menu.',
         firstlogin_sub: 'Enter your accounts — other players can copy them to connect with you.',
 
         // --- Medium Account Step ---
@@ -968,6 +983,21 @@ const TRANSLATIONS = {
         btn_save_accounts: 'Speichern',
         btn_later: 'Später',
         firstlogin_title: 'Deine Gaming-Accounts',
+
+        // --- Help Panel ---
+        help_panel_title: '❓ Hilfe',
+        help_coins_title: '🪙 Coins',
+        help_coins_body: 'Coins verdienst du durch abgeschlossene Spielsessions. Ein Admin genehmigt Sessions und legt fest, wie viele Coins jeder Teilnehmer erhält. Im Shop kannst du Coins für besondere Aktionen ausgeben.',
+        help_challenges_title: '⚔️ Challenges',
+        help_challenges_body: '<b>1v1 Duell:</b> Fordere einen anwesenden Spieler heraus. Beide nehmen an, spielen die Partie und melden das Ergebnis.<br><br><b>Team-Challenge:</b> Bilde zwei Teams und tretet gegeneinander an. Das Siegerteam erhält Stars (Controller-Punkte).',
+        help_sessions_title: '🎮 Sessions',
+        help_sessions_body: 'Gehe zu <b>Spiele</b> und wähle ein Spiel aus. Starte eine Session – andere Spieler können beitreten. Wenn die Session endet, schließt ein Admin sie und verteilt Coins an alle Teilnehmer.',
+        help_shop_title: '🛒 Shop',
+        help_shop_body: 'Gib deine Coins für besondere Aktionen aus – zum Beispiel Coins von anderen Spielern stehlen oder besondere Effekte auslösen. Manche Items haben einen Cooldown.',
+        help_accounts_title: '👤 Accounts',
+        help_accounts_body: 'Trage deine Gaming-Nutzernamen (Steam, Discord, Battle.net usw.) in deinem <b>Profil</b> ein. Andere Spieler können deine Account-Namen dann kopieren, um dich in Spielen hinzuzufügen.',
+        help_admin_title: '⚙️ Admin',
+        help_admin_body: 'Als Admin kannst du: Spieler verwalten, Spielsessions genehmigen, Spiele hinzufügen/entfernen, Coins manuell vergeben, das vollständige Log einsehen und Einstellungen über das Zahnrad-Menü konfigurieren.',
         firstlogin_sub: 'Trage deine Accounts ein – andere Spieler können sie kopieren, um dich zu finden.',
 
         // --- Medium Account Step ---

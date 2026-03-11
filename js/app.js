@@ -2542,6 +2542,58 @@ function getNowPlus10() {
     }
 
     // ---- Admin Panel ----
+    // ---- Help Panel ----
+    let helpPanelOpen = false;
+
+    function closeHelpPanel() {
+        helpPanelOpen = false;
+        $('#help-panel').classList.remove('open');
+        $('#help-panel-backdrop').classList.remove('open');
+        $('#help-btn').classList.remove('active');
+    }
+
+    function toggleHelpPanel() {
+        if (helpPanelOpen) { closeHelpPanel(); return; }
+        helpPanelOpen = true;
+        $('#help-btn').classList.add('active');
+        $('#help-panel-backdrop').classList.add('open');
+        renderHelpPanel();
+        $('#help-panel').classList.add('open');
+    }
+
+    function renderHelpPanel() {
+        const panel = $('#help-panel');
+        if (!panel) return;
+        const sections = [
+            { title: t('help_coins_title'),      body: t('help_coins_body') },
+            { title: t('help_challenges_title'),  body: t('help_challenges_body') },
+            { title: t('help_sessions_title'),    body: t('help_sessions_body') },
+            { title: t('help_shop_title'),        body: t('help_shop_body') },
+            { title: t('help_accounts_title'),    body: t('help_accounts_body') },
+            ...(isAdmin() ? [{ title: t('help_admin_title'), body: t('help_admin_body') }] : []),
+        ];
+        panel.innerHTML = `
+            <div class="help-panel-header">
+                <div class="help-panel-title">${t('help_panel_title')}</div>
+                <button class="help-panel-close" id="help-panel-close">✕</button>
+            </div>
+            <div class="help-panel-body">
+                ${sections.map(s => `
+                    <div class="help-accordion-item">
+                        <div class="help-accordion-header">
+                            <span>${s.title}</span>
+                            <span class="help-accordion-arrow">▼</span>
+                        </div>
+                        <div class="help-accordion-body">${s.body}</div>
+                    </div>
+                `).join('')}
+            </div>`;
+        panel.querySelector('#help-panel-close').addEventListener('click', closeHelpPanel);
+        panel.querySelectorAll('.help-accordion-header').forEach(h => {
+            h.addEventListener('click', () => h.closest('.help-accordion-item').classList.toggle('open'));
+        });
+    }
+
     let adminPanelOpen = false;
 
     function closeAdminPanel() {
@@ -3732,6 +3784,9 @@ function getNowPlus10() {
 
         const bellBtn = $('#notif-bell-btn');
         if (bellBtn) bellBtn.style.display = state.currentPlayer ? '' : 'none';
+
+        const helpBtn = $('#help-btn');
+        if (helpBtn) helpBtn.style.display = state.currentPlayer ? '' : 'none';
 
         const gearBtn = $('#admin-gear-btn');
         if (gearBtn) gearBtn.style.display = isAdmin() ? '' : 'none';
@@ -5829,6 +5884,10 @@ function getNowPlus10() {
         $('#header-player-btn').addEventListener('click', () => {
             showLoginModal();
         });
+
+        // Help panel
+        $('#help-btn').addEventListener('click', toggleHelpPanel);
+        $('#help-panel-backdrop').addEventListener('click', closeHelpPanel);
 
         // Admin gear panel
         $('#admin-gear-btn').addEventListener('click', toggleAdminPanel);
