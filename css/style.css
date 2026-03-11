@@ -504,16 +504,19 @@ body {
     cursor: default;
     position: relative;
     overflow: hidden;
-    background-size: cover;
-    background-position: center right;
-    background-repeat: no-repeat;
 }
 
-.game-item::before {
-    content: '';
+.game-cover-bg {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(to right, var(--bg-card) 50%, rgba(30,30,54,0.75) 100%);
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 50%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 40%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 40%);
     pointer-events: none;
     z-index: 0;
 }
@@ -527,18 +530,14 @@ body {
     background: #24243e;
 }
 
-.game-item:nth-child(odd)::before {
-    background: linear-gradient(to right, #24243e 50%, rgba(36,36,62,0.75) 100%);
-}
+
 
 .game-item:hover {
     background: #2c2c50;
     border-left-color: var(--accent-blue);
 }
 
-.game-item:hover::before {
-    background: linear-gradient(to right, #2c2c50 50%, rgba(44,44,80,0.75) 100%);
-}
+
 
 .game-item.no-match {
     opacity: 0.7;
@@ -2975,9 +2974,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     border-color: var(--accent-blue);
 }
 
-.game-item.selected::before {
-    background: linear-gradient(to right, rgba(14, 18, 40, 0.92) 50%, rgba(14,18,40,0.75) 100%);
-}
+
 
 /* ---- Alle-auswählen im Header ---- */
 #select-all-games {

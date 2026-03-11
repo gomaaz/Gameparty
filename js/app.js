@@ -2043,7 +2043,8 @@ function getNowPlus10() {
             const ratingBadge = g.rating ? `<span class="game-rating ${g.rating >= 75 ? 'good' : g.rating >= 50 ? 'ok' : 'bad'}">${g.rating}</span>` : '';
 
             return `
-                <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}"${g.cover_url ? ` style="background-image:url('${g.cover_url}')"` : ''}>
+                <div class="game-item ${noMatch} ${hasMatch} ${admin ? 'admin-row' : ''} ${selectedGames.has(g.name) ? 'selected' : ''}">
+                    ${g.cover_url ? `<div class="game-cover-bg" style="background-image:url('${g.cover_url}')"></div>` : ''}
                     ${checkbox}
                     <div class="game-info">
                         <div class="game-name" data-game="${g.name}"${g.description ? ` title="${g.description.replace(/"/g, '&quot;').slice(0, 200)}"` : ''}>
