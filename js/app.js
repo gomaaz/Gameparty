@@ -1139,6 +1139,9 @@ function getNowPlus10() {
                     if (!name) return;
                     try {
                         await api('POST', '/games/suggest', { name, genre, maxPlayers, suggestedBy: state.currentPlayer });
+                        if (isAdmin()) {
+                            await api('PUT', `/games/${encodeURIComponent(name)}/approve`, { sessionCoins: 0 });
+                        }
                         showToast(t('game_suggested', name), 'success');
                         playSound('coin');
                         renderMatcher();
@@ -1169,7 +1172,6 @@ function getNowPlus10() {
         if (admin) {
             adminHTML = `
                 <div class="leader-edit-row mt-1">
-                    <input type="number" class="approve-coins-input" data-game="${g.name}" placeholder="Coins/Session" min="0" max="10" inputmode="numeric" value="">
                     <button class="btn-approve" data-game="${g.name}">Freigeben</button>
                     <button class="btn-reject" data-game="${g.name}">&#x2716;</button>
                 </div>`;
@@ -1199,11 +1201,9 @@ function getNowPlus10() {
         container.querySelectorAll('#suggested-game-list .btn-approve').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const gameName = btn.dataset.game;
-                const coinsInput = container.querySelector(`.approve-coins-input[data-game="${gameName}"]`);
-                const coins = parseInt((coinsInput || {}).value) || 0;
                 try {
-                    await api('PUT', `/games/${encodeURIComponent(gameName)}/approve`, { sessionCoins: coins });
-                    showToast(`"${gameName}" ${t('btn_release')} (${fmt(coins)} C/Session)!`, 'success');
+                    await api('PUT', `/games/${encodeURIComponent(gameName)}/approve`, { sessionCoins: 0 });
+                    showToast(`"${gameName}" ${t('btn_release')}!`, 'success');
                     playSound('coin');
                     renderMatcher();
                 } catch (e) { console.error(e); }

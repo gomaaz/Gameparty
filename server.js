@@ -394,9 +394,11 @@ app.post('/api/games/:name/interest', (req, res) => {
 });
 
 // GET /api/genres
+const BASE_GENRES = ['Action', 'Egoshooter', 'Indie', 'Rollenspiel', 'Strategie', 'Taktik'];
+
 app.get('/api/genres', (req, res) => {
     const games = db.prepare("SELECT genre FROM games WHERE genre IS NOT NULL AND genre != ''").all();
-    const genres = new Set();
+    const genres = new Set(BASE_GENRES);
     games.forEach(g => {
         g.genre.split(',').forEach(genre => {
             const trimmed = genre.trim();
