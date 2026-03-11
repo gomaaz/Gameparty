@@ -1234,7 +1234,7 @@ body {
     bottom: 5rem;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 250;
+    z-index: 400;
     display: flex;
     flex-direction: column-reverse;
     align-items: center;
