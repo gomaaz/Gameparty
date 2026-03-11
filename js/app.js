@@ -5464,6 +5464,9 @@ function getNowPlus10() {
                     if (wiz.coins > 0) await api('POST', '/coins/add', { player: p.name.trim(), amount: wiz.coins, reason: 'Willkommens-Coins' });
                 }
                 if (wiz.coins > 0) await api('POST', '/coins/add', { player: state.currentPlayer, amount: wiz.coins, reason: 'Willkommens-Coins' });
+                // Mark all created players + admin as attending
+                const allAttendees = [state.currentPlayer, ...filledPlayers.map(p => p.name.trim())];
+                await api('PUT', '/attendees', { attendees: allAttendees });
                 if (wiz.game) {
                     try {
                         await api('POST', '/games/suggest', { name: wiz.game, genre: wiz.genres.join(', '), maxPlayers: 4, suggestedBy: state.currentPlayer });
