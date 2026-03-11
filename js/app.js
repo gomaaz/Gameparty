@@ -1706,7 +1706,11 @@ function getNowPlus10() {
             <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
         `;
         overlay.classList.add('show');
-        $('#modal-cancel').addEventListener('click', () => overlay.classList.remove('show'));
+        $('#modal-cancel').addEventListener('click', () => {
+            const iframe = modal.querySelector('iframe');
+            if (iframe) iframe.src = '';
+            overlay.classList.remove('show');
+        });
     }
 
     function filterGames() {
