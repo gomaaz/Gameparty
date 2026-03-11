@@ -3602,13 +3602,13 @@ function getNowPlus10() {
             <div style="text-align:center;font-size:1.5rem;font-weight:700;margin:0.75rem 0;color:var(--accent-gold);">
                 +${fmt(coins)} ${coinSvgIcon('1.2em')}
             </div>
-            <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.25rem;">
+            <div style="text-align:center;font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;">
                 🎮 ${data.game}
             </div>
-            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">
+            <div style="text-align:center;font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">
                 ${data.playerCount} ${t('session_payout_players')}
             </div>
-            ${data.durationMin ? `<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">⏱ ${data.durationMin} min &times; ${data.coinRate} ${coinSvgIcon('0.85em')} / min</div>` : ''}
+            ${data.durationMin ? `<div style="text-align:center;font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">⏱ ${data.durationMin} min &times; ${data.coinRate} ${coinSvgIcon('0.85em')} / min</div>` : ''}
             <div style="margin-bottom:0.75rem;"></div>
             <button class="btn-propose" id="session-payout-close">OK</button>
         `;
