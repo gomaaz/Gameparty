@@ -54,12 +54,13 @@ Spend Coins on actions that shake up the session:
 | Item | Cost | Description |
 |---|---|---|
 | Controller Point | 20 Coins | Permanent victory point on the leaderboard |
-| Choose Next Game | 3 Coins | You decide which game is played next |
+| Force Play | 5 Coins | Force one other player to join a game of your choice |
 | Skip Token | 2 Coins | Skip a game you don't want to play |
-| Force Play | 5 Coins | Force one other player to participate |
 | Drink Order | 3 Coins | Order someone to drink immediately |
+| Pickpocket (Coins) | 10 Coins | Steal 0–20 Coins from another player |
+| Pickpocket (Controller) | 50 Coins | Steal a Controller Point — 50% chance |
 
-Shop actions that target another player (Force Play, Drink Order) generate a **real-time notification** for the recipient, including an acknowledgement flow so the initiator knows the action was received.
+Shop items that target another player (Force Play, Drink Order, Pickpocket) generate a **real-time notification** for the recipient, including an acknowledgement flow so the initiator knows the action was received.
 
 ### Duels (1v1)
 Challenge another player head-to-head with Coins or Controller Points as stakes:
@@ -76,7 +77,7 @@ The full group gets in on the action — not just two players:
 - Set a **stake per person** — the input is automatically capped to the lowest balance in the current lineup, so no one can bet more than they have
 - A **live pot preview** updates as players are added or stakes are changed
 - Every participant must **individually accept** the challenge before it goes live; anyone can reject and cancel it
-- The creator is the **Gruppenleiter (GL)** — shown first in the team list with a gold GL badge, and the only one who can select the winning team
+- The creator is the **Group Leader (GL)** — shown first in the team list with a gold GL badge, and the only one who can select the winning team
 - When the winner is set, **all admins receive a notification** in their challenge panel with a direct link to the card
 - After the admin pays out, **every participant gets a payout modal** showing whether they won or lost, their earnings (or losses), and the full team breakdown
 - Remainder Coins that can't be split evenly go to the first winner in the list
@@ -102,10 +103,12 @@ A live panel in the header (⚔️ badge) collects all pending actions for the c
 Two session types, same unified interface:
 
 - **Spontaneous sessions** — start immediately, players join the lobby
-- **Planned sessions** — scheduled for a specific date/time, visible to all players
-- The group leader (GL) is always shown first in the player list, others sorted alphabetically
+- **Planned sessions** — scheduled for a specific date/time, visible to all players; can be created even while already in a running session
+- The **Group Leader (GL)** is always shown first with a gold GL badge
+- Optional **player slots** — the GL can set a fixed number of slots when creating a session; slots are numbered, the lowest free slot is always filled next, and a freed slot becomes available again immediately
 - Admin can end any session and trigger Coin payout
 - Players see the **live coin accumulator** ticking up second by second in running sessions
+- When a session ends and Coins are paid out, every participant receives a **session receipt modal** showing the game, number of players, duration, and coin rate — followed by the coin animation
 - Both session types use the same approval and payout flow
 
 ### Leaderboard
@@ -151,7 +154,7 @@ Edit `docker-compose.yml` and change `"3000:3000"` to `"8080:3000"`.
 
 ---
 
-### Option C — Reverse Proxy (Nginx Proxy Manager)
+### Option B — Reverse Proxy (Nginx Proxy Manager)
 
 If you expose Gameparty via a reverse proxy, SSE (live updates) requires specific configuration to work correctly. Without it, the proxy buffers the event stream and clients never receive real-time updates.
 
@@ -172,7 +175,7 @@ proxy_set_header Connection '';
 
 ---
 
-### Option B — Manual (Node.js)
+### Option C — Manual (Node.js)
 
 ```bash
 # Install dependencies
@@ -239,8 +242,7 @@ The admin panel includes a **Session Coins** configuration card:
 
 ---
 
-## Versioning & Changelog
+## Versioning
 
 Every change is committed with a version tag (`v2.3.x`).
-See [CHANGELOG.md](CHANGELOG.md) for the full history.
 All releases are available under [Releases](https://github.com/gomaaz/Gameparty/releases).
