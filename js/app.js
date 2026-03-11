@@ -5214,6 +5214,23 @@ function getNowPlus10() {
         let currentStep = 1;
         let currentData = {};
 
+        // Initialize screen structure once so the background animation doesn't reset on each step
+        screen.innerHTML = `
+            ${starsHtml}
+            <div class="ls-logo">
+                <span class="ls-logo-icon">🎮</span>
+                <span class="ls-logo-text">Gameparty</span>
+            </div>
+            <div class="ls-form"></div>
+            <div class="ls-version">v${state.version || ''}</div>
+            <button id="ls-lang-wiz" class="ls-lang-btn">${getLang() === 'en' ? '🇬🇧' : '🇩🇪'}</button>
+        `;
+        screen.classList.remove('hidden');
+        screen.querySelector('#ls-lang-wiz').addEventListener('click', () => {
+            setLang(getLang() === 'en' ? 'de' : 'en');
+            renderStep(currentStep, currentData);
+        });
+
         function renderStep(step, data = {}) {
             currentStep = step;
             currentData = data;
@@ -5247,22 +5264,9 @@ function getNowPlus10() {
                 `;
             }
 
-            screen.innerHTML = `
-                ${starsHtml}
-                <div class="ls-logo">
-                    <span class="ls-logo-icon">🎮</span>
-                    <span class="ls-logo-text">Gameparty</span>
-                </div>
-                <div class="ls-form">${formHtml}</div>
-                <div class="ls-version">v${state.version || ''}</div>
-                <button id="ls-lang-wiz" class="ls-lang-btn">${getLang() === 'en' ? '🇬🇧' : '🇩🇪'}</button>
-            `;
-            screen.classList.remove('hidden');
-
-            screen.querySelector('#ls-lang-wiz')?.addEventListener('click', () => {
-                setLang(getLang() === 'en' ? 'de' : 'en');
-                renderStep(currentStep, currentData);
-            });
+            screen.querySelector('.ls-form').innerHTML = formHtml;
+            const langBtn = screen.querySelector('#ls-lang-wiz');
+            if (langBtn) langBtn.textContent = getLang() === 'en' ? '🇬🇧' : '🇩🇪';
 
             if (step === 1) {
                 screen.querySelector('#sw-next').addEventListener('click', () => renderStep(2));
@@ -5336,30 +5340,34 @@ function getNowPlus10() {
 
         let currentStepFn = null;
 
+        // Initialize screen structure once so the background animation doesn't reset on each step
+        screen.innerHTML = `
+            ${starsHtml}
+            <div class="ls-logo">
+                <span class="ls-logo-icon">🎮</span>
+                <span class="ls-logo-text">Gameparty</span>
+            </div>
+            <div class="ls-form" style="max-height:70vh;overflow-y:auto;scrollbar-width:none"></div>
+            <div class="ls-version">v${state.version || ''}</div>
+            <button id="ls-lang-wiz" class="ls-lang-btn">${getLang() === 'en' ? '🇬🇧' : '🇩🇪'}</button>
+        `;
+        screen.classList.remove('hidden');
+        screen.querySelector('#ls-lang-wiz').addEventListener('click', () => {
+            const gameName = screen.querySelector('#pw-game-name');
+            if (gameName) wiz.game = gameName.value.trim();
+            const msg = screen.querySelector('#pw-message');
+            if (msg) wiz.message = msg.value.trim();
+            const coinsEl = screen.querySelector('#pw-coins');
+            if (coinsEl) wiz.coins = parseInt(coinsEl.value) || 0;
+            if (screen.querySelector('.pw-name')) savePlayerRows();
+            setLang(getLang() === 'en' ? 'de' : 'en');
+            if (currentStepFn) currentStepFn();
+        });
+
         function buildScreen(formHtml) {
-            screen.innerHTML = `
-                ${starsHtml}
-                <div class="ls-logo">
-                    <span class="ls-logo-icon">🎮</span>
-                    <span class="ls-logo-text">Gameparty</span>
-                </div>
-                <div class="ls-form" style="max-height:70vh;overflow-y:auto;scrollbar-width:none">${formHtml}</div>
-                <div class="ls-version">v${state.version || ''}</div>
-                <button id="ls-lang-wiz" class="ls-lang-btn">${getLang() === 'en' ? '🇬🇧' : '🇩🇪'}</button>
-            `;
-            screen.classList.remove('hidden');
-            screen.querySelector('#ls-lang-wiz')?.addEventListener('click', () => {
-                // Save current form values before re-render
-                const gameName = screen.querySelector('#pw-game-name');
-                if (gameName) wiz.game = gameName.value.trim();
-                const msg = screen.querySelector('#pw-message');
-                if (msg) wiz.message = msg.value.trim();
-                const coinsEl = screen.querySelector('#pw-coins');
-                if (coinsEl) wiz.coins = parseInt(coinsEl.value) || 0;
-                if (screen.querySelector('.pw-name')) savePlayerRows();
-                setLang(getLang() === 'en' ? 'de' : 'en');
-                if (currentStepFn) currentStepFn();
-            });
+            screen.querySelector('.ls-form').innerHTML = formHtml;
+            const langBtn = screen.querySelector('#ls-lang-wiz');
+            if (langBtn) langBtn.textContent = getLang() === 'en' ? '🇬🇧' : '🇩🇪';
         }
 
         function renderPlayerRows(rows) {
