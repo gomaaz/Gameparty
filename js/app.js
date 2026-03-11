@@ -5015,18 +5015,23 @@ function getNowPlus10() {
             `<div class="shooting_star" style="top:${top}%;left:${left}%;--delay:${delay}s;--duration:${duration}s"></div>`
         ).join('')}</div>`;
 
+        let currentStep = 1;
+        let currentData = {};
+
         function renderStep(step, data = {}) {
+            currentStep = step;
+            currentData = data;
             let formHtml = '';
             if (step === 1) {
                 formHtml = `
-                    <div class="ls-wizard-title">Willkommen bei Gameparty!</div>
-                    <div class="ls-wizard-sub">Richte deinen ersten Admin-Account ein, um loszulegen.</div>
-                    <button class="ls-btn" id="sw-next">Einrichten →</button>
+                    <div class="ls-wizard-title">${t('sw_welcome_title')}</div>
+                    <div class="ls-wizard-sub">${t('sw_welcome_sub')}</div>
+                    <button class="ls-btn" id="sw-next">${t('sw_start_btn')}</button>
                 `;
             } else if (step === 2) {
                 formHtml = `
-                    <div class="ls-wizard-title">Admin-Account erstellen</div>
-                    <input class="ls-input" id="sw-name" type="text" placeholder="Admin-Name" maxlength="32" autocomplete="off">
+                    <div class="ls-wizard-title">${t('sw_admin_title')}</div>
+                    <input class="ls-input" id="sw-name" type="text" placeholder="${t('sw_name_placeholder')}" maxlength="32" autocomplete="off">
                     <div class="ls-pin-section" id="sw-pin-section" style="display:none">
                         <div class="ls-selected-name" id="sw-selected-name"></div>
                         <div class="pin-input-row">
@@ -5040,9 +5045,9 @@ function getNowPlus10() {
                 `;
             } else if (step === 3) {
                 formHtml = `
-                    <div class="ls-wizard-title">✅ Bereit!</div>
-                    <div class="ls-wizard-sub">Admin <strong>${data.name}</strong> wurde angelegt.</div>
-                    <div class="ls-wizard-sub" style="font-size:0.85rem;opacity:0.6">Du wirst automatisch angemeldet…</div>
+                    <div class="ls-wizard-title">${t('sw_success_title')}</div>
+                    <div class="ls-wizard-sub">${t('sw_success_sub', `<strong>${data.name}</strong>`)}</div>
+                    <div class="ls-wizard-sub" style="font-size:0.85rem;opacity:0.6">${t('sw_autologin')}</div>
                 `;
             }
 
@@ -5054,8 +5059,14 @@ function getNowPlus10() {
                 </div>
                 <div class="ls-form">${formHtml}</div>
                 <div class="ls-version">v${state.version || ''}</div>
+                <button id="ls-lang-wiz" class="ls-lang-btn">${getLang() === 'en' ? '🇬🇧' : '🇩🇪'}</button>
             `;
             screen.classList.remove('hidden');
+
+            screen.querySelector('#ls-lang-wiz')?.addEventListener('click', () => {
+                setLang(getLang() === 'en' ? 'de' : 'en');
+                renderStep(currentStep, currentData);
+            });
 
             if (step === 1) {
                 screen.querySelector('#sw-next').addEventListener('click', () => renderStep(2));
@@ -5088,7 +5099,7 @@ function getNowPlus10() {
                                         renderStep(3, { name: adminName });
                                         setTimeout(() => attemptLogin(adminName, pin), 1500);
                                     } catch (err) {
-                                        errorEl.textContent = err.message || 'Fehler beim Anlegen';
+                                        errorEl.textContent = err.message || t('pin_wrong');
                                         freshDigits.forEach(d => { d.value = ''; });
                                         freshDigits[0].focus();
                                     }
@@ -5127,6 +5138,8 @@ function getNowPlus10() {
 
         const wiz = { coins: 0, players: [], game: '', genres: [], message: '' };
 
+        let currentStepFn = null;
+
         function buildScreen(formHtml) {
             screen.innerHTML = `
                 ${starsHtml}
@@ -5136,8 +5149,21 @@ function getNowPlus10() {
                 </div>
                 <div class="ls-form" style="max-height:70vh;overflow-y:auto;scrollbar-width:none">${formHtml}</div>
                 <div class="ls-version">v${state.version || ''}</div>
+                <button id="ls-lang-wiz" class="ls-lang-btn">${getLang() === 'en' ? '🇬🇧' : '🇩🇪'}</button>
             `;
             screen.classList.remove('hidden');
+            screen.querySelector('#ls-lang-wiz')?.addEventListener('click', () => {
+                // Save current form values before re-render
+                const gameName = screen.querySelector('#pw-game-name');
+                if (gameName) wiz.game = gameName.value.trim();
+                const msg = screen.querySelector('#pw-message');
+                if (msg) wiz.message = msg.value.trim();
+                const coinsEl = screen.querySelector('#pw-coins');
+                if (coinsEl) wiz.coins = parseInt(coinsEl.value) || 0;
+                if (screen.querySelector('.pw-name')) savePlayerRows();
+                setLang(getLang() === 'en' ? 'de' : 'en');
+                if (currentStepFn) currentStepFn();
+            });
         }
 
         function renderPlayerRows(rows) {
@@ -5155,15 +5181,16 @@ function getNowPlus10() {
             wiz.players = names.map((n, i) => ({ name: n.value, pin: pins[i]?.value || '1111' }));
         }
 
-        // Step 1: Spieler anlegen
+        // Step 1: Players
         function showStep1() {
+            currentStepFn = showStep1;
             if (!wiz.players.length) wiz.players = [{ name: '', pin: '1111' }, { name: '', pin: '1111' }];
             buildScreen(`
-                <div class="ls-wizard-title">Wer spielt mit?</div>
-                <div class="ls-wizard-sub">Gib die Namen und PINs aller Mitspieler ein.</div>
+                <div class="ls-wizard-title">${t('pw_players_title')}</div>
+                <div class="ls-wizard-sub">${t('pw_players_sub')}</div>
                 <div id="pw-player-list">${renderPlayerRows(wiz.players)}</div>
-                <button class="ls-btn-secondary" id="pw-add-player">+ Spieler hinzufügen</button>
-                <button class="ls-btn" id="pw-step1-next">Weiter →</button>
+                <button class="ls-btn-secondary" id="pw-add-player">${t('pw_add_player')}</button>
+                <button class="ls-btn" id="pw-step1-next">${t('pw_next')}</button>
             `);
             screen.querySelector('#pw-add-player').addEventListener('click', () => {
                 savePlayerRows();
@@ -5178,17 +5205,18 @@ function getNowPlus10() {
             });
         }
 
-        // Step 2: Erstes Spiel
+        // Step 2: First game
         function showStep2() {
+            currentStepFn = showStep2;
             buildScreen(`
-                <div class="ls-wizard-title">Erstes Spiel</div>
-                <div class="ls-wizard-sub">Welches Spiel soll aufgenommen werden?</div>
-                <input class="ls-input" id="pw-game-name" type="text" placeholder="Spielname" value="${wiz.game}" autocomplete="off">
+                <div class="ls-wizard-title">${t('pw_game_title')}</div>
+                <div class="ls-wizard-sub">${t('pw_game_sub')}</div>
+                <input class="ls-input" id="pw-game-name" type="text" placeholder="${t('pw_game_placeholder')}" value="${wiz.game}" autocomplete="off">
                 <div class="pw-genre-grid">${GAME_GENRES.map(g =>
                     `<button class="pw-genre-chip${wiz.genres.includes(g) ? ' selected' : ''}" data-genre="${g}">${g}</button>`
                 ).join('')}</div>
-                <button class="ls-btn" id="pw-step2-next">Weiter →</button>
-                <button class="ls-btn-secondary" id="pw-step2-skip">Überspringen</button>
+                <button class="ls-btn" id="pw-step2-next">${t('pw_next')}</button>
+                <button class="ls-btn-secondary" id="pw-step2-skip">${t('pw_skip')}</button>
             `);
             screen.querySelectorAll('.pw-genre-chip').forEach(btn => {
                 btn.addEventListener('click', () => btn.classList.toggle('selected'));
@@ -5204,14 +5232,15 @@ function getNowPlus10() {
             });
         }
 
-        // Step 3: Login-Nachricht
+        // Step 3: Login message
         function showStep3() {
+            currentStepFn = showStep3;
             buildScreen(`
-                <div class="ls-wizard-title">Login-Nachricht</div>
-                <div class="ls-wizard-sub">Erscheint unterhalb des Logos beim Login.</div>
-                <input class="ls-input" id="pw-message" type="text" placeholder="z.B. Willkommen zur LAN-Party!" value="${wiz.message}" autocomplete="off">
-                <button class="ls-btn" id="pw-step3-next">Weiter →</button>
-                <button class="ls-btn-secondary" id="pw-step3-skip">Überspringen</button>
+                <div class="ls-wizard-title">${t('pw_message_title')}</div>
+                <div class="ls-wizard-sub">${t('pw_message_sub')}</div>
+                <input class="ls-input" id="pw-message" type="text" placeholder="${t('pw_message_placeholder')}" value="${wiz.message}" autocomplete="off">
+                <button class="ls-btn" id="pw-step3-next">${t('pw_next')}</button>
+                <button class="ls-btn-secondary" id="pw-step3-skip">${t('pw_skip')}</button>
             `);
             screen.querySelector('#pw-step3-next').addEventListener('click', () => {
                 wiz.message = screen.querySelector('#pw-message').value.trim();
@@ -5223,13 +5252,14 @@ function getNowPlus10() {
             });
         }
 
-        // Step 4: Willkommens-Coins
+        // Step 4: Welcome coins
         function showStep4() {
+            currentStepFn = showStep4;
             buildScreen(`
-                <div class="ls-wizard-title">Startguthaben</div>
-                <div class="ls-wizard-sub">Wie viele Coins erhält jeder Spieler zu Beginn?<br><span style="font-size:0.82rem;opacity:0.6">Empfohlen: 0</span></div>
-                <input class="ls-input" id="pw-coins" type="number" min="0" max="9999" value="0" placeholder="0">
-                <button class="ls-btn" id="pw-step4-finish">Fertig →</button>
+                <div class="ls-wizard-title">${t('pw_coins_title')}</div>
+                <div class="ls-wizard-sub">${t('pw_coins_sub')}<br><span style="font-size:0.82rem;opacity:0.6">${t('pw_coins_recommended')}</span></div>
+                <input class="ls-input" id="pw-coins" type="number" min="0" max="9999" value="${wiz.coins}" placeholder="0">
+                <button class="ls-btn" id="pw-step4-finish">${t('pw_finish')}</button>
             `);
             screen.querySelector('#pw-step4-finish').addEventListener('click', async () => {
                 wiz.coins = parseInt(screen.querySelector('#pw-coins').value) || 0;
@@ -5238,9 +5268,10 @@ function getNowPlus10() {
         }
 
         async function finishWizard() {
+            currentStepFn = null;
             buildScreen(`
-                <div class="ls-wizard-title" style="font-size:1.1rem">⏳ Wird eingerichtet…</div>
-                <div class="ls-wizard-sub">Einen Moment bitte.</div>
+                <div class="ls-wizard-title" style="font-size:1.1rem">${t('pw_saving')}</div>
+                <div class="ls-wizard-sub">…</div>
             `);
             try {
                 const filledPlayers = wiz.players.filter(r => r.name.trim());
@@ -5259,14 +5290,14 @@ function getNowPlus10() {
                 state.settings.setup_completed = 'true';
 
                 const parts = [];
-                if (filledPlayers.length) parts.push(`${filledPlayers.length} Spieler`);
+                if (filledPlayers.length) parts.push(`${filledPlayers.length} ${getLang() === 'en' ? 'players' : 'Spieler'}`);
                 if (wiz.coins > 0) parts.push(`${wiz.coins} Coins`);
-                if (wiz.game) parts.push(`Spiel: ${wiz.game}`);
+                if (wiz.game) parts.push(wiz.game);
 
                 buildScreen(`
-                    <div class="ls-wizard-title">✅ Alles bereit!</div>
-                    <div class="ls-wizard-sub">${parts.join(' · ') || 'Setup abgeschlossen'}</div>
-                    <div class="ls-wizard-sub" style="font-size:0.82rem;opacity:0.5">Die App öffnet sich gleich…</div>
+                    <div class="ls-wizard-title">${t('pw_done_title')}</div>
+                    <div class="ls-wizard-sub">${parts.join(' · ') || '✓'}</div>
+                    <div class="ls-wizard-sub" style="font-size:0.82rem;opacity:0.5">${t('pw_done_sub')}</div>
                 `);
 
                 setTimeout(async () => {
@@ -5285,9 +5316,9 @@ function getNowPlus10() {
                 }, 2000);
             } catch (e) {
                 buildScreen(`
-                    <div class="ls-wizard-title">❌ Fehler</div>
-                    <div class="ls-wizard-sub">${e.message || 'Unbekannter Fehler'}</div>
-                    <button class="ls-btn" id="pw-retry">Erneut versuchen</button>
+                    <div class="ls-wizard-title">❌ Error</div>
+                    <div class="ls-wizard-sub">${e.message || '?'}</div>
+                    <button class="ls-btn" id="pw-retry">${t('pw_error_retry')}</button>
                 `);
                 screen.querySelector('#pw-retry').addEventListener('click', () => finishWizard());
             }

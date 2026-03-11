@@ -66,6 +66,7 @@ const TRANSLATIONS = {
         btn_start_session: '▶ Start Session',
         btn_start: 'Start',
         btn_cancel: 'Cancel',
+        btn_confirm: 'Confirm',
         btn_end: 'End',
 
         // --- Proposal Status Labels ---
@@ -463,6 +464,36 @@ const TRANSLATIONS = {
         // --- Medium Account Step ---
         medium_account_hint: 'What account link / nickname should others use to find you?',
         back: 'Back',
+
+        // --- Setup & Post-Login Wizard ---
+        sw_welcome_title: 'Welcome to Gameparty!',
+        sw_welcome_sub: 'Set up your first admin account to get started.',
+        sw_start_btn: 'Get Started →',
+        sw_admin_title: 'Create Admin Account',
+        sw_name_placeholder: 'Admin Name',
+        sw_create_btn: 'Create Admin',
+        sw_success_title: '✅ Ready!',
+        sw_success_sub: 'Admin "{0}" was created.',
+        sw_autologin: 'Logging you in automatically…',
+        pw_players_title: "Who's playing?",
+        pw_players_sub: 'Enter the names and PINs of all players.',
+        pw_add_player: '+ Add Player',
+        pw_next: 'Next →',
+        pw_game_title: 'First Game',
+        pw_game_sub: 'Which game should be added?',
+        pw_game_placeholder: 'Game name',
+        pw_skip: 'Skip',
+        pw_message_title: 'Welcome Message',
+        pw_message_sub: 'Appears below the logo on the login screen.',
+        pw_message_placeholder: 'e.g. Welcome to the LAN Party!',
+        pw_coins_title: 'Starting Balance',
+        pw_coins_sub: 'How many coins does each player start with?',
+        pw_coins_recommended: 'Recommended: 0',
+        pw_finish: 'Finish →',
+        pw_done_title: '✅ All ready!',
+        pw_done_sub: 'The app is opening…',
+        pw_saving: '⏳ Setting up…',
+        pw_error_retry: 'Try again',
     },
 
     de: {
@@ -528,6 +559,7 @@ const TRANSLATIONS = {
         btn_start_session: '▶ Session starten',
         btn_start: 'Starten',
         btn_cancel: 'Abbrechen',
+        btn_confirm: 'Bestätigen',
         btn_end: 'Beenden',
 
         // --- Proposal Status Labels ---
@@ -925,6 +957,36 @@ const TRANSLATIONS = {
         // --- Medium Account Step ---
         medium_account_hint: 'Welchen Account-Link / Nickname sollen andere verwenden?',
         back: 'Zurück',
+
+        // --- Setup & Post-Login Wizard ---
+        sw_welcome_title: 'Willkommen bei Gameparty!',
+        sw_welcome_sub: 'Richte deinen ersten Admin-Account ein, um loszulegen.',
+        sw_start_btn: 'Einrichten →',
+        sw_admin_title: 'Admin-Account erstellen',
+        sw_name_placeholder: 'Admin-Name',
+        sw_create_btn: 'Admin anlegen',
+        sw_success_title: '✅ Bereit!',
+        sw_success_sub: 'Admin "{0}" wurde angelegt.',
+        sw_autologin: 'Du wirst automatisch angemeldet…',
+        pw_players_title: 'Wer spielt mit?',
+        pw_players_sub: 'Gib die Namen und PINs aller Mitspieler ein.',
+        pw_add_player: '+ Spieler hinzufügen',
+        pw_next: 'Weiter →',
+        pw_game_title: 'Erstes Spiel',
+        pw_game_sub: 'Welches Spiel soll aufgenommen werden?',
+        pw_game_placeholder: 'Spielname',
+        pw_skip: 'Überspringen',
+        pw_message_title: 'Login-Nachricht',
+        pw_message_sub: 'Erscheint unterhalb des Logos beim Login.',
+        pw_message_placeholder: 'z.B. Willkommen zur LAN-Party!',
+        pw_coins_title: 'Startguthaben',
+        pw_coins_sub: 'Wie viele Coins erhält jeder Spieler zu Beginn?',
+        pw_coins_recommended: 'Empfohlen: 0',
+        pw_finish: 'Fertig →',
+        pw_done_title: '✅ Alles bereit!',
+        pw_done_sub: 'Die App öffnet sich gleich…',
+        pw_saving: '⏳ Wird eingerichtet…',
+        pw_error_retry: 'Erneut versuchen',
     }
 };
 

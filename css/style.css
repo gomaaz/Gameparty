@@ -3360,6 +3360,20 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     color: var(--text-muted);
     z-index: 1;
 }
+.ls-lang-btn {
+    position: absolute;
+    bottom: 1rem;
+    left: 1.5rem;
+    background: transparent;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    z-index: 2;
+    opacity: 0.7;
+    transition: opacity 0.2s, transform 0.1s;
+    line-height: 1;
+}
+.ls-lang-btn:hover { opacity: 1; transform: scale(1.15); }
 
 /* Setup Wizard */
 .ls-input {
