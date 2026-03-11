@@ -3682,3 +3682,37 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     color: var(--accent-gold);
 }
 
+
+/* Session History */
+.session-history-row {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.session-history-row:last-child { border-bottom: none; }
+.session-history-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+.session-history-game {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.session-history-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+.session-history-players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.2rem;
+}
+.session-history-coins {
+    font-size: 0.78rem;
+    color: var(--accent-gold);
+    margin-top: 0.1rem;
+}

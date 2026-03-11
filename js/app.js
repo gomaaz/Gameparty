@@ -571,7 +571,7 @@ function getNowPlus10() {
         const container = $('#view-dashboard');
 
         try {
-            const [coinsData, starsData, proposalsData, liveSessionsData, usersData, settingsData, challengesData, teamChallengesData] = await Promise.all([
+            const [coinsData, starsData, proposalsData, liveSessionsData, usersData, settingsData, challengesData, teamChallengesData, sessionsData] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
                 api('GET', '/proposals'),
@@ -579,7 +579,8 @@ function getNowPlus10() {
                 api('GET', '/users'),
                 api('GET', '/settings'),
                 api('GET', '/challenges'),
-                api('GET', '/team-challenges')
+                api('GET', '/team-challenges'),
+                api('GET', '/sessions')
             ]);
 
             // Load votes for all ended duel sessions
@@ -667,8 +668,33 @@ function getNowPlus10() {
             const plannedSessionsHTML = plannedProposals.map(renderProposalCard).join('') ||
                 `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_planned_sessions')}</div>`;
 
-            // Recent sessions moved to profile
+            // Recent sessions
             let sessionsHTML = '';
+            if (sessionsData && sessionsData.length > 0) {
+                const recentSessions = sessionsData.slice(0, 10);
+                const rows = recentSessions.map(s => {
+                    const date = new Date(s.timestamp);
+                    const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                    const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    const playerChips = (s.players || []).map(p =>
+                        `<span class="player-chip player-name-clickable" data-player-info="${p}">${p}</span>`
+                    ).join('');
+                    return `
+                        <div class="session-history-row">
+                            <div class="session-history-meta">
+                                <span class="session-history-game">🎮 ${s.game}</span>
+                                <span class="session-history-time">${dateStr} ${timeStr}</span>
+                            </div>
+                            <div class="session-history-players">${playerChips}</div>
+                            ${s.coinsPerPlayer > 0 ? `<div class="session-history-coins">+${fmt(s.coinsPerPlayer)} ${coinSvgIcon('0.9em')} ${t('session_payout_players')}</div>` : ''}
+                        </div>`;
+                }).join('');
+                sessionsHTML = `
+                    <div class="card">
+                        <div class="card-title">${t('session_history_title')}</div>
+                        ${rows}
+                    </div>`;
+            }
 
             let liveSessionsHTML = '';
             if (liveSessionsData.length > 0) {
