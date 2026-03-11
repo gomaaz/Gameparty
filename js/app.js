@@ -1686,13 +1686,13 @@ function getNowPlus10() {
         const maxLinks = Math.max(1, ...games.map(g => (g.shopLinks || []).length));
         const linkHeaders = [];
         for (let i = 1; i <= maxLinks; i++) { linkHeaders.push(`shoplink_label_${i}`, `shoplink_url_${i}`); }
-        const headers = ['name','genre','maxPlayers','lanRating','previewUrl', ...linkHeaders];
+        const headers = ['name','genre','maxPlayers','previewUrl', ...linkHeaders];
         const rows = [headers];
         games.forEach(g => {
             const links = g.shopLinks || [];
             const linkCols = [];
             for (let i = 0; i < maxLinks; i++) { linkCols.push(links[i]?.platform || '', links[i]?.url || ''); }
-            rows.push([g.name, g.genre || '', g.maxPlayers || 4, g.lanRating || 0, g.previewUrl || '', ...linkCols]);
+            rows.push([g.name, g.genre || '', g.maxPlayers || 4, g.previewUrl || '', ...linkCols]);
         });
         const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1703,10 +1703,10 @@ function getNowPlus10() {
 
     function downloadGameTemplate() {
         const csv = [
-            'name,genre,maxPlayers,lanRating,previewUrl,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2',
-            '"Mario Kart 8","Racing",4,1,"","Steam","https://store.steampowered.com/app/1234","","" ',
-            '"Rocket League","Sport",8,1,"","Epic Games","https://store.epicgames.com/p/rocket-league","Steam","https://store.steampowered.com/app/252950"',
-            '"Among Us","Party",15,0,"","","","",""',
+            'name,genre,maxPlayers,previewUrl,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2',
+            '"Mario Kart 8","Racing",4,"","Steam","https://store.steampowered.com/app/1234","",""',
+            '"Rocket League","Sport",8,"","Epic Games","https://store.epicgames.com/p/rocket-league","Steam","https://store.steampowered.com/app/252950"',
+            '"Among Us","Party",15,"","","","",""',
         ].join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -1810,18 +1810,18 @@ function getNowPlus10() {
 
     function showPreviewModal(url) {
         const videoId = extractYouTubeId(url);
+        if (!videoId) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+            return;
+        }
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
-        modal.innerHTML = videoId ? `
+        modal.innerHTML = `
             <div class="modal-title">${t('modal_preview_title')}</div>
             <div class="video-container">
                 <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1"
                     frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
             </div>
-            <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
-        ` : `
-            <div class="modal-title">${t('invalid_link')}</div>
-            <p style="padding:1rem;color:var(--text-secondary)">${t('invalid_link_text')}</p>
             <button class="modal-close-btn" id="modal-cancel">${t('modal_close')}</button>
         `;
         overlay.classList.add('show');

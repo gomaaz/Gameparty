@@ -501,11 +501,10 @@ app.post('/api/games/import', (req, res) => {
         return res.status(400).json({ error: 'games array required' });
     let imported = 0, updated = 0;
     const upsertStmt = db.prepare(
-        `INSERT INTO games (name, maxPlayers, genre, lanRating, previewUrl, status, shop_links) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO games (name, maxPlayers, genre, previewUrl, status, shop_links) VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(name) DO UPDATE SET
              maxPlayers = excluded.maxPlayers,
              genre = excluded.genre,
-             lanRating = excluded.lanRating,
              previewUrl = excluded.previewUrl,
              shop_links = excluded.shop_links`
     );
@@ -518,7 +517,6 @@ app.post('/api/games/import', (req, res) => {
                 g.name.trim(),
                 parseInt(g.maxPlayers) || 4,
                 g.genre?.trim() || '',
-                parseInt(g.lanRating) || 0,
                 g.previewUrl?.trim() || '',
                 'approved',
                 shopLinks
