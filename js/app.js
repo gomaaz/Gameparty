@@ -1467,6 +1467,13 @@ function getNowPlus10() {
                 return;
             }
 
+            const previewBtn = e.target.closest('.game-preview-btn');
+            if (previewBtn && previewBtn.dataset.preview) {
+                e.stopPropagation();
+                showPreviewModal(previewBtn.dataset.preview);
+                return;
+            }
+
             const nameLink = e.target.closest('.game-name-link');
             if (nameLink && nameLink.dataset.preview && !e.target.closest('a')) {
                 e.stopPropagation();
@@ -1917,6 +1924,7 @@ function getNowPlus10() {
                 </div>` : '';
 
             const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '<span></span>';
+            const previewBtn = g.previewUrl ? `<button class="game-preview-btn" data-preview="${g.previewUrl}" title="Vorschau">▶️</button>` : '';
 
             const shopLinksHTML = (g.shopLinks && g.shopLinks.length)
                 ? g.shopLinks.map(l => {
@@ -1945,6 +1953,7 @@ function getNowPlus10() {
                         </div>
                         <div class="game-players-row">${playerDots}</div>
                     </div>
+                    ${previewBtn}
                     ${createRoomBtn}
                     ${interestBtn}
                     ${adminBtns}
