@@ -15,6 +15,7 @@ services:
       - NODE_ENV=production
       - TZ=Europe/Berlin
       - RAWG_API_KEY=
+      - LOG_LEVEL=INFO             # OFF | INFO | DEBUG
       # Initial admin account (only used when the database is empty)
       - SEED_ADMIN_NAME=admin
       - SEED_ADMIN_PIN=1234

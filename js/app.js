@@ -3209,7 +3209,7 @@ function getNowPlus10() {
         const logInterval = setInterval(() => {
             if (document.getElementById('log-output')) loadLogs();
             else clearInterval(logInterval);
-        }, 10000);
+        }, 4000);
 
         // Freigabe Events
         panel.querySelectorAll('.freigabe-approve-btn').forEach(btn => {

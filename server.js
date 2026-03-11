@@ -11,11 +11,13 @@ const { version } = require('./package.json');
 // ---- Logger (define early, before DB) ----
 const logBuffer = [];
 const LOG_MAX = 500;
+const LOG_LEVEL = (process.env.LOG_LEVEL || 'INFO').toUpperCase(); // OFF | INFO | DEBUG
 function log(level, message) {
     const entry = { ts: new Date().toISOString(), level, message };
     logBuffer.push(entry);
     if (logBuffer.length > LOG_MAX) logBuffer.shift();
-    // Always print to stdout (Docker captures this)
+    if (LOG_LEVEL === 'OFF') return;
+    if (level === 'DEBUG' && LOG_LEVEL !== 'DEBUG') return;
     console[level === 'ERROR' ? 'error' : 'log'](`[${entry.ts}] [${level}] ${message}`);
 }
 const logger = {
