@@ -50,9 +50,11 @@ app.get('/', (req, res) => {
 
 app.use(express.static(path.join(__dirname)));
 
-// ---- RAWG: Static file serving for downloaded covers ----
+// ---- RAWG: Static file serving for downloaded covers + screenshots ----
 const coversDir = path.join(__dirname, 'gamefiles', 'covers');
+const screenshotsDir = path.join(__dirname, 'gamefiles', 'screenshots');
 fs.mkdirSync(coversDir, { recursive: true });
+fs.mkdirSync(screenshotsDir, { recursive: true });
 app.use('/gamefiles', express.static(path.join(__dirname, 'gamefiles')));
 
 // ---- Server-Sent Events ----
@@ -2201,15 +2203,33 @@ app.post('/api/games/enrich', async (req, res) => {
             }
             logger.debug(`[${g.name}] shops=${rawgStores.map(s=>`${s.platform}(${s.url ? 'url✓' : 'no-url'})`).join(', ') || 'none'}`);
 
-            // Fetch screenshots
+            // Fetch and download screenshots locally
             let screenshotUrls = [];
             try {
                 const ssRes = await fetch(`https://api.rawg.io/api/games/${rawgId}/screenshots?key=${key}&page_size=6`);
                 const ssData = await ssRes.json();
                 const ssc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
                 db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(ssc+1), String(ssc+1));
-                screenshotUrls = (ssData.results || []).slice(0, 6).map(s => s.image).filter(Boolean);
-                logger.debug(`[${g.name}] screenshots → ${screenshotUrls.length}`);
+                const remoteUrls = (ssData.results || []).slice(0, 6).map(s => s.image).filter(Boolean);
+                const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50);
+                for (let i = 0; i < remoteUrls.length; i++) {
+                    const localPath = path.join(screenshotsDir, `${safeName}-${i}.jpg`);
+                    const localUrl = `/gamefiles/screenshots/${safeName}-${i}.jpg`;
+                    // Skip download if already exists
+                    if (fs.existsSync(localPath)) {
+                        screenshotUrls.push(localUrl);
+                        continue;
+                    }
+                    try {
+                        const imgRes = await fetch(remoteUrls[i]);
+                        const buf = await imgRes.arrayBuffer();
+                        fs.writeFileSync(localPath, Buffer.from(buf));
+                        screenshotUrls.push(localUrl);
+                    } catch (dlErr) {
+                        logger.debug(`[${g.name}] screenshot ${i} download failed: ${dlErr.message}`);
+                    }
+                }
+                logger.debug(`[${g.name}] screenshots → ${screenshotUrls.length} downloaded locally`);
             } catch (ssErr) {
                 logger.debug(`[${g.name}] screenshots fetch failed: ${ssErr.message}`);
             }
