@@ -8,6 +8,22 @@ const path = require('path');
 const fs = require('fs');
 const { version } = require('./package.json');
 
+// ---- Logger (define early, before DB) ----
+const logBuffer = [];
+const LOG_MAX = 500;
+function log(level, message) {
+    const entry = { ts: new Date().toISOString(), level, message };
+    logBuffer.push(entry);
+    if (logBuffer.length > LOG_MAX) logBuffer.shift();
+    // Always print to stdout (Docker captures this)
+    console[level === 'ERROR' ? 'error' : 'log'](`[${entry.ts}] [${level}] ${message}`);
+}
+const logger = {
+    info:  (msg) => log('INFO',  msg),
+    error: (msg) => log('ERROR', msg),
+    debug: (msg) => log('DEBUG', msg),
+};
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -61,21 +77,32 @@ app.use('/api', (req, res, next) => {
     next();
 });
 
+// GET /api/logs
+app.get('/api/logs', (req, res) => {
+    const level = req.query.level || 'ALL';
+    const limit = Math.min(parseInt(req.query.limit || '200'), 500);
+    let entries = logBuffer;
+    if (level !== 'ALL') entries = entries.filter(e => e.level === level);
+    res.json(entries.slice(-limit).reverse()); // newest first
+});
+
 app.get('/api/events', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
     sseClients.add(res);
+    logger.debug('SSE client connected');
     // Heartbeat alle 25s damit die Verbindung nicht vom Browser gekappt wird
     const heartbeat = setInterval(() => res.write(':\n\n'), 25000);
-    req.on('close', () => { sseClients.delete(res); clearInterval(heartbeat); });
+    req.on('close', () => { sseClients.delete(res); clearInterval(heartbeat); logger.debug('SSE client disconnected'); });
 });
 
 // ---- Database Setup ----
 const db = new Database(process.env.DB_PATH || path.join(__dirname, 'gameparty.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+logger.info('Database initialized');
 
 db.exec(`
     CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, pin TEXT, role TEXT DEFAULT 'player');
@@ -351,6 +378,7 @@ app.post('/api/login', (req, res) => {
     if (!user || user.pin !== pin) {
         return res.status(401).json({ error: 'Falsche PIN' });
     }
+    logger.info('User login: ' + name);
     res.json({ success: true, role: user.role });
 });
 
@@ -371,6 +399,7 @@ app.post('/api/games/suggest', (req, res) => {
     if (suggestedBy) {
         db.prepare('INSERT OR IGNORE INTO game_players (game_id, player) VALUES (?, ?)').run(result.lastInsertRowid, suggestedBy);
     }
+    logger.info('Game suggested: ' + name);
     res.json({ success: true, id: result.lastInsertRowid });
 });
 
@@ -391,6 +420,7 @@ app.put('/api/games/:name/approve', (req, res) => {
             .run(player, 'game_approved', '', payload, now, 'active');
     });
 
+    logger.info('Game approved: ' + req.params.name);
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
@@ -423,6 +453,7 @@ app.delete('/api/games/:name', (req, res) => {
         });
     }
 
+    logger.info('Game deleted: ' + req.params.name);
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
@@ -551,6 +582,7 @@ app.post('/api/games/import', (req, res) => {
         }
     });
     tx();
+    logger.info('Games imported: ' + imported + ' new, ' + updated + ' updated');
     broadcast();
     res.json({ imported, updated });
 });
@@ -1173,6 +1205,7 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     try {
         _acceptTx6();
     } catch (e) {
+        logger.error('Duel session creation failed: ' + e.message);
         console.error('Duel session creation failed:', e);
         return res.status(500).json({ error: 'Session konnte nicht erstellt werden' });
     }
@@ -2013,6 +2046,7 @@ app.post('/api/rawg/search', async (req, res) => {
     if (!key) return res.json({ results: [], configured: false });
     const { query } = req.body;
     if (!query) return res.json({ results: [] });
+    logger.debug('RAWG search: ' + query);
     try {
         const r = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${key}&page_size=5`);
         const data = await r.json();
@@ -2027,6 +2061,7 @@ app.post('/api/rawg/search', async (req, res) => {
             released: g.released || '',
         })), configured: true });
     } catch (e) {
+        logger.error('RAWG search error: ' + e.message);
         res.json({ results: [], configured: true });
     }
 });
@@ -2047,6 +2082,7 @@ app.post('/api/games/enrich', async (req, res) => {
              OR released = '' OR released IS NULL)
     `).all();
 
+    logger.info('RAWG enrich started: ' + games.length + ' games to process');
     let enriched = 0, skipped = 0;
 
     for (const g of games) {
@@ -2111,18 +2147,28 @@ app.post('/api/games/enrich', async (req, res) => {
                     .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, g.name);
             }
 
+            logger.debug('RAWG enriched: ' + g.name);
             enriched++;
             await new Promise(r => setTimeout(r, 250));
         } catch (e) {
+            logger.debug('RAWG no match: ' + g.name);
             skipped++;
         }
     }
 
+    logger.info('RAWG enrich done: ' + enriched + ' enriched, ' + skipped + ' skipped');
     broadcast();
     res.json({ enriched, skipped });
 });
 
+// ---- Global Error Handler ----
+app.use((err, req, res, next) => {
+    logger.error('Unhandled error: ' + err.message);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
 // ---- Start Server ----
 app.listen(PORT, () => {
+    logger.info('Server started on port ' + PORT);
     console.log(`Gameparty Server laeuft auf http://localhost:${PORT}`);
 });

@@ -3851,3 +3851,18 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     line-height: 1.5;
     word-break: break-word;
 }
+
+/* ---- Log filter buttons ---- */
+.log-filter-btn {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.log-filter-btn:hover { background: rgba(255,255,255,0.06); }
+.log-filter-btn.active { background: rgba(102,153,255,0.15); color: #6699ff; border-color: rgba(102,153,255,0.4); }

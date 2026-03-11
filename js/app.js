@@ -3152,11 +3152,64 @@ function getNowPlus10() {
                     <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
                 </div>
 
+                <div class="card" id="log-card">
+                    <div class="card-title">📋 Logs</div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem">
+                        <button class="log-filter-btn active" data-level="ALL">ALL</button>
+                        <button class="log-filter-btn" data-level="INFO">INFO</button>
+                        <button class="log-filter-btn" data-level="ERROR">ERROR</button>
+                        <button class="log-filter-btn" data-level="DEBUG">DEBUG</button>
+                        <button class="ls-btn-secondary" id="btn-refresh-logs" style="margin-left:auto">↻ Refresh</button>
+                        <button class="ls-btn-secondary" id="btn-clear-logs">✕ Clear</button>
+                    </div>
+                    <div id="log-output" style="background:#0d0d1a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;max-height:280px;overflow-y:auto;font-family:monospace;font-size:0.68rem;line-height:1.5"></div>
+                </div>
+
                 <div style="text-align:center;margin-top:1rem;font-size:0.75rem;color:var(--text-secondary);opacity:0.5">v${state.version}</div>
 
             </div>`;
 
         $('#ap-close').addEventListener('click', closeAdminPanel);
+
+        // ---- Logs ----
+        let currentLogLevel = 'ALL';
+
+        async function loadLogs(level) {
+            if (level !== undefined) currentLogLevel = level;
+            const url = currentLogLevel === 'ALL' ? '/logs' : '/logs?level=' + currentLogLevel;
+            try {
+                const entries = await api('GET', url);
+                const output = panel.querySelector('#log-output');
+                if (!output) return;
+                if (!entries || !entries.length) { output.innerHTML = '<span style="color:#666">Keine Logs vorhanden</span>'; return; }
+                output.innerHTML = entries.map(e => {
+                    const color = e.level === 'ERROR' ? '#ff5555' : e.level === 'DEBUG' ? '#888' : '#6699ff';
+                    const time = e.ts.replace('T', ' ').replace(/\.\d+Z$/, '');
+                    return '<div><span style="color:#555">' + time + '</span> <span style="color:' + color + ';font-weight:700">[' + e.level + ']</span> <span style="color:#ccc">' + e.message + '</span></div>';
+                }).join('');
+            } catch(err) { /* silently ignore */ }
+        }
+
+        panel.querySelectorAll('.log-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                panel.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                loadLogs(btn.dataset.level);
+            });
+        });
+
+        panel.querySelector('#btn-refresh-logs')?.addEventListener('click', () => loadLogs());
+        panel.querySelector('#btn-clear-logs')?.addEventListener('click', () => {
+            const output = panel.querySelector('#log-output');
+            if (output) output.innerHTML = '<span style="color:#666">Logs geleert (nur Anzeige)</span>';
+        });
+
+        loadLogs('ALL');
+
+        const logInterval = setInterval(() => {
+            if (document.getElementById('log-output')) loadLogs();
+            else clearInterval(logInterval);
+        }, 10000);
 
         // Freigabe Events
         panel.querySelectorAll('.freigabe-approve-btn').forEach(btn => {
