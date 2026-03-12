@@ -2413,8 +2413,9 @@ app.put('/api/live-sessions/:id/end', (req, res) => {
     for (let c = cappedCount; c >= 2; c--) {
         if (playerMultipliersMap[String(c)] !== undefined) { playerRate = parseFloat(playerMultipliersMap[String(c)]); break; }
     }
-    const durationMin = sessionData?.startedAt ? Math.ceil((endedAt - sessionData.startedAt) / 60000) : 0;
-    const pendingCoins = Math.round(durationMin * playerRate);
+    const durationMinRaw = sessionData?.startedAt ? (endedAt - sessionData.startedAt) / 60000 : 0;
+    const durationMin = Math.round(durationMinRaw);
+    const pendingCoins = Math.round(durationMinRaw * playerRate);
     db.prepare("UPDATE live_sessions SET status = 'ended', endedAt = ?, pending_coins = ?, duration_min = ?, coin_rate = ? WHERE id = ?").run(endedAt, pendingCoins, durationMin, playerRate, req.params.id);
     res.json({ success: true });
 });
