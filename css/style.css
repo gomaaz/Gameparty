@@ -2763,6 +2763,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-session-join { background:none; border:1px solid var(--accent-green-dim); color:var(--accent-green); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .btn-session-leave { background:none; border:1px solid var(--accent-red-dim); color:var(--accent-red); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .btn-session-start { background:none; border:1px solid var(--accent-blue-dim,#2255aa); color:#6699ff; border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; font-weight:600; }
+.session-collect-btn { padding: 10px 12px; }
 .btn-session-end { background:none; border:1px solid var(--border-bright); color:var(--text-secondary); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .session-leader-badge { font-size:0.62rem; color:var(--accent-gold); border:1px solid var(--accent-gold-dim); border-radius:4px; padding:1px 5px; margin-right:0.3rem; vertical-align:middle; position:relative; cursor:default; }
 .session-leader-badge[data-tooltip]:hover::after {
