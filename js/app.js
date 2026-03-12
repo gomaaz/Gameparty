@@ -803,7 +803,7 @@ function getNowPlus10() {
                             }
                         }
                         if (s.challenge_id && (isLeader || isAdmin())) {
-                            actionsHTML += `<button class="btn-danger duel-running-cancel-btn" data-sid="${s.id}" style="font-size:0.8rem;padding:0.3rem 0.7rem;margin-left:auto">🗑️ ${t('btn_cancel')}</button>`;
+                            actionsHTML += `<button class="btn-danger duel-running-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px;margin-left:auto">${t('btn_cancel')}</button>`;
                         }
                     } else if (s.status === 'ended' && s.challenge_id) {
                         // Duel session — show voting UI instead of admin approval
