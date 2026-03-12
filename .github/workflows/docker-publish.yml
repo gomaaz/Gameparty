@@ -59,23 +59,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Extract changelog for this tag
-        if: startsWith(github.ref, 'refs/tags/')
-        id: changelog
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          NOTES=$(awk "/^## v${VERSION}/,/^## v[0-9]/" CHANGELOG.md | sed '1d' | sed '/^## v[0-9]/d' | sed '/^$/d')
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          body: ${{ steps.changelog.outputs.notes }}
-          make_latest: true
-
       - name: Update Docker Hub description
         continue-on-error: true
         uses: peter-evans/dockerhub-description@v4
