@@ -3121,6 +3121,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     border-color: var(--accent-red-dim); font-size: 0.9rem;
 }
 .notif-btn-no:hover { background: rgba(255,68,68,0.25); }
+.notif-session-collect { width: auto; padding: 0 0.6rem; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
 .notif-accent-red {
     background: rgba(255,68,68,0.06);
     border-left: 3px solid var(--accent-red);
