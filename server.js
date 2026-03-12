@@ -2464,6 +2464,8 @@ app.put('/api/live-sessions/:id/collect', (req, res) => {
         db.prepare('UPDATE live_sessions SET sessionCollected = ? WHERE id = ?').run(newCollected, req.params.id);
     });
     collectTx();
+    // Delete the session_payout player_event for this player so the bell notification disappears
+    db.prepare("DELETE FROM player_events WHERE target = ? AND type = 'session_payout' AND json_extract(message, '$.sessionId') = ?").run(player, req.params.id);
     // Check if all players have now collected
     const newCollectedArr = [...sessionCollected, player];
     if (newCollectedArr.length >= allPlayers.length) {
