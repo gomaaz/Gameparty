@@ -2242,7 +2242,7 @@ app.get('/api/player-events/:player', (req, res) => {
 app.get('/api/activities/:player', (req, res) => {
     const player = req.params.player;
     const incoming = db.prepare(
-        "SELECT * FROM player_events WHERE target = ? AND type IN ('force_play', 'drink_order') ORDER BY CASE WHEN status = 'active' THEN 0 ELSE 1 END, createdAt ASC"
+        "SELECT * FROM player_events WHERE target = ? AND type IN ('force_play', 'drink_order', 'session_payout') AND status = 'active' ORDER BY createdAt ASC"
     ).all(player);
     const outgoing = db.prepare(
         "SELECT * FROM player_events WHERE from_player = ? AND type IN ('force_play', 'drink_order') ORDER BY createdAt DESC"

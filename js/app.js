@@ -5962,10 +5962,20 @@ function getNowPlus10() {
         }
     }
 
+    let _activityBadgeCount = 0;
+    async function refreshActivityBadge() {
+        if (!state.currentPlayer) return;
+        try {
+            const data = await api('GET', `/activities/${encodeURIComponent(state.currentPlayer)}`);
+            _activityBadgeCount = (data.incoming || []).filter(a => a.status === 'active').length;
+        } catch { _activityBadgeCount = 0; }
+        updateBadge();
+    }
+
     function updateBadge() {
         const badge = $('#notif-badge');
         if (!badge) return;
-        const count = pendingNotifications.length;
+        const count = pendingNotifications.length + _activityBadgeCount;
         badge.textContent = count;
         badge.style.display = count > 0 ? '' : 'none';
     }
@@ -6287,11 +6297,7 @@ function getNowPlus10() {
                     continue;
                 }
                 if (ev.type === 'session_payout') {
-                    try {
-                        const data = JSON.parse(ev.message);
-                        showSessionPayoutModal(data);
-                    } catch {}
-                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    // Handled via notification bell — event stays in DB until player collects
                     continue;
                 }
                 if (ev.type === 'tc_winner_review') {
@@ -6467,6 +6473,7 @@ function getNowPlus10() {
                 if (getNotifPref('sound')) playSound('challenge');
             }
         } catch (e) { /* Polling-Fehler ignorieren */ }
+        refreshActivityBadge();
     }
 
     function refreshActiveView() {
