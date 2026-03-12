@@ -2153,7 +2153,7 @@ app.post('/api/games/enrich', async (req, res) => {
     // Process all approved games — full re-fetch and overwrite
     const { name: singleName } = req.body;
     const games = singleName
-        ? db.prepare(`SELECT name, rawg_id, cover_url FROM games WHERE name = ?`).all(singleName)
+        ? db.prepare(`SELECT name, rawg_id, cover_url FROM games WHERE LOWER(name) = LOWER(?)`).all(singleName)
         : db.prepare(`SELECT name, rawg_id, cover_url FROM games WHERE status = 'approved'`).all();
 
     logger.info(`RAWG enrich started: ${games.length} games to process`);
@@ -2173,7 +2173,18 @@ app.post('/api/games/enrich', async (req, res) => {
                 const sc = parseInt(db.prepare("SELECT value FROM settings WHERE key='rawg_calls_total'").get()?.value || '0');
                 db.prepare("INSERT INTO settings (key,value) VALUES ('rawg_calls_total',?) ON CONFLICT(key) DO UPDATE SET value=?").run(String(sc+1), String(sc+1));
                 if (!rawgId) {
-                    logger.debug(`[${g.name}] SEARCH → no results, skipping`);
+                    logger.debug(`[${g.name}] SEARCH → no results, checking disk for existing screenshots`);
+                    const safeNameFallback = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50);
+                    const existingScreenshots = [];
+                    for (let i = 0; i < 6; i++) {
+                        const lp = path.join(screenshotsDir, `${safeNameFallback}-${i}.jpg`);
+                        if (fs.existsSync(lp)) existingScreenshots.push(`/gamefiles/screenshots/${safeNameFallback}-${i}.jpg`);
+                        else break;
+                    }
+                    if (existingScreenshots.length > 0) {
+                        db.prepare('UPDATE games SET screenshots=? WHERE name=?').run(JSON.stringify(existingScreenshots), g.name);
+                        logger.debug(`[${g.name}] registered ${existingScreenshots.length} existing screenshots from disk (no RAWG match)`);
+                    }
                     skipped++; continue;
                 }
                 logger.debug(`[${g.name}] SEARCH → found RAWG id=${rawgId} (${searchData.results[0]?.name}), HTTP ${searchRes.status}`);
