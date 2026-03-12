@@ -2231,11 +2231,10 @@ function getNowPlus10() {
 
         // Status badge like live-session-card
         let statusBadge = '';
-        const proposalRateStr = proposalRate > 0 ? `<span class="session-coin-rate">${proposalRate} ${coinSvgIcon()} / min</span>` : '';
         if (p.status === 'pending') {
-            statusBadge = `<div style="color:var(--text-secondary);font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem"><span>${t('status_pending')}</span>${proposalRateStr}</div>`;
+            statusBadge = `<span style="color:var(--text-secondary);font-size:0.8rem">${t('status_pending')}</span>`;
         } else if (p.status === 'approved') {
-            statusBadge = `<div style="color:var(--accent-green);font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem"><span>${t('status_approved')}</span>${proposalRateStr}</div>`;
+            statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_approved')}</span>`;
         } else if (p.status === 'active') {
             const initialMins0 = p.startedAt ? Math.floor((Date.now() - p.startedAt) / 60000) : 0;
             statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('status_active')} · <span class="session-runtime" data-started-at="${p.startedAt || 0}">${initialMins0} Min.</span></span>`;
@@ -2259,6 +2258,13 @@ function getNowPlus10() {
         let coinRateHTML = '';
         const proposalPlayerCount = p.players.length;
         const proposalRate = getPlayerRate(proposalPlayerCount);
+        const proposalRateStr = proposalRate > 0 ? `<span class="session-coin-rate">${proposalRate} ${coinSvgIcon()} / min</span>` : '';
+        // Patch status badge with rate now that proposalRate is defined
+        if (p.status === 'pending') {
+            statusBadge = `<div style="color:var(--text-secondary);font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem"><span>${t('status_pending')}</span>${proposalRateStr}</div>`;
+        } else if (p.status === 'approved') {
+            statusBadge = `<div style="color:var(--accent-green);font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem"><span>${t('status_approved')}</span>${proposalRateStr}</div>`;
+        }
         if (p.status === 'active' && proposalRate > 0 && p.startedAt) {
             const initialMinutes = (Date.now() - p.startedAt) / 60000;
             const initialCoins = Math.ceil(initialMinutes * proposalRate);
