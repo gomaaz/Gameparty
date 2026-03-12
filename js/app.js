@@ -740,7 +740,7 @@ function getNowPlus10() {
 
                     if (s.status === 'lobby') {
                         const rateStr = rate > 0 ? `<span class="session-coin-rate">${rate} ${coinSvgIcon()} / min</span>` : '';
-                        statusBadge = `<div style="color:#6699ff;font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem">${s.challenge_id ? `<span>⚔️ ${t('duel_label')}</span>` : ''}<span>${t('session_lobby')}</span>${rateStr}</div>`;
+                        statusBadge = `<div class="status-badge-column" style="color:#6699ff">${s.challenge_id ? `<span>⚔️ ${t('duel_label')}</span>` : ''}<span>${t('session_lobby')}</span>${rateStr}</div>`;
                         if (!isInSession && (s.max_slots === 0 || s.players.length < s.max_slots)) {
                             actionsHTML += `<button class="btn-session-join" data-sid="${s.id}" data-action="join">${t('btn_join')}</button>`;
                         } else if (!isLeader) {
@@ -992,13 +992,9 @@ function getNowPlus10() {
             // Build "Abholbereit" section for released sessions where current player hasn't collected yet
             let releasedSessionsHTML = '';
             if (liveSessionsData.length > 0 && state.currentPlayer) {
-                const releasedForMe = liveSessionsData.filter(s => {
-                    if (s.status !== 'released') return false;
-                    const isInSession = s.players.some(p => (p.player || p) === state.currentPlayer);
-                    if (!isInSession) return false;
-                    const collected = JSON.parse(s.sessionCollected || '[]');
-                    return !collected.includes(state.currentPlayer);
-                });
+                const releasedForMe = liveSessionsData
+                    .filter(s => s.status === 'released' && s.players.some(p => (p.player || p) === state.currentPlayer))
+                    .filter(s => !JSON.parse(s.sessionCollected || '[]').includes(state.currentPlayer));
                 releasedSessionsHTML = releasedForMe.map(s => {
                     const amounts = JSON.parse(s.sessionPayoutAmounts || '{}');
                     const myCoins = amounts[state.currentPlayer] || 0;
@@ -2226,11 +2222,7 @@ function getNowPlus10() {
 
         // Status badge like live-session-card
         let statusBadge = '';
-        if (p.status === 'pending') {
-            statusBadge = `<span style="color:var(--text-secondary);font-size:0.8rem">${t('status_pending')}</span>`;
-        } else if (p.status === 'approved') {
-            statusBadge = `<span style="color:var(--accent-green);font-size:0.8rem">${t('status_approved')}</span>`;
-        } else if (p.status === 'active') {
+        if (p.status === 'active') {
             const initialMins0 = p.startedAt ? Math.floor((Date.now() - p.startedAt) / 60000) : 0;
             statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('status_active')} · <span class="session-runtime" data-started-at="${p.startedAt || 0}">${initialMins0} Min.</span></span>`;
         } else if (p.status === 'completed' && !p.coinsApproved) {
@@ -2256,9 +2248,9 @@ function getNowPlus10() {
         const proposalRateStr = proposalRate > 0 ? `<span class="session-coin-rate">${proposalRate} ${coinSvgIcon()} / min</span>` : '';
         // Patch status badge with rate now that proposalRate is defined
         if (p.status === 'pending') {
-            statusBadge = `<div style="color:var(--text-secondary);font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem"><span>${t('status_pending')}</span>${proposalRateStr}</div>`;
+            statusBadge = `<div class="status-badge-column" style="color:var(--text-secondary)"><span>${t('status_pending')}</span>${proposalRateStr}</div>`;
         } else if (p.status === 'approved') {
-            statusBadge = `<div style="color:var(--accent-green);font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem"><span>${t('status_approved')}</span>${proposalRateStr}</div>`;
+            statusBadge = `<div class="status-badge-column" style="color:var(--accent-green)"><span>${t('status_approved')}</span>${proposalRateStr}</div>`;
         }
         if (p.status === 'active' && proposalRate > 0 && p.startedAt) {
             const initialMinutes = (Date.now() - p.startedAt) / 60000;
@@ -6211,15 +6203,15 @@ function getNowPlus10() {
                 const coins = Number(btn.dataset.coins);
                 const evId  = btn.dataset.id;
                 try {
-                    let alreadyDone = false;
+                    let collectFailed = false;
                     try {
                         await api('PUT', `/live-sessions/${sid}/collect`, { player: state.currentPlayer });
                     } catch (collectErr) {
                         // Session already archived or already collected — treat as done, just clean up the event
-                        alreadyDone = true;
+                        collectFailed = true;
                     }
                     await api('DELETE', `/player-events/${evId}`);
-                    if (!alreadyDone && coins > 0) showCoinAnimation(coins, 0);
+                    if (!collectFailed && coins > 0) showCoinAnimation(coins, 0);
                     notifPanelOpen = false;
                     panel.classList.remove('open');
                     renderDashboard();
