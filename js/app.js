@@ -1582,6 +1582,10 @@ function getNowPlus10() {
 
         container.querySelectorAll('#suggested-game-list [data-action="interest"]').forEach(btn => {
             btn.addEventListener('click', async () => {
+                if (!state.attendees.includes(state.currentPlayer)) {
+                    showToast(t('not_in_party'), 'error');
+                    return;
+                }
                 try {
                     await api('POST', `/games/${encodeURIComponent(btn.dataset.game)}/interest`, { player: state.currentPlayer });
                     renderMatcher();
@@ -1650,6 +1654,10 @@ function getNowPlus10() {
             const interestBtn = e.target.closest('.game-interest-btn');
             if (interestBtn) {
                 e.stopPropagation();
+                if (!state.attendees.includes(state.currentPlayer)) {
+                    showToast(t('not_in_party'), 'error');
+                    return;
+                }
                 try {
                     await api('POST', `/games/${encodeURIComponent(interestBtn.dataset.game)}/interest`, { player: state.currentPlayer });
                     renderMatcher();

@@ -91,7 +91,7 @@ const TRANSLATIONS = {
 
         // --- Matcher ---
         games_title: 'Game List',
-        who_is_present: 'Who is playing?',
+        who_is_present: 'Active players',
         present: 'Present',
         suggest_game: 'Suggest a Game',
         select_genre: 'Select genre...',
@@ -109,6 +109,7 @@ const TRANSLATIONS = {
         btn_bulk_delete: 'Delete',
         btn_deselect: '✕ Deselect',
         btn_interest: 'Interest',
+        not_in_party: 'You are not part of the party — ask the admin to add you!',
         btn_unregister: 'Remove',
         btn_release: 'Approve',
         game_already_exists: 'Game already exists!',
@@ -641,7 +642,7 @@ const TRANSLATIONS = {
 
         // --- Matcher ---
         games_title: 'Spieleliste',
-        who_is_present: 'Wer spielt mit?',
+        who_is_present: 'Aktive Spieler',
         present: 'Anwesend',
         suggest_game: 'Spiel vorschlagen',
         select_genre: 'Genre waehlen...',
@@ -659,6 +660,7 @@ const TRANSLATIONS = {
         btn_bulk_delete: 'Löschen',
         btn_deselect: '✕ Abwählen',
         btn_interest: 'Interesse',
+        not_in_party: 'Du bist nicht Teil der Party — bitte den Admin, dich hinzuzufügen!',
         btn_unregister: 'Austragen',
         btn_release: 'Freigeben',
         game_already_exists: 'Spiel existiert bereits!',
