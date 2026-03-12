@@ -6210,10 +6210,15 @@ function getNowPlus10() {
                 const coins = Number(btn.dataset.coins);
                 const evId  = btn.dataset.id;
                 try {
-                    await api('PUT', `/live-sessions/${sid}/collect`, { player: state.currentPlayer });
+                    let alreadyDone = false;
+                    try {
+                        await api('PUT', `/live-sessions/${sid}/collect`, { player: state.currentPlayer });
+                    } catch (collectErr) {
+                        // Session already archived or already collected — treat as done, just clean up the event
+                        alreadyDone = true;
+                    }
                     await api('DELETE', `/player-events/${evId}`);
-                    if (coins > 0) showCoinAnimation(coins, 0);
-                    else playSound('coin');
+                    if (!alreadyDone && coins > 0) showCoinAnimation(coins, 0);
                     notifPanelOpen = false;
                     panel.classList.remove('open');
                     renderDashboard();
