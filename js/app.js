@@ -6254,8 +6254,6 @@ function getNowPlus10() {
                     }
                     await api('DELETE', `/player-events/${evId}`);
                     if (!collectFailed && coins > 0) showCoinAnimation(coins, 0);
-                    notifPanelOpen = false;
-                    panel.classList.remove('open');
                     renderDashboard();
                     renderNotifPanel();
                 } catch (err) {
