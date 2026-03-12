@@ -1744,14 +1744,16 @@ function getNowPlus10() {
             if (createRoomBtn) {
                 e.stopPropagation();
                 const gameName = createRoomBtn.dataset.game;
-                showMediumSelectModal(gameName, async (medium, account) => {
-                    try {
-                        await api('POST', '/live-sessions', { game: gameName, leader: state.currentPlayer, medium, account });
-                        showToast(t('room_created', gameName), 'success');
-                        navigateTo('dashboard');
-                    } catch (err) {
-                        showToast(t('room_error'), 'error');
-                    }
+                showSlotsSelectModal(gameName, (maxSlots) => {
+                    showMediumSelectModal(gameName, async (medium, account) => {
+                        try {
+                            await api('POST', '/live-sessions', { game: gameName, leader: state.currentPlayer, medium, account, maxSlots });
+                            showToast(t('room_created', gameName), 'success');
+                            navigateTo('dashboard');
+                        } catch (err) {
+                            showToast(t('room_error'), 'error');
+                        }
+                    });
                 });
                 return;
             }
@@ -4236,6 +4238,35 @@ function getNowPlus10() {
         `;
         overlay.classList.add('show');
         $('#ack-close-btn').addEventListener('click', () => overlay.classList.remove('show'));
+    }
+
+    function showSlotsSelectModal(gameName, callback) {
+        const overlay = $('#modal-overlay');
+        const modal = overlay.querySelector('.modal');
+
+        modal.innerHTML = `
+            <div class="modal-title">${t('modal_create_room_title')}</div>
+            <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:1rem">${escapeHtml(gameName)}</div>
+            <div class="leader-edit-row" style="margin-bottom:1rem;align-items:center">
+                <span class="datetime-label" style="min-width:auto;margin-right:0.5rem">${t('slots_label') || 'Slots'}:</span>
+                <input type="number" id="sgs-slots" min="1" max="99" placeholder="${t('slots_placeholder') || '∞'}" class="datetime-input" style="width:5rem;text-align:center">
+            </div>
+            <div style="display:flex;gap:0.5rem">
+                <button id="sgs-cancel-btn" class="modal-close-btn" style="flex:1">${t('btn_cancel')}</button>
+                <button id="sgs-confirm-btn" style="flex:2;padding:0.75rem;border:none;border-radius:8px;background:var(--gradient-primary);color:white;cursor:pointer;font-weight:600;">${t('btn_confirm')}</button>
+            </div>
+        `;
+
+        document.getElementById('sgs-cancel-btn').addEventListener('click', () => {
+            overlay.classList.remove('show');
+        });
+
+        document.getElementById('sgs-confirm-btn').addEventListener('click', () => {
+            overlay.classList.remove('show');
+            if (callback) callback(parseInt($('#sgs-slots')?.value) || 0);
+        });
+
+        overlay.classList.add('show');
     }
 
     function showMediumSelectModal(gameName, callback) {
