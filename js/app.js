@@ -56,6 +56,8 @@
     let notifPanelOpen = false;
     let _matcherListenersAttached = false;
     let _filterDebounce;
+    let _audioCtx = null;
+    const _audioBuffers = {};
     let focusChallengeId = null;
     let challengeActiveTab = '1v1'; // '1v1' | 'team' | 'ffa'
     let tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
@@ -198,15 +200,45 @@
     }
 
     // ---- Sound ----
+    const SOUNDS = {
+        coin:      'sounds/coin_popup_positive.mp3',
+        spend:     'sounds/Coin_popup_negative.mp3',
+        error:     'sounds/Coin_popup_negative.mp3',
+        challenge: 'sounds/notify.mp3',
+        buy:       'sounds/buyitem.mp3',
+    };
+
+    async function _initAudio() {
+        if (_audioCtx) return;
+        try {
+            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const uniqueSrcs = [...new Set(Object.values(SOUNDS))];
+            await Promise.all(uniqueSrcs.map(async src => {
+                try {
+                    const buf = await (await fetch(src)).arrayBuffer();
+                    const decoded = await _audioCtx.decodeAudioData(buf);
+                    Object.entries(SOUNDS).forEach(([k, v]) => { if (v === src) _audioBuffers[k] = decoded; });
+                } catch (e) {}
+            }));
+        } catch (e) { _audioCtx = null; }
+    }
+
+    // Unlock + preload on first user gesture
+    document.addEventListener('pointerdown', () => _initAudio(), { once: true });
+
     function playSound(type) {
         if (!getNotifPref('sound')) return;
-        const SOUNDS = {
-            coin:      'sounds/coin_popup_positive.mp3',
-            spend:     'sounds/Coin_popup_negative.mp3',
-            error:     'sounds/Coin_popup_negative.mp3',
-            challenge: 'sounds/notify.mp3',
-            buy:       'sounds/buyitem.mp3',
-        };
+        if (_audioCtx && _audioBuffers[type]) {
+            try {
+                if (_audioCtx.state === 'suspended') _audioCtx.resume();
+                const src = _audioCtx.createBufferSource();
+                src.buffer = _audioBuffers[type];
+                src.connect(_audioCtx.destination);
+                src.start(0);
+            } catch (e) {}
+            return;
+        }
+        // Fallback: HTML Audio (before first gesture or if Web Audio failed)
         const src = SOUNDS[type];
         if (!src) return;
         try { new Audio(src).play().catch(() => {}); } catch (e) {}
