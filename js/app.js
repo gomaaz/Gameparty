@@ -6090,7 +6090,7 @@ function getNowPlus10() {
                     const icon  = coinSvgIcon('1.1em');
                     const title = payload.game || '';
                     const sub   = '';
-                    const actions = `<button class="notif-btn notif-btn-ok notif-session-collect" data-id="${a.id}" data-sid="${payload.sessionId || ''}" data-coins="${coins}">+${fmt(coins)} ${coinSvgIcon()}</button>`;
+                    const actions = `<button class="notif-btn notif-btn-ok notif-session-collect" data-id="${a.id}" data-sid="${payload.sessionId || ''}" data-coins="${coins}">+${fmt(coins)}&nbsp;${coinSvgIcon()}</button>`;
                     return itemHtml({ id: 'activity-' + a.id, icon, title, sub, actions, accent: 'gold', navigate: null, ts: a.ts });
                 }
                 const icon    = TASK_ICONS[a.type] || '⚡';
