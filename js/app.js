@@ -1532,7 +1532,7 @@ function getNowPlus10() {
         if (admin) {
             adminHTML = `
                 <div class="leader-edit-row mt-1">
-                    <button class="btn-approve" data-game="${g.name}">Freigeben</button>
+                    <button class="btn-approve" data-game="${g.name}">${t('btn_approve')}</button>
                     <button class="btn-reject" data-game="${g.name}">&#x2716;</button>
                 </div>`;
         }
@@ -5928,7 +5928,7 @@ function getNowPlus10() {
                         showToast(t('duel_accepted'), 'success');
                         navigateTo('dashboard');
                     }
-                } catch { showToast('Fehler beim Annehmen', 'error'); }
+                } catch { showToast(t('error_accept'), 'error'); }
             });
         });
 
@@ -5949,10 +5949,10 @@ function getNowPlus10() {
                     } else {
                         await api('PUT', `/challenges/${id}/reject`, { player: state.currentPlayer });
                         removeNotification(id);
-                        showToast('Duell abgelehnt.', 'error');
+                        showToast(t('duel_rejected'), 'error');
                     }
                     if ($('#view-challenges').classList.contains('active')) renderChallenges();
-                } catch { showToast('Fehler beim Ablehnen', 'error'); }
+                } catch { showToast(t('error_reject'), 'error'); }
             });
         });
 
