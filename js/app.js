@@ -1118,7 +1118,24 @@ function getNowPlus10() {
                         else playSound('coin');
                         if (card) {
                             card.classList.add('card-collect-out');
-                            card.addEventListener('animationend', () => renderDashboard(), { once: true });
+                            card.addEventListener('animationend', () => {
+                                const releasedContainer = document.getElementById('released-sessions-container');
+                                const remainingCards = releasedContainer ? releasedContainer.querySelectorAll('.session-collect-btn').length : 0;
+                                // card is still in DOM (invisible), so <=1 means this was the last one
+                                if (remainingCards <= 1 && releasedContainer) {
+                                    releasedContainer.style.maxHeight = releasedContainer.offsetHeight + 'px';
+                                    releasedContainer.style.overflow = 'hidden';
+                                    releasedContainer.style.transition = 'max-height 0.35s ease, opacity 0.28s ease, margin-top 0.35s ease';
+                                    requestAnimationFrame(() => {
+                                        releasedContainer.style.maxHeight = '0';
+                                        releasedContainer.style.opacity = '0';
+                                        releasedContainer.style.marginTop = '0';
+                                        releasedContainer.addEventListener('transitionend', () => renderDashboard(), { once: true });
+                                    });
+                                } else {
+                                    renderDashboard();
+                                }
+                            }, { once: true });
                         } else {
                             renderDashboard();
                         }
