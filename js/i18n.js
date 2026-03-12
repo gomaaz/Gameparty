@@ -462,6 +462,7 @@ const TRANSLATIONS = {
 
         // --- Session Plan/Start Modal ---
         start_time_label: 'Start time:',
+        end_time_label: 'End:',
         start_time_future_error: 'Start time must be at least 10 minutes in the future',
         modal_create_room_title: '🎮 Create Room',
         modal_plan_session_title: '📅 Plan Session',
@@ -1054,6 +1055,7 @@ const TRANSLATIONS = {
 
         // --- Session Plan/Start Modal ---
         start_time_label: 'Startzeit:',
+        end_time_label: 'Ende:',
         start_time_future_error: 'Startzeit muss mind. 10 Minuten in der Zukunft liegen',
         modal_create_room_title: '🎮 Raum erstellen',
         modal_plan_session_title: '📅 Sitzung planen',

@@ -80,6 +80,12 @@
         return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins"${style}>`;
     }
 
+    function coinSvgIconAnimated(size) {
+        const s = size || '';
+        const style = s ? ` style="width:${s};height:${s};vertical-align:middle"` : '';
+        return `<img src="svg/coins_animated.svg" class="coin-svg-icon" alt="coins"${style}>`;
+    }
+
     function controllerSvgIcon(size) {
         const s = size || '1em';
         return `<img src="svg/console-controller.svg" class="coin-svg-icon" alt="controller" style="width:${s};height:1.3em;vertical-align:middle;margin-bottom:-0.2em">`;
@@ -141,7 +147,7 @@
                 if (!startedAt || !rate) return;
                 const minutes = (Date.now() - startedAt) / 60000;
                 const coins = Math.ceil(minutes * rate);
-                el.innerHTML = `~${fmt(coins)} ${coinSvgIcon()}`;
+                el.innerHTML = `~${fmt(coins)} ${coinSvgIconAnimated()}`;
             });
             document.querySelectorAll('.session-runtime').forEach(el => {
                 const startedAt = parseInt(el.dataset.startedAt || '0');
@@ -760,7 +766,7 @@ function getNowPlus10() {
                             coinInfoHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="live-session-meta"><span class="datetime-label">${t('start_time_label')}</span> ${startTimeStr}</div>
-        <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${fmt(initialCoins)} ${coinSvgIcon()}</span>
+        <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${fmt(initialCoins)} ${coinSvgIconAnimated()}</span>
     </div>`;
                         }
                         if (s.challenge_id) {
@@ -878,7 +884,9 @@ function getNowPlus10() {
                                         <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                         ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
                                         ${options.map(opt => `<button class="duel-vote-btn admin-resolve-btn" data-sid="${s.id}" data-vote="${opt}">${optionLabel(opt)}</button>`).join('')}
-                                        <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="margin-top:0.3rem;padding:0.35rem 0.8rem;font-size:0.85rem;display:block;margin-left:auto;margin-right:auto">🗑️ Abbrechen</button>
+                                        <div style="text-align:right;margin-top:0.4rem">
+                                            <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px">${t('btn_cancel')}</button>
+                                        </div>
                                     </div>`;
                             } else if (isConflict) {
                                 actionsHTML = `
@@ -897,8 +905,10 @@ function getNowPlus10() {
                                         <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
                                             🏆 ${t('duel_consensus')} <strong>${winner}</strong>
                                         </div>
-                                        <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve') || 'Freigeben'}</button>
-                                        <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button>
+                                        <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve')}</button>
+                                        <div style="text-align:right;margin-top:0.4rem">
+                                            <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px">${t('btn_cancel')}</button>
+                                        </div>
                                     </div>`;
                             } else if (isVoted && !isAdmin()) {
                                 actionsHTML = `
@@ -927,15 +937,32 @@ function getNowPlus10() {
                             }
                             // Admin can cancel pending duel sessions
                             if (isAdmin() && !isVoted && !isConflict) {
-                                actionsHTML += `<div style="margin-top:0.3rem;text-align:center"><button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="padding:0.35rem 0.8rem;font-size:0.85rem">🗑️ Abbrechen</button></div>`;
+                                actionsHTML += `<div style="margin-top:0.3rem;text-align:right"><button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px">${t('btn_cancel')}</button></div>`;
                             }
                         }
                     } else if (s.status === 'ended') {
                         statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
                         const coins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
-                        if (coins > 0) {
-                            coinInfoHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><span></span><span style="font-weight:600;color:var(--text-primary)">${fmt(coins)} ${coinSvgIcon()}</span></div>`;
+
+                        // Build time/duration info
+                        const timeParts = [];
+                        if (s.startedAt) {
+                            const sd = new Date(s.startedAt);
+                            timeParts.push(`${t('start_time_label')} ${sd.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})}`);
                         }
+                        if (s.endedAt) {
+                            const ed = new Date(s.endedAt);
+                            timeParts.push(`${t('end_time_label')} ${ed.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})}`);
+                        }
+                        const durationPart = s.duration_min ? `${s.duration_min} min` : '';
+
+                        const timeInfoHTML = (timeParts.length || durationPart) ? `
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2rem;">
+                                <span style="font-size:0.78rem;color:var(--text-secondary)">${timeParts.join(' · ')}${durationPart ? ' · ' + durationPart : ''}</span>
+                                ${coins > 0 ? `<span style="font-weight:600;color:var(--text-primary)">${fmt(coins)} ${coinSvgIcon()}</span>` : ''}
+                            </div>` : (coins > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;"><span></span><span style="font-weight:600;color:var(--text-primary)">${fmt(coins)} ${coinSvgIcon()}</span></div>` : '');
+
+                        coinInfoHTML = timeInfoHTML;
                         if (isAdmin()) {
                             actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="approve" data-coins="${coins}">${t('btn_approve_coins', fmt(coins))}</button>`;
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">🗑️</button>`;
@@ -943,11 +970,16 @@ function getNowPlus10() {
                     }
 
                     const sessionCover = (state.games || []).find(g => g.name === s.game)?.cover_url || '';
+                    const challengeTypeBadge = s.challenge_id ? (() => {
+                        const typeMap = { '1v1': '⚔️ 1v1', 'team': `👥 ${t('tab_team')}`, 'ffa': `🎯 FFA` };
+                        const label = typeMap[s.challenge_type] || s.challenge_type || '';
+                        return label ? `<span style="font-size:0.72rem;color:var(--text-secondary);margin-left:0.4rem;opacity:0.8">${label}</span>` : '';
+                    })() : '';
                     return { status: s.status, html: `
                         <div class="card live-session-card ${s.status}">
                             ${sessionCover ? `<div class="session-cover-bg" style="background-image:url('${sessionCover}')"></div>` : ''}
                             <div class="live-session-header">
-                                <span class="live-session-game">${renderLeaderIcons(s.leader, s.medium, s.medium_account)}${s.game}</span>
+                                <span class="live-session-game">${renderLeaderIcons(s.leader, s.medium, s.medium_account)}${s.game}${challengeTypeBadge}</span>
                                 ${statusBadge}
                             </div>
                             ${coinInfoHTML}
