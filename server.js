@@ -298,6 +298,9 @@ try { db.prepare("ALTER TABLE ffa_challenges ADD COLUMN collected TEXT DEFAULT '
 // ---- Migration: sessionPayoutAmounts / sessionCollected fuer live_sessions collect-flow ----
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN sessionPayoutAmounts TEXT DEFAULT NULL").run(); } catch {}
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN sessionCollected TEXT DEFAULT '[]'").run(); } catch {}
+// ---- Migration: session_id column in player_events for indexed session_payout lookup ----
+try { db.prepare("ALTER TABLE player_events ADD COLUMN session_id TEXT DEFAULT NULL").run(); } catch {}
+try { db.prepare("CREATE INDEX IF NOT EXISTS idx_player_events_session_id ON player_events(target, type, session_id)").run(); } catch {}
 
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
@@ -2435,7 +2438,7 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
         const payoutPayload = JSON.stringify({ sessionId: req.params.id, game: session.game, coins: coinsPerPlayer, playerCount: players.length, durationMin: session.duration_min || 0, coinRate: session.coin_rate || 0 });
         const payoutNow = Date.now();
         for (const p of players) {
-            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'session_payout', '', payoutPayload, payoutNow, 'active');
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status, session_id) VALUES (?, ?, ?, ?, ?, ?, ?)').run(p, 'session_payout', '', payoutPayload, payoutNow, 'active', req.params.id);
         }
     }
     broadcast({ type: 'update' });
@@ -2449,23 +2452,21 @@ app.put('/api/live-sessions/:id/collect', (req, res) => {
     const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(req.params.id);
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
     if (session.status !== 'released') return res.status(400).json({ error: 'Session nicht im released-Status' });
-    const inSession = db.prepare('SELECT 1 FROM live_session_players WHERE session_id = ? AND player = ?').get(req.params.id, player);
-    if (!inSession) return res.status(403).json({ error: 'Spieler nicht in dieser Session' });
+    const allPlayers = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id).map(r => r.player);
+    if (!allPlayers.includes(player)) return res.status(403).json({ error: 'Spieler nicht in dieser Session' });
     const sessionCollected = JSON.parse(session.sessionCollected || '[]');
     if (sessionCollected.includes(player)) return res.status(400).json({ error: 'Bereits eingesammelt' });
     const payoutAmounts = JSON.parse(session.sessionPayoutAmounts || '{}');
     const coinsToCredit = payoutAmounts[player] || 0;
-    const allPlayers = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id).map(r => r.player);
     const now = Date.now();
     const collectTx = db.transaction(() => {
         db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, coinsToCredit, coinsToCredit);
         db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, coinsToCredit, `Session: ${session.game} (${allPlayers.length} Spieler)`, now);
         const newCollected = JSON.stringify([...sessionCollected, player]);
         db.prepare('UPDATE live_sessions SET sessionCollected = ? WHERE id = ?').run(newCollected, req.params.id);
+        db.prepare("DELETE FROM player_events WHERE target = ? AND type = 'session_payout' AND session_id = ?").run(player, req.params.id);
     });
     collectTx();
-    // Delete the session_payout player_event for this player so the bell notification disappears
-    db.prepare("DELETE FROM player_events WHERE target = ? AND type = 'session_payout' AND json_extract(message, '$.sessionId') = ?").run(player, req.params.id);
     // Check if all players have now collected
     const newCollectedArr = [...sessionCollected, player];
     if (newCollectedArr.length >= allPlayers.length) {

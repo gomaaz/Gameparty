@@ -74,16 +74,11 @@
         return 0;
     }
 
-    function coinSvgIcon(size) {
+    function coinSvgIcon(size, animated = false) {
         const s = size || '';
         const style = s ? ` style="width:${s};height:${s};vertical-align:middle"` : '';
-        return `<img src="svg/coins.svg" class="coin-svg-icon" alt="coins"${style}>`;
-    }
-
-    function coinSvgIconAnimated(size) {
-        const s = size || '';
-        const style = s ? ` style="width:${s};height:${s};vertical-align:middle"` : '';
-        return `<img src="svg/coins_animated.svg" class="coin-svg-icon" alt="coins"${style}>`;
+        const src = animated ? 'svg/coins_animated.svg' : 'svg/coins.svg';
+        return `<img src="${src}" class="coin-svg-icon" alt="coins"${style}>`;
     }
 
     function controllerSvgIcon(size) {
@@ -147,7 +142,7 @@
                 if (!startedAt || !rate) return;
                 const minutes = (Date.now() - startedAt) / 60000;
                 const coins = Math.ceil(minutes * rate);
-                el.innerHTML = `~${fmt(coins)} ${coinSvgIconAnimated()}`;
+                el.innerHTML = `~${fmt(coins)} ${coinSvgIcon('', true)}`;
             });
             document.querySelectorAll('.session-runtime').forEach(el => {
                 const startedAt = parseInt(el.dataset.startedAt || '0');
@@ -766,7 +761,7 @@ function getNowPlus10() {
                             coinInfoHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
         <div class="live-session-meta"><span class="datetime-label">${t('start_time_label')}</span> ${startTimeStr}</div>
-        <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${fmt(initialCoins)} ${coinSvgIconAnimated()}</span>
+        <span class="session-coin-accumulator" data-started-at="${s.startedAt}" data-rate="${rate}">~${fmt(initialCoins)} ${coinSvgIcon('', true)}</span>
     </div>`;
                         }
                         if (s.challenge_id) {
