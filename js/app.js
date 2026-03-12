@@ -54,6 +54,8 @@
     const pendingNotifications = []; // { id, challenger, game, stakeStr }
     const shownNotifToastIds = new Set(JSON.parse(localStorage.getItem('gameparty_shown_notif_toast_ids') || '[]'));
     let notifPanelOpen = false;
+    let _matcherListenersAttached = false;
+    let _filterDebounce;
     let focusChallengeId = null;
     let challengeActiveTab = '1v1'; // '1v1' | 'team' | 'ffa'
     let tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
@@ -136,7 +138,14 @@
     function startCoinAccumulatorInterval() {
         if (coinAccumulatorInterval) clearInterval(coinAccumulatorInterval);
         coinAccumulatorInterval = setInterval(() => {
-            document.querySelectorAll('.session-coin-accumulator').forEach(el => {
+            const accEls = document.querySelectorAll('.session-coin-accumulator');
+            const rtEls  = document.querySelectorAll('.session-runtime');
+            if (!accEls.length && !rtEls.length) {
+                clearInterval(coinAccumulatorInterval);
+                coinAccumulatorInterval = null;
+                return;
+            }
+            accEls.forEach(el => {
                 const startedAt = parseInt(el.dataset.startedAt || '0');
                 const rate = parseFloat(el.dataset.rate || '0');
                 if (!startedAt || !rate) return;
@@ -144,16 +153,12 @@
                 const coins = Math.ceil(minutes * rate);
                 el.innerHTML = `~${fmt(coins)} ${coinSvgIcon('', true)}`;
             });
-            document.querySelectorAll('.session-runtime').forEach(el => {
+            rtEls.forEach(el => {
                 const startedAt = parseInt(el.dataset.startedAt || '0');
                 if (!startedAt) return;
                 const mins = Math.floor((Date.now() - startedAt) / 60000);
                 el.textContent = `${mins} Min.`;
             });
-            if (!document.querySelector('.session-coin-accumulator') && !document.querySelector('.session-runtime')) {
-                clearInterval(coinAccumulatorInterval);
-                coinAccumulatorInterval = null;
-            }
         }, 1000);
     }
 
@@ -553,6 +558,8 @@ function getNowPlus10() {
         if (nav) nav.classList.add('active');
 
         localStorage.setItem(LOCAL_KEYS.VIEW, viewId);
+
+        if (viewId !== 'matcher') _matcherListenersAttached = false;
 
         switch (viewId) {
             case 'dashboard': renderDashboard(); break;
@@ -1082,6 +1089,8 @@ function getNowPlus10() {
             if (liveContainer) bindProposalCardEvents(liveContainer);
             container.querySelectorAll('[data-action]').forEach(btn => {
                 btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
                     const sid = btn.dataset.sid, action = btn.dataset.action;
                     try {
                         if (action === 'join') {
@@ -1102,6 +1111,8 @@ function getNowPlus10() {
                         }
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
+                        btn.disabled = false;
+                        btn.style.opacity = '';
                     }
                     renderDashboard();
                 });
@@ -1110,6 +1121,8 @@ function getNowPlus10() {
             // Event: Collect session payout
             container.querySelectorAll('.session-collect-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
                     try {
                         await api('PUT', `/live-sessions/${btn.dataset.sid}/collect`, { player: state.currentPlayer });
                         const coins = Number(btn.dataset.coins);
@@ -1141,6 +1154,8 @@ function getNowPlus10() {
                         }
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
+                        btn.disabled = false;
+                        btn.style.opacity = '';
                     }
                 });
             });
@@ -1452,16 +1467,26 @@ function getNowPlus10() {
             renderGameList(approvedGames);
 
             // --- Filter Events ---
-            $('#filter-search').addEventListener('input', () => filterGames());
-            $('#filter-genre').addEventListener('change', () => filterGames());
-            $('#filter-min-players').addEventListener('input', () => filterGames());
+            if (!_matcherListenersAttached) {
+                _matcherListenersAttached = true;
+                const searchEl = document.getElementById('filter-search');
+                const genreEl  = document.getElementById('filter-genre');
+                const minPlEl  = document.getElementById('filter-min-players');
+                if (searchEl) searchEl.addEventListener('input', () => { clearTimeout(_filterDebounce); _filterDebounce = setTimeout(filterGames, 120); });
+                if (genreEl)  genreEl.addEventListener('change', filterGames);
+                if (minPlEl)  minPlEl.addEventListener('input', filterGames);
+            }
 
-            container.querySelectorAll('.player-filter-chip').forEach(chip => {
-                chip.addEventListener('click', () => {
+            const chipContainer = document.getElementById('player-filter-chips');
+            if (chipContainer && !chipContainer._delegated) {
+                chipContainer._delegated = true;
+                chipContainer.addEventListener('click', e => {
+                    const chip = e.target.closest('.player-filter-chip');
+                    if (!chip) return;
                     chip.classList.toggle('active');
                     filterGames();
                 });
-            });
+            }
 
             // --- Suggest Game ---
             const suggestNameEl = $('#suggest-name');
