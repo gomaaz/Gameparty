@@ -4075,6 +4075,47 @@ function getNowPlus10() {
         });
     }
 
+    function showFFAPayoutModal(data) {
+        const player = state.currentPlayer;
+        const place = data.placements[player];
+        const coins = data.coinPayouts[player] || 0;
+        const stars = data.starPayouts[player] || 0;
+        const stake = data.stakeCoinsPerPerson || 0;
+        const netCoins = coins - stake;
+        const won = netCoins >= 0;
+
+        const allRows = Object.entries(data.placements)
+            .sort((a, b) => a[1] - b[1])
+            .map(([p, pl]) => {
+                const pCoins = data.coinPayouts[p] || 0;
+                const pStars = data.starPayouts[p] || 0;
+                const isMe = p === player;
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;${isMe ? 'font-weight:700;color:var(--text-primary);' : 'color:var(--text-secondary);'}">
+                    <span>${pl}. ${escapeHtml(p)}</span>
+                    <span>${pCoins > 0 ? '+' + pCoins + ' 🪙' : ''}${pStars > 0 ? ' +' + pStars + ' ⭐' : ''}</span>
+                </div>`;
+            }).join('');
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `<div class="modal-box" style="max-width:340px;">
+            <div style="font-size:1.4rem;text-align:center;margin-bottom:0.5rem;">${won ? '🏆' : '😔'}</div>
+            <div style="font-size:1.1rem;font-weight:700;text-align:center;margin-bottom:0.3rem;">${t('new_ffa_challenge')}</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);text-align:center;margin-bottom:1rem;">${escapeHtml(data.game)}</div>
+            <div style="border-top:1px solid var(--border);padding-top:0.7rem;margin-bottom:0.7rem;">${allRows}</div>
+            <div style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">
+                ${t('tc_payout_stake')}: ${stake} 🪙
+            </div>
+            <button class="btn btn-primary" id="ffa-payout-collect" style="width:100%">${t('btn_collect')}</button>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#ffa-payout-collect').addEventListener('click', () => {
+            modal.remove();
+            if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
+            refreshCoins();
+        });
+    }
+
     function showSessionPayoutModal(data) {
         const overlay = $('#modal-overlay');
         const modal = overlay.querySelector('.modal');
@@ -4665,7 +4706,39 @@ function getNowPlus10() {
                 let placementsHTML = '';
                 if ((ffa.status === 'completed' || ffa.status === 'paid') && Object.keys(placements).length > 0) {
                     const sorted = [...players].sort((a, b) => (placements[a] || 99) - (placements[b] || 99));
-                    placementsHTML = `<div style="margin-top:0.4rem;font-size:0.82rem;">` + sorted.map(p => `<div style="display:flex;justify-content:space-between;padding:0.1rem 0;"><span>${p}</span><span style="color:var(--accent-gold);font-weight:700;">Platz ${placements[p] || '?'}</span></div>`).join('') + `</div>`;
+                    // Calculate coin/star payouts on the fly for the paid state
+                    const coinPayouts = {};
+                    const starPayouts = {};
+                    if (ffa.status === 'paid' && payoutConfig.length > 0) {
+                        let coinRemainder = totalPot;
+                        let starRemainder = totalStarPot;
+                        for (const entry of payoutConfig) {
+                            const playerForPlace = players.find(p => placements[p] === entry.place);
+                            if (playerForPlace) {
+                                const coinAmt = Math.floor(totalPot * entry.pct / 100);
+                                coinPayouts[playerForPlace] = coinAmt;
+                                coinRemainder -= coinAmt;
+                                const starAmt = Math.floor(totalStarPot * entry.pct / 100);
+                                starPayouts[playerForPlace] = starAmt;
+                                starRemainder -= starAmt;
+                            }
+                        }
+                        const place1Player = players.find(p => placements[p] === 1);
+                        if (place1Player) {
+                            if (coinRemainder > 0) coinPayouts[place1Player] = (coinPayouts[place1Player] || 0) + coinRemainder;
+                            if (starRemainder > 0) starPayouts[place1Player] = (starPayouts[place1Player] || 0) + starRemainder;
+                        }
+                    }
+                    placementsHTML = `<div style="margin-top:0.4rem;font-size:0.82rem;">` + sorted.map(p => {
+                        const pCoins = coinPayouts[p] || 0;
+                        const pStars = starPayouts[p] || 0;
+                        let payoutStr = '';
+                        if (ffa.status === 'paid') {
+                            if (pCoins > 0) payoutStr += ` · +${fmt(pCoins)} 🪙`;
+                            if (pStars > 0) payoutStr += ` · +${fmt(pStars)} ⭐`;
+                        }
+                        return `<div style="display:flex;justify-content:space-between;padding:0.1rem 0;"><span>${escapeHtml(p)}</span><span style="color:var(--accent-gold);font-weight:700;">Platz ${placements[p] || '?'}${payoutStr}</span></div>`;
+                    }).join('') + `</div>`;
                 }
 
                 return `
@@ -5493,6 +5566,13 @@ function getNowPlus10() {
                             if (!sel.value) { showToast(t('ffa_placement_error'), 'error'); playSound('error'); return; }
                             placements[sel.dataset.player] = parseInt(sel.value);
                         }
+                        const values = Object.values(placements).map(Number);
+                        const unique = new Set(values);
+                        if (unique.size !== values.length) {
+                            showToast(t('ffa_duplicate_placement_error'), 'error');
+                            playSound('error');
+                            return;
+                        }
                         try {
                             await api('PUT', `/ffa-challenges/${btn.dataset.id}/complete`, { createdBy: state.currentPlayer, placements });
                             showToast(t('ffa_placements_set'), 'success');
@@ -5867,6 +5947,15 @@ function getNowPlus10() {
                     try {
                         const data = JSON.parse(ev.message);
                         showTcPayoutModal(data);
+                        if (getNotifPref('sound')) playSound('coin');
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
+                if (ev.type === 'ffa_payout') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        showFFAPayoutModal(data);
                         if (getNotifPref('sound')) playSound('coin');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}

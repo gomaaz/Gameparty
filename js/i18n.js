@@ -403,6 +403,8 @@ const TRANSLATIONS = {
         ffa_select_players_error: 'Select at least 2 other players (3 total)',
         ffa_pct_error: 'Percentages must add up to 100%',
         ffa_placement_error: 'All players need a placement',
+        ffa_duplicate_placement_error: 'Each place may only be assigned once',
+        btn_collect: 'Collect',
         ffa_payout_winner_review: '🎯 FFA results awaiting review',
         ffa_payout_notif: '🎯 FFA Challenge result: Place {0}',
 
@@ -982,6 +984,8 @@ const TRANSLATIONS = {
         ffa_select_players_error: 'Mind. 2 weitere Spieler wählen (3 gesamt)',
         ffa_pct_error: 'Prozente müssen 100% ergeben',
         ffa_placement_error: 'Alle Spieler brauchen eine Platzierung',
+        ffa_duplicate_placement_error: 'Jeder Platz darf nur einmal vergeben werden',
+        btn_collect: 'Einsammeln',
         ffa_payout_winner_review: '🎯 FFA Ergebnis wartet auf Überprüfung',
         ffa_payout_notif: '🎯 FFA Challenge Ergebnis: Platz {0}',
 

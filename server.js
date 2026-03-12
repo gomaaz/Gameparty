@@ -1738,6 +1738,10 @@ app.put('/api/ffa-challenges/:id/complete', (req, res) => {
     const missingPlayers = players.filter(p => placements[p] === undefined || placements[p] === null);
     if (missingPlayers.length > 0) return res.status(400).json({ error: `Fehlende Platzierung für: ${missingPlayers.join(', ')}` });
 
+    const placementValues = players.map(p => placements[p]);
+    const uniquePlaces = new Set(placementValues);
+    if (uniquePlaces.size !== placementValues.length) return res.status(400).json({ error: 'Jeder Platz darf nur einmal vergeben werden' });
+
     db.prepare('UPDATE ffa_challenges SET status = ?, placements = ? WHERE id = ?').run('completed', JSON.stringify(placements), req.params.id);
 
     const admins = db.prepare("SELECT name FROM users WHERE role = 'admin'").all().map(r => r.name);
