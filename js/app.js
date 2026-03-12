@@ -169,7 +169,8 @@
         PLAYER: 'gameparty_player',
         ROLE: 'gameparty_role',
         SOUND: 'gameparty_sound',
-        VIEW: 'gameparty_view'
+        VIEW: 'gameparty_view',
+        TOKEN: 'gameparty_token'
     };
 
     function getNotifPref(type) {
@@ -184,9 +185,16 @@
 
     // ---- API Helper ----
     async function api(method, path, body) {
-        const opts = { method, headers: { 'Content-Type': 'application/json' }, cache: 'no-store' };
+        const headers = { 'Content-Type': 'application/json' };
+        const token = localStorage.getItem(LOCAL_KEYS.TOKEN);
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        const opts = { method, headers, cache: 'no-store' };
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch('/api' + path, opts);
+        if (res.status === 401) {
+            logout();
+            throw new Error('Sitzung abgelaufen');
+        }
         if (!res.ok) {
             try {
                 const json = await res.json();
@@ -3641,8 +3649,11 @@ function getNowPlus10() {
                         await api('DELETE', '/reset', { requestedBy: state.currentPlayer });
                         state.currentPlayer = null;
                         state.role = null;
+                        const _logoutToken = localStorage.getItem(LOCAL_KEYS.TOKEN);
+                        if (_logoutToken) fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _logoutToken }, cache: 'no-store' }).catch(() => {});
                         localStorage.removeItem(LOCAL_KEYS.PLAYER);
                         localStorage.removeItem(LOCAL_KEYS.ROLE);
+                        localStorage.removeItem(LOCAL_KEYS.TOKEN);
                         sessionState = { selectedGame: null, selectedPlayers: [] };
                         showToast(t('all_data_deleted'), 'error');
                         closeAdminPanel();
@@ -6583,7 +6594,8 @@ function getNowPlus10() {
         // SSE als primärer Live-Update-Mechanismus
         if (typeof EventSource !== 'undefined') {
             setTimeout(() => {
-                sseSource = new EventSource('/api/events');
+                const _sseToken = localStorage.getItem(LOCAL_KEYS.TOKEN) || '';
+                sseSource = new EventSource('/api/events' + (_sseToken ? '?token=' + encodeURIComponent(_sseToken) : ''));
                 sseSource.addEventListener('update', () => {
                     // SSE aktiv: View-Fallback-Timer stoppen
                     if (sseDropViewInterval) { clearInterval(sseDropViewInterval); sseDropViewInterval = null; }
@@ -6633,8 +6645,11 @@ function getNowPlus10() {
         renderNotifPanel();
         state.currentPlayer = null;
         state.role = null;
+        const _logoutToken = localStorage.getItem(LOCAL_KEYS.TOKEN);
+        if (_logoutToken) fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _logoutToken }, cache: 'no-store' }).catch(() => {});
         localStorage.removeItem(LOCAL_KEYS.PLAYER);
         localStorage.removeItem(LOCAL_KEYS.ROLE);
+        localStorage.removeItem(LOCAL_KEYS.TOKEN);
         updateHeader();
         updateNavVisibility();
         navigateTo('dashboard');
@@ -7208,6 +7223,7 @@ function getNowPlus10() {
             state.role = result.role;
             localStorage.setItem(LOCAL_KEYS.PLAYER, JSON.stringify(state.currentPlayer));
             localStorage.setItem(LOCAL_KEYS.ROLE, JSON.stringify(state.role));
+            if (result.token) localStorage.setItem(LOCAL_KEYS.TOKEN, result.token);
             // Apply player's saved language preference
             const me = (state._usersCache || []).find(u => u.name === playerName);
             if (me?.lang) setLang(me.lang);
@@ -7383,8 +7399,11 @@ function getNowPlus10() {
             if (state.currentPlayer && !data.players.includes(state.currentPlayer)) {
                 state.currentPlayer = null;
                 state.role = null;
+                const _logoutToken = localStorage.getItem(LOCAL_KEYS.TOKEN);
+                if (_logoutToken) fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _logoutToken }, cache: 'no-store' }).catch(() => {});
                 localStorage.removeItem(LOCAL_KEYS.PLAYER);
                 localStorage.removeItem(LOCAL_KEYS.ROLE);
+                localStorage.removeItem(LOCAL_KEYS.TOKEN);
             }
 
             // Apply player's saved language preference from server
