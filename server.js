@@ -2233,6 +2233,10 @@ app.post('/api/games/enrich', async (req, res) => {
                         screenshotUrls.push(localUrl);
                     } catch (dlErr) {
                         logger.debug(`[${g.name}] screenshot ${i} download failed: ${dlErr.message}`);
+                        if (fs.existsSync(localPath)) {
+                            screenshotUrls.push(localUrl);
+                            logger.debug(`[${g.name}] screenshot ${i} already on disk, registering existing file`);
+                        }
                     }
                 }
                 logger.debug(`[${g.name}] screenshots → ${screenshotUrls.length} downloaded locally`);
