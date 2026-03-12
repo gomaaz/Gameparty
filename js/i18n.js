@@ -552,6 +552,8 @@ const TRANSLATIONS = {
         pw_done_sub: 'The app is opening…',
         pw_saving: '⏳ Setting up…',
         pw_error_retry: 'Try again',
+        credit_idea: 'Idea by',
+        credit_vibed: '· Built vibe-coded with Claude Sonnet',
     },
 
     de: {
@@ -1103,6 +1105,8 @@ const TRANSLATIONS = {
         pw_done_sub: 'Die App öffnet sich gleich…',
         pw_saving: '⏳ Wird eingerichtet…',
         pw_error_retry: 'Erneut versuchen',
+        credit_idea: 'Idee von',
+        credit_vibed: '· Umsetzung vibe-coded mit Claude Sonnet',
     }
 };
 
