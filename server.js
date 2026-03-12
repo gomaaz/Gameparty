@@ -7,6 +7,7 @@ const Database = require('better-sqlite3');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { version } = require('./package.json');
 
 // ---- Logger (define early, before DB) ----
@@ -90,6 +91,36 @@ app.use('/api', (req, res, next) => {
     next();
 });
 
+// ---- Auth middleware ----
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+function requireAuth(req, res, next) {
+    const header = req.headers['authorization'] || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) return res.status(401).json({ error: 'Nicht angemeldet' });
+    const s = db.prepare('SELECT player, role, created_at FROM auth_sessions WHERE token = ?').get(token);
+    if (!s) return res.status(401).json({ error: 'Sitzung abgelaufen' });
+    if (Date.now() - s.created_at > SESSION_TTL_MS) {
+        db.prepare('DELETE FROM auth_sessions WHERE token = ?').run(token);
+        return res.status(401).json({ error: 'Sitzung abgelaufen' });
+    }
+    req.authPlayer = s.player;
+    req.authRole   = s.role;
+    next();
+}
+
+const PUBLIC_ROUTES = [
+    { method: 'POST', path: '/login' },
+    { method: 'POST', path: '/logout' },
+    { method: 'GET',  path: '/users' },
+    { method: 'GET',  path: '/events' },
+    { method: 'GET',  path: '/logs' },
+];
+app.use('/api', (req, res, next) => {
+    if (PUBLIC_ROUTES.some(p => p.method === req.method && req.path === p.path)) return next();
+    requireAuth(req, res, next);
+});
+
 // GET /api/logs
 app.get('/api/logs', (req, res) => {
     const level = req.query.level || 'ALL';
@@ -100,6 +131,11 @@ app.get('/api/logs', (req, res) => {
 });
 
 app.get('/api/events', (req, res) => {
+    const qToken = req.query.token;
+    if (qToken) {
+        const s = db.prepare('SELECT player FROM auth_sessions WHERE token = ?').get(qToken);
+        if (!s) { res.status(401).end(); return; }
+    }
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -310,6 +346,17 @@ try { db.prepare("ALTER TABLE live_sessions ADD COLUMN sessionCollected TEXT DEF
 try { db.prepare("ALTER TABLE player_events ADD COLUMN session_id TEXT DEFAULT NULL").run(); } catch {}
 try { db.prepare("CREATE INDEX IF NOT EXISTS idx_player_events_session_id ON player_events(target, type, session_id)").run(); } catch {}
 
+// ---- auth_sessions: server-side session tokens ----
+db.exec(`CREATE TABLE IF NOT EXISTS auth_sessions (
+    token      TEXT PRIMARY KEY,
+    player     TEXT NOT NULL,
+    role       TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+)`);
+try { db.prepare('CREATE INDEX IF NOT EXISTS idx_auth_sessions_player ON auth_sessions(player)').run(); } catch {}
+// Prune expired sessions on startup (30 days TTL)
+db.prepare('DELETE FROM auth_sessions WHERE created_at < ?').run(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
 // ---- Cleanup: verwaiste Attendees (Spieler geloescht, aber noch in attendees) ----
 try {
     const result = db.prepare('DELETE FROM attendees WHERE player NOT IN (SELECT name FROM users)').run();
@@ -432,8 +479,20 @@ app.post('/api/login', (req, res) => {
     if (!user || user.pin !== pin) {
         return res.status(401).json({ error: 'Falsche PIN' });
     }
+    const cutoff = Date.now() - SESSION_TTL_MS;
+    db.prepare('DELETE FROM auth_sessions WHERE player = ? AND created_at < ?').run(name, cutoff);
+    const token = crypto.randomBytes(32).toString('hex');
+    db.prepare('INSERT INTO auth_sessions (token, player, role, created_at) VALUES (?, ?, ?, ?)').run(token, name, user.role, Date.now());
     logger.info('User login: ' + name);
-    res.json({ success: true, role: user.role });
+    res.json({ success: true, role: user.role, token });
+});
+
+// POST /api/logout
+app.post('/api/logout', (req, res) => {
+    const header = req.headers['authorization'] || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (token) db.prepare('DELETE FROM auth_sessions WHERE token = ?').run(token);
+    res.json({ success: true });
 });
 
 // GET /api/games
@@ -814,11 +873,9 @@ app.post('/api/shop/buy-star', (req, res) => {
 
 // POST /api/stars/add
 app.post('/api/stars/add', (req, res) => {
-    const { player, amount, requestedBy } = req.body;
+    const { player, amount } = req.body;
     if (!player || !amount) return res.status(400).json({ error: 'player und amount erforderlich' });
-    const _requester2 = requestedBy || player;
-    const _isAdmin2 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(_requester2);
-    if (!_isAdmin2) return res.status(403).json({ error: 'Nur Admins können Controller-Punkte vergeben' });
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins können Controller-Punkte vergeben' });
     if (player === 'alle') {
         const allPlayers = db.prepare('SELECT name FROM users').all();
         const tx = db.transaction(() => {
@@ -966,8 +1023,7 @@ app.post('/api/proposals/:id/leave', (req, res) => {
 // POST /api/proposals/:id/approve — Coins auszahlen und Proposal abschliessen
 app.post('/api/proposals/:id/approve', (req, res) => {
     const { coins, approvedBy } = req.body;
-    const _isAdmin5 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(approvedBy);
-    if (!_isAdmin5) return res.status(403).json({ error: 'Nur Admins können freigeben' });
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins können freigeben' });
     const coinsPerPlayer = parseInt(coins) || 0;
     const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id);
     if (!proposal) return res.status(404).json({ error: 'Proposal nicht gefunden' });
@@ -1155,9 +1211,7 @@ app.post('/api/genres-played', (req, res) => {
 
 // DELETE /api/reset
 app.delete('/api/reset', (req, res) => {
-    const { requestedBy } = req.body;
-    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
-    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins duerfen zuruecksetzen' });
     db.exec(`
         DELETE FROM users; DELETE FROM games; DELETE FROM game_players;
         DELETE FROM coins; DELETE FROM stars; DELETE FROM history; DELETE FROM sessions;
@@ -1165,33 +1219,28 @@ app.delete('/api/reset', (req, res) => {
         DELETE FROM proposal_players; DELETE FROM attendees; DELETE FROM settings;
         DELETE FROM challenges;
         DELETE FROM team_challenges;
+        DELETE FROM auth_sessions;
     `);
     seedIfEmpty();
     res.json({ success: true });
 });
 
 app.delete('/api/reset/coins', (req, res) => {
-    const { requestedBy } = req.body;
-    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
-    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins duerfen zuruecksetzen' });
     db.prepare('UPDATE coins SET amount = 0').run();
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
 
 app.delete('/api/reset/stars', (req, res) => {
-    const { requestedBy } = req.body;
-    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
-    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins duerfen zuruecksetzen' });
     db.prepare('UPDATE stars SET amount = 0').run();
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
 
 app.delete('/api/reset/challenges', (req, res) => {
-    const { requestedBy } = req.body;
-    const isAdmin = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(requestedBy);
-    if (!isAdmin) return res.status(403).json({ error: 'Nur Admins können zurücksetzen' });
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins duerfen zuruecksetzen' });
     db.prepare('DELETE FROM challenges').run();
     broadcast({ type: 'update' });
     res.json({ success: true });
@@ -2132,8 +2181,7 @@ app.get('/api/duel-votes/:sessionId', (req, res) => {
 // POST /api/duel-votes/resolve  (must come BEFORE /api/duel-votes with param to avoid route conflict)
 app.post('/api/duel-votes/resolve', (req, res) => {
     const { sessionId, winner, admin } = req.body;
-    const _isAdmin3 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(admin);
-    if (!_isAdmin3) return res.status(403).json({ error: 'Nur Admins können auflösen' });
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins können auflösen' });
 
     const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(sessionId);
     if (!session || !session.challenge_id) {
@@ -2402,8 +2450,7 @@ app.put('/api/live-sessions/:id/end', (req, res) => {
     if (player) {
         if (session.leader !== player) {
             // Check ob Admin
-            const user = db.prepare('SELECT role FROM users WHERE name = ?').get(player);
-            if (!user || user.role !== 'admin') {
+            if (req.authRole !== 'admin') {
                 return res.status(403).json({ error: 'Nur der Leader oder ein Admin kann die Session beenden' });
             }
         }
@@ -2433,9 +2480,8 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
     const { coinsPerPlayer: bodyCoins, player } = req.body;
     const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(req.params.id);
     if (!session) return res.status(404).json({ error: 'Session nicht gefunden' });
-    const _isAdmin1 = !!db.prepare("SELECT 1 FROM users WHERE name = ? AND role = 'admin'").get(player);
     const _isLeader1 = session.leader === player;
-    if (!_isAdmin1 && !_isLeader1) return res.status(403).json({ error: 'Nicht berechtigt' });
+    if (req.authRole !== 'admin' && !_isLeader1) return res.status(403).json({ error: 'Nicht berechtigt' });
     const coinsPerPlayer = session.pending_coins > 0 ? session.pending_coins : Math.max(0, parseInt(bodyCoins) || 0);
     const players = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id).map(r => r.player);
     // Build per-player payout amounts (same amount for each player)
