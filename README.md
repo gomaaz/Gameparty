@@ -3,7 +3,7 @@
 [![Docker Hub](https://img.shields.io/docker/pulls/gomaaz/gameparty?logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/gomaaz/gameparty)
 [![GitHub](https://img.shields.io/badge/GitHub-gomaaz%2FGameparty-181717?logo=github)](https://github.com/gomaaz/Gameparty)
 
-> **Disclaimer:** This project is 100% vibe-coded. It was built for fun, at a LAN party, for friends — not for production. No guarantees of any kind. The author takes no responsibility for any damage, data loss, bugs, or chaos of any sort that may result from using this software. Use at your own risk. Have fun. 🤙
+> **Disclaimer:** This project is 100% vibe-coded. It was built for fun, at a LAN party, for friends — not for production. No guarantees of any kind. The author takes no responsibility for any damage, data loss, bugs, or chaos that may result from using this software. Use at your own risk. Have fun. 🤙
 
 ---
 
@@ -39,14 +39,7 @@ It's not about winning. It's about getting everyone off their corner of the couc
 ## Features
 
 ### Coin System
-Players earn Coins for every minute they spend in a group session. The rate scales with the number of participants and is fully configurable by the admin:
-
-- Each player count (2, 3, 4, … players) has its own **Coins per minute** rate
-- A **max player limit** caps the rate (e.g., sessions with more than 7 players still earn at the 7-player rate)
-- **Formula:** `Coins = ceil(minutes) × rate[playerCount]`
-- All rates are set individually in the admin panel and saved instantly on change
-
-Session cards show the **expected rate** while waiting in the lobby, and a **live coin counter** ticks up in real time once the session is running.
+Players earn Coins for every minute they spend in a group session. The rate scales with the number of participants and is fully configurable by the admin. Session cards show the expected rate while waiting, and a live counter ticks up in real time once the session is running.
 
 ### Shop
 Spend Coins on actions that shake up the session:
@@ -60,82 +53,59 @@ Spend Coins on actions that shake up the session:
 | Pickpocket (Coins) | 10 Coins | Steal 0–20 Coins from another player |
 | Pickpocket (Controller) | 50 Coins | Steal a Controller Point — 50% chance |
 
-Shop items that target another player (Force Play, Drink Order, Pickpocket) generate a **real-time notification** for the recipient, including an acknowledgement flow so the initiator knows the action was received.
+Targeted actions (Force Play, Drink Order, Pickpocket) trigger a real-time notification for the recipient, including an acknowledgement flow.
 
-### Duels (1v1)
-Challenge another player head-to-head with Coins or Controller Points as stakes:
+### Duels & Team Duels
+**1v1 Duels:** Challenge another player head-to-head — stakes are deducted from both sides the moment a duel is accepted. No backing out.
 
-- Set your stake and pick an opponent — the challenge appears in their notification panel immediately
-- Stakes are **deducted from both players as soon as the duel is accepted** — no backing out
-- Once the duel is live, the challenger marks the winner and the admin pays out the pot
-- The winner receives a **payout modal** with a full breakdown of winnings
-
-### Team Duels
-The full group gets in on the action — not just two players:
-
-- **Build two teams** from all LAN-present players; each player can only be on one side
-- Set a **stake per person** — the input is automatically capped to the lowest balance in the current lineup, so no one can bet more than they have
-- A **live pot preview** updates as players are added or stakes are changed
-- Every participant must **individually accept** the challenge before it goes live; anyone can reject and cancel it
-- The creator is the **Group Leader (GL)** — shown first in the team list with a gold GL badge, and the only one who can select the winning team
-- When the winner is set, **all admins receive a notification** in their challenge panel with a direct link to the card
-- After the admin pays out, **every participant gets a payout modal** showing whether they won or lost, their earnings (or losses), and the full team breakdown
-- Remainder Coins that can't be split evenly go to the first winner in the list
-
-### Notifications Panel
-A live panel in the header (⚔️ badge) collects all pending actions for the current player:
-
-- **Duels** — accept or reject directly from the panel; clicking the item navigates to the challenge card
-- **Team Duels** — shown with a 👥 indicator; clicking opens the Team tab and scrolls to the card
-- **Admin winner review** — admins see a 🏆 notification when a Team Duel creator sets the winning team
-- **Shop tasks** — Force Play and Drink Order arrive here; confirm with ✓ to send an acknowledgement back to the buyer
-- Badge count combines all pending items across types
+**Team Duels:** Build two teams from everyone present, set a stake per person, and every participant must individually accept before it goes live. The winner is set by the Group Leader; the admin pays out the pot.
 
 ### Game Library
+The game list is the heart of Gameparty — all approved games in one place, each with cover art visible as a faded background on every card.
 
-The game list shows all approved games with cover art, metadata, and quick access to external links.
+- **Game detail modal** — click any game title to open a full view with a **screenshot slider** (cover + up to 6 in-game screenshots), release date, genres, supported platforms, Metacritic score, shop links, description, and PC system requirements
+- **Shop links** — clickable badges below each game title (Steam, GOG, Epic, and more)
+- **YouTube badge** — quick link to a YouTube search for any game
+- **Game Matcher** — shows which game currently has the most interested players
+- Players can mark their interest per game; the admin can add, edit, approve, and delete games
 
-- **Cover backgrounds** — each game card shows its cover image faded in from the right (35% opacity) for a visual at-a-glance overview
-- **Game detail modal** — click any game title to open a full detail view with:
-  - **Screenshot slider** — cover image plus up to 6 in-game screenshots with prev/next navigation and dot indicators
-  - Release date, genres, supported platforms, Metacritic score
-  - Shop links (Steam, GOG, Epic, official website, …)
-  - Full game description and PC system requirements (minimum)
-- **YouTube badge** — a red YT badge per game links directly to a YouTube search for that title
-- **Shop links** — displayed below the game title as clickable badges; sourced from RAWG or set manually by the admin
-- Players can mark their **interest** in games; the **Game Matcher** shows which game has the most interested players right now
-- Admin can add, approve, edit, and delete games; bulk-clear all shop links from the danger zone
+### Sessions
+Two types, one unified interface:
 
-### RAWG API Integration
+- **Spontaneous sessions** — start immediately, players join the lobby
+- **Planned sessions** — scheduled for a specific date/time, visible to everyone in advance
+- Session cards show the game's cover image for quick recognition
+- Optional player slots — numbered seats, lowest free slot filled first
+- When a session ends and Coins are paid out, every participant gets a receipt modal with game, duration, player count, and coin earnings
 
-Connect to [RAWG.io](https://rawg.io) to automatically enrich your game library with metadata. Enable it in the admin panel under *Game Data* and enter your free API key in `docker-compose.yml`.
+### Notifications
+A live panel in the header collects all pending actions — duel challenges, team duel invites, shop tasks (Force Play, Drink Order), and admin payout alerts. Badge count updates instantly for everyone.
 
-**What gets fetched:**
-- Cover image (downloaded locally to `gamefiles/covers/`)
-- Description, Metacritic score, genres, release date
-- Supported platforms and PC system requirements
-- Store links (Steam, GOG, Epic, Xbox, PlayStation Store, …) + official website
-- Up to 6 in-game screenshots
+### RAWG Integration (optional)
+Connect to [RAWG.io](https://rawg.io) to automatically enrich your game library with rich metadata. Get a free API key at [rawg.io/apidocs](https://rawg.io/apidocs) and set it in `docker-compose.yml`.
 
-**How it works:**
-- Toggle RAWG on/off in the admin panel — all game suggestion flows work with or without it
-- "Load game data" button enriches all approved games that are still missing metadata (skips already-complete entries to minimize API calls)
+**What gets fetched and stored locally:**
+- Cover image → `gamefiles/covers/`
+- Up to 6 in-game screenshots → `gamefiles/screenshots/`
+- Description, Metacritic score, genres, release date, platforms, PC system requirements
+- Store links (Steam, GOG, Epic, Xbox, PlayStation Store, official website)
+
+**How to use it:**
+- Toggle RAWG on/off in the admin panel under *Game Data*
+- Click **"Load game data from RAWG"** to enrich all approved games at once — already complete entries are skipped to save API calls
+- When suggesting a new game, an autocomplete dropdown appears with RAWG results — selecting one pre-fills all metadata and downloads images immediately
 - The admin panel shows total API requests made and how many games have been enriched
-- When suggesting a new game, an **autocomplete dropdown** appears with RAWG results (cover, genres, score preview) — selecting one pre-fills all metadata including shop links
-
-**Minimal API calls:** Games that already have full metadata (cover, platforms, release date, shop links, screenshots) are skipped on subsequent enrich runs.
 
 ### Game Import & Export
-The admin panel includes a **Game Data** card for bulk management:
 
 | Action | Description |
 |---|---|
 | **Export CSV** | Download all approved games as a CSV file |
 | **Import CSV** | Upload a CSV to add or update games — existing entries are overwritten, player interests are preserved |
-| **Import via URL** | Paste a public Google Sheets link or direct CSV URL — the server fetches and parses it automatically |
+| **Import via URL** | Paste a public Google Sheets link or direct CSV URL — fetched and parsed server-side |
 | **Load Default Games** | One-click import of ~100 pre-configured games — ideal for a fresh setup |
 
-All imports show a **preview modal** before committing. The CSV format uses flat columns for shop links:
+All imports show a preview modal before committing. CSV format:
 ```
 name,genre,maxPlayers,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_url_2
 "Mario Kart 8","Racing",4,"Steam","https://store.steampowered.com/app/...","",""
@@ -143,33 +113,8 @@ name,genre,maxPlayers,shoplink_label_1,shoplink_url_1,shoplink_label_2,shoplink_
 
 > **Tip (Excel):** Save as *CSV UTF-8 (comma delimited)* — not the default semicolon-separated format used in some locales.
 
-### Sessions
-Two session types, same unified interface:
-
-- **Spontaneous sessions** — start immediately, players join the lobby
-- **Planned sessions** — scheduled for a specific date/time, visible to all players; can be created even while already in a running session
-- Session cards show the **cover image** of the game faded in from the right for quick recognition
-- The **Group Leader (GL)** is always shown first with a gold GL badge
-- Optional **player slots** — the GL can set a fixed number of slots when creating a session; slots are numbered, the lowest free slot is always filled next, and a freed slot becomes available again immediately
-- Admin can end any session and trigger Coin payout
-- Players see the **live coin accumulator** ticking up second by second in running sessions
-- When a session ends and Coins are paid out, every participant receives a **session receipt modal** showing the game, number of players, duration, and coin rate — followed by the coin animation
-- Both session types use the same approval and payout flow
-
-### Leaderboard
-Sorted by Controller Points, then by Coins. Controller Points are permanent victory points — they can't be spent, only earned.
-
-### Live Updates
-All clients update in real time via Server-Sent Events (SSE). No refresh needed — everyone sees the same state instantly.
-
 ### Server Logs
-Gameparty logs all server-side activity to a ring buffer (last 500 entries). View logs live in the admin panel under *Logs*:
-
-- Filter by level: **ALL / INFO / ERROR / DEBUG**
-- Auto-refreshes every 4 seconds
-- RAWG API calls are logged in detail at DEBUG level (search queries, HTTP status, fields found, cover download size, store URLs, etc.)
-
-Set the log level via `docker-compose.yml`:
+Live log viewer in the admin panel with level filter (ALL / INFO / ERROR / DEBUG). RAWG API calls are logged in detail at DEBUG level. Set the log level in `docker-compose.yml`:
 ```yaml
 LOG_LEVEL=INFO   # OFF | INFO | DEBUG
 ```
@@ -178,51 +123,48 @@ LOG_LEVEL=INFO   # OFF | INFO | DEBUG
 
 ## Quick Start
 
-### Option A — Docker Hub (easiest)
+### Option A — Docker Hub (recommended)
 
-No git clone, no build. Just two commands.
+No git clone, no build. Just two commands:
 
 ```bash
 curl -O https://raw.githubusercontent.com/gomaaz/Gameparty/main/docker-compose.yml
 docker compose up -d
 ```
 
-The image is pulled from Docker Hub automatically. Open **http://localhost:3000** in your browser.
-All devices on the same network can connect via **http://\<HOST-IP\>:3000**.
+Open **http://localhost:3000** in your browser.
+Everyone on your network can join via **http://\<HOST-IP\>:3000**.
 
-**Default login (first start with a fresh database):**
+**Default login (first start only):**
 | Field | Value |
 |---|---|
 | Username | `admin` |
 | PIN | `1234` |
 
-> The admin account is created automatically on first start. Log in, then add your players via the Admin panel.
-> You can change the default credentials before the first start by editing `SEED_ADMIN_NAME` / `SEED_ADMIN_PIN` in `docker-compose.yml`.
-
-> Data is persisted in a Docker named volume (`gameparty-data`) and survives container restarts and updates.
-> Cover images downloaded via RAWG are stored in `./gamefiles/covers/` (bind-mounted from the host).
+> Change default credentials before first start by editing `SEED_ADMIN_NAME` / `SEED_ADMIN_PIN` in `docker-compose.yml`.
 
 **Update to the latest version:**
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-**Custom port (e.g. 8080):**
-Edit `docker-compose.yml` and change `"3000:3000"` to `"8080:3000"`.
+**Persistent data:**
+- The SQLite database lives in a named Docker volume (`gameparty-data`) — survives restarts and updates
+- Cover images and screenshots downloaded via RAWG are stored in `./gamefiles/` (bind-mounted from your host)
 
-**RAWG API key (optional):**
-Edit `docker-compose.yml` and set `RAWG_API_KEY=your_key_here`. Get a free key at [rawg.io/apidocs](https://rawg.io/apidocs).
+**Custom port (e.g. 8080):**
+Change `"3000:3000"` to `"8080:3000"` in `docker-compose.yml`.
+
+**RAWG API key:**
+Set `RAWG_API_KEY=your_key_here` in `docker-compose.yml`. Free key at [rawg.io/apidocs](https://rawg.io/apidocs).
 
 ---
 
 ### Option B — Reverse Proxy (Nginx Proxy Manager)
 
-If you expose Gameparty via a reverse proxy, SSE (live updates) requires specific configuration to work correctly. Without it, the proxy buffers the event stream and clients never receive real-time updates.
-
-**Nginx Proxy Manager — Advanced tab (per Proxy Host):**
+If you expose Gameparty via a reverse proxy, SSE (live updates) requires specific configuration. Add this to the **Advanced** tab of your Proxy Host:
 
 ```nginx
-# Required for SSE (Server-Sent Events / live updates)
 proxy_buffering off;
 proxy_cache off;
 proxy_read_timeout 86400s;
@@ -231,61 +173,37 @@ proxy_http_version 1.1;
 proxy_set_header Connection '';
 ```
 
-> Without `proxy_buffering off`, SSE events are silently swallowed by the proxy and clients fall back to 10-second polling only.
-> Without `proxy_read_timeout 86400s`, the proxy closes idle SSE connections after ~60 seconds, causing constant reconnects and browser console errors.
+> Without `proxy_buffering off`, live updates are silently swallowed and clients fall back to polling only.
 
 ---
 
 ### Option C — Manual (Node.js)
 
 ```bash
-# Install dependencies
 npm install
-
-# Start server
 npm start
 ```
 
-Requires **Node.js 18+**.
-The server runs on `http://localhost:3000`.
+Requires **Node.js 18+**. Server runs at `http://localhost:3000`.
 
 ---
 
-## Tech Stack
+## Configuration
 
-- **Backend:** Node.js, Express, better-sqlite3 (SQLite)
-- **Frontend:** Vanilla JS, HTML5, CSS3 – no framework
-- **Database:** SQLite with WAL mode
-- **Realtime:** Server-Sent Events (SSE)
-- **External API:** RAWG.io (optional, game metadata)
-- **Deployment:** Docker / Docker Compose
+All configuration lives in `docker-compose.yml`:
 
-## Internationalization
-
-The UI supports **English** (default) and **German**. Switch languages using the flag button in the header. The selection is stored in `localStorage`.
-
-To add another language, extend `js/i18n.js` with a new locale object.
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3000` | HTTP port |
+| `DB_PATH` | `/data/gameparty.db` | SQLite database path |
+| `GAMEFILES_PATH` | `/app/gamefiles` | Storage path for covers and screenshots |
+| `TZ` | `Europe/Berlin` | Timezone for timestamps |
+| `RAWG_API_KEY` | *(empty)* | RAWG.io API key — enables game metadata enrichment |
+| `LOG_LEVEL` | `INFO` | Log verbosity: `OFF` / `INFO` / `DEBUG` |
+| `SEED_ADMIN_NAME` | `admin` | Initial admin username (fresh DB only) |
+| `SEED_ADMIN_PIN` | `1234` | Initial admin PIN (fresh DB only) |
 
 ---
-
-## Project Structure
-
-```
-gameparty/
-├── server.js        # Express backend + SQLite API
-├── index.html       # Single-page app shell
-├── js/
-│   ├── app.js       # Complete frontend logic
-│   ├── data.js      # Configuration, player list, game library
-│   └── i18n.js      # Translations (EN/DE) + t() helper
-├── css/
-│   └── style.css    # Dark gaming theme
-├── svg/             # SVG icons (coins, controller, platform logos)
-├── gamefiles/
-│   └── covers/      # Cover images downloaded from RAWG (bind-mounted)
-├── Dockerfile       # Multi-stage Docker build
-└── docker-compose.yml
-```
 
 ## Roles
 
@@ -296,23 +214,17 @@ gameparty/
 
 ---
 
-## Admin Settings
+## Tech Stack
 
-The admin panel includes a **Session Coins** configuration card:
+- **Backend:** Node.js, Express, better-sqlite3 (SQLite)
+- **Frontend:** Vanilla JS, HTML5, CSS3 — no framework
+- **Realtime:** Server-Sent Events (SSE)
+- **External API:** RAWG.io (optional)
+- **Deployment:** Docker / Docker Compose
 
-- **Coinrate per player count** — set individual Coins/min rates for 2, 3, 4, … players
-- **Max player limit** — sessions with more players than the limit use the cap's rate
-- All settings save automatically on input change (no save button needed)
+## Internationalization
 
-**Game Data card:**
-- Import / export games via CSV or URL
-- Run RAWG enrichment to load metadata for all approved games
-- Toggle RAWG on/off; view API call count and enrichment progress
-- Danger zone: reset all player data, clear all shop links, wipe the game list
-
-**Logs card:**
-- Live log viewer with level filter (ALL / INFO / ERROR / DEBUG)
-- Auto-refreshes every 4 seconds
+The UI supports **English** (default) and **German**. Switch via the flag button in the header — stored in `localStorage`.
 
 ---
 
