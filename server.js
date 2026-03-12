@@ -442,7 +442,7 @@ app.delete('/api/games/shop-links', (req, res) => {
 
 // DELETE /api/games/:name
 app.delete('/api/games/:name', (req, res) => {
-    const game = db.prepare('SELECT id, name, suggestedBy, status FROM games WHERE name = ?').get(req.params.name);
+    const game = db.prepare('SELECT id, name, suggestedBy, status, cover_url, screenshots FROM games WHERE name = ?').get(req.params.name);
     if (!game) return res.status(404).json({ error: 'Spiel nicht gefunden' });
 
     // Collect players to notify BEFORE deletion
@@ -452,6 +452,14 @@ app.delete('/api/games/:name', (req, res) => {
         interested.forEach(p => toNotify.add(p));
         if (game.suggestedBy) toNotify.add(game.suggestedBy);
     }
+
+    // Delete local image files
+    const toDelete = [];
+    if (game.cover_url && game.cover_url.startsWith('/gamefiles/')) toDelete.push(game.cover_url);
+    try { JSON.parse(game.screenshots || '[]').forEach(u => { if (u && u.startsWith('/gamefiles/')) toDelete.push(u); }); } catch {}
+    toDelete.forEach(relUrl => {
+        try { fs.unlinkSync(path.join(gamefilesDir, relUrl.replace('/gamefiles/', ''))); } catch {}
+    });
 
     db.transaction(() => {
         db.prepare('DELETE FROM game_players WHERE game_id = ?').run(game.id);
@@ -2242,6 +2250,16 @@ app.post('/api/games/enrich', async (req, res) => {
                 logger.debug(`[${g.name}] screenshots → ${screenshotUrls.length} downloaded locally`);
             } catch (ssErr) {
                 logger.debug(`[${g.name}] screenshots fetch failed: ${ssErr.message}`);
+            }
+
+            // Fallback: if RAWG returned no screenshots (or all downloads failed), check for existing files on disk
+            if (screenshotUrls.length === 0) {
+                for (let i = 0; i < 6; i++) {
+                    const localPath = path.join(screenshotsDir, `${safeName}-${i}.jpg`);
+                    if (fs.existsSync(localPath)) screenshotUrls.push(`/gamefiles/screenshots/${safeName}-${i}.jpg`);
+                    else break;
+                }
+                if (screenshotUrls.length > 0) logger.debug(`[${g.name}] screenshots → ${screenshotUrls.length} existing files registered from disk`);
             }
 
             // System requirements (prefer PC, fallback to first platform with requirements)
