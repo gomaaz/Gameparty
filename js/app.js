@@ -2485,28 +2485,44 @@ function getNowPlus10() {
                     </div>`;
             }
 
-            const recentHistory = history.slice(0, 20);
-            let historyHTML = '';
-            if (recentHistory.length > 0) {
-                historyHTML = `
-                    <div class="card">
+            // Sort history newest-first
+            const sortedHistory = history.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const HIST_PAGE_SIZE = 10;
+            let historyPage = 0;
+
+            function buildHistoryHTML(page) {
+                const total = sortedHistory.length;
+                if (total === 0) return '';
+                const maxPage = Math.floor((total - 1) / HIST_PAGE_SIZE);
+                const pageEntries = sortedHistory.slice(page * HIST_PAGE_SIZE, page * HIST_PAGE_SIZE + HIST_PAGE_SIZE);
+                const paginationHTML = total > HIST_PAGE_SIZE ? `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
+                        <button class="btn-session-end hist-prev" ${page >= maxPage ? 'disabled' : ''}>← ${t('older')}</button>
+                        <span style="font-size:0.8rem;color:var(--text-secondary);">${page * HIST_PAGE_SIZE + 1}–${Math.min((page + 1) * HIST_PAGE_SIZE, total)} / ${total}</span>
+                        <button class="btn-session-end hist-next" ${page <= 0 ? 'disabled' : ''}>→ ${t('newer')}</button>
+                    </div>` : '';
+                return `
+                    <div class="card" id="profile-history-card">
                         <div class="card-title">${t('history_title')}</div>
                         <div class="history-list">
-                            ${recentHistory.map(h => {
+                            ${pageEntries.map(h => {
                                 const cls = h.amount > 0 ? 'positive' : 'negative';
                                 return `
                                     <div class="history-item">
                                         <div class="history-icon">${h.amount > 0 ? '+' : '-'}</div>
                                         <div>
-                                            <div class="history-text">${h.reason}</div>
+                                            <div class="history-text">${escapeHtml(h.reason)}</div>
                                             <div class="history-time">${formatTime(h.timestamp)}</div>
                                         </div>
                                         <div class="history-coins ${cls}">${h.amount > 0 ? '+' : ''}${h.amount}</div>
                                     </div>`;
                             }).join('')}
                         </div>
+                        ${paginationHTML}
                     </div>`;
             }
+
+            const historyHTML = buildHistoryHTML(0);
 
             container.innerHTML = `
                 <div class="card profile-header">
@@ -2604,6 +2620,29 @@ function getNowPlus10() {
                     <button class="btn-danger" id="btn-logout" style="width:100%">🚪 ${t('btn_logout', 'Logout')}</button>
                 </div>
             `;
+
+            // History pagination
+            function attachHistoryPagination() {
+                const histCard = container.querySelector('#profile-history-card');
+                if (!histCard) return;
+                const prevBtn = histCard.querySelector('.hist-prev');
+                const nextBtn = histCard.querySelector('.hist-next');
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', () => {
+                        historyPage++;
+                        histCard.outerHTML = buildHistoryHTML(historyPage);
+                        attachHistoryPagination();
+                    });
+                }
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', () => {
+                        historyPage--;
+                        histCard.outerHTML = buildHistoryHTML(historyPage);
+                        attachHistoryPagination();
+                    });
+                }
+            }
+            attachHistoryPagination();
 
             // Token einloesen
             container.querySelectorAll('.token-badge').forEach(btn => {
