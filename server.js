@@ -2212,6 +2212,9 @@ app.post('/api/games/enrich', async (req, res) => {
             }
             logger.debug(`[${g.name}] shops=${rawgStores.map(s=>`${s.platform}(${s.url ? 'url✓' : 'no-url'})`).join(', ') || 'none'}`);
 
+            // Safe filename for covers + screenshots
+            const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50);
+
             // Fetch and download screenshots locally
             let screenshotUrls = [];
             try {
@@ -2246,7 +2249,6 @@ app.post('/api/games/enrich', async (req, res) => {
             logger.debug(`[${g.name}] requirements=${reqMin ? 'found (PC=' + !!pcPlat + ')' : 'none'}`);
 
             // Cover download — keep existing value on failure so DB is never cleared
-            const safeName = g.name.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50);
             let coverUrl = g.cover_url || '';
             if (d.background_image) {
                 logger.debug(`[${g.name}] cover → downloading ${d.background_image}`);
