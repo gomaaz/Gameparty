@@ -47,6 +47,11 @@ body {
     color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
+    touch-action: manipulation;
+}
+
+button, a, input, select, textarea, label, [role="button"] {
+    touch-action: manipulation;
 }
 
 /* ---- Scrollbar ---- */
