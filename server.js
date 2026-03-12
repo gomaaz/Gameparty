@@ -2266,14 +2266,15 @@ app.post('/api/games/enrich', async (req, res) => {
                 logger.debug(`[${g.name}] cover → no background_image in RAWG response`);
             }
 
-            // Update DB
-            if (rawgStores.length > 0) {
-                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=?, shop_links=?, screenshots=? WHERE name=?`)
-                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, JSON.stringify(rawgStores), JSON.stringify(screenshotUrls), g.name);
-            } else {
-                db.prepare(`UPDATE games SET cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=?, screenshots=? WHERE name=?`)
-                    .run(coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements, JSON.stringify(screenshotUrls), g.name);
-            }
+            // Update DB — only overwrite screenshots/shop_links if we actually got data
+            const baseFields = `cover_url=?, description=?, rating=?, rawg_id=?, genre=?, platforms=?, released=?, requirements=?`;
+            const baseParams = [coverUrl, description, metacritic, rawgId, genres, platforms, released, requirements];
+            let extraFields = '';
+            const extraParams = [];
+            if (rawgStores.length > 0) { extraFields += ', shop_links=?'; extraParams.push(JSON.stringify(rawgStores)); }
+            if (screenshotUrls.length > 0) { extraFields += ', screenshots=?'; extraParams.push(JSON.stringify(screenshotUrls)); }
+            db.prepare(`UPDATE games SET ${baseFields}${extraFields} WHERE name=?`)
+                .run(...baseParams, ...extraParams, g.name);
 
             logger.debug(`[${g.name}] ✓ enriched: genre="${genres}", released="${released}", cover=${coverUrl ? '✓' : '✗'}, shops=${rawgStores.length}`);
             enriched++;
