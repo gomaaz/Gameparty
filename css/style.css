@@ -2338,6 +2338,8 @@ body {
     color: var(--accent-gold);
 }
 
+.status-badge.released { background: rgba(100,200,255,0.15); color: #64c8ff; animation: pulse-badge 2s infinite; }
+
 .leader-badge {
     display: inline-flex;
     align-items: center;

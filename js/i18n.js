@@ -313,6 +313,7 @@ const TRANSLATIONS = {
         duel_status_paid: 'Paid Out',
         duel_status_rejected: 'Rejected',
         duel_status_conflict: 'Conflict',
+        duel_status_released: 'Ready to Collect',
         duel_vote_header: 'Who won?',
         duel_vote_label: 'Cast your vote:',
         duel_vote_waiting: 'Waiting for Gamemaster...',
@@ -405,6 +406,8 @@ const TRANSLATIONS = {
         ffa_placement_error: 'All players need a placement',
         ffa_duplicate_placement_error: 'Each place may only be assigned once',
         btn_collect: 'Collect',
+        btn_collect_amount: 'Collect {0} 🪙',
+        btn_collect_amount_stars: 'Collect {0} 🪙 + {1} ⭐',
         ffa_payout_winner_review: '🎯 FFA results awaiting review',
         ffa_payout_notif: '🎯 FFA Challenge result: Place {0}',
 
@@ -894,6 +897,7 @@ const TRANSLATIONS = {
         duel_status_paid: 'Ausgezahlt',
         duel_status_rejected: 'Abgelehnt',
         duel_status_conflict: 'Konflikt',
+        duel_status_released: 'Abholbereit',
         duel_vote_header: 'Wer hat gewonnen?',
         duel_vote_label: 'Stimme ab:',
         duel_vote_waiting: 'Warte auf Gamemaster...',
@@ -986,6 +990,8 @@ const TRANSLATIONS = {
         ffa_placement_error: 'Alle Spieler brauchen eine Platzierung',
         ffa_duplicate_placement_error: 'Jeder Platz darf nur einmal vergeben werden',
         btn_collect: 'Einsammeln',
+        btn_collect_amount: '{0} 🪙 einsammeln',
+        btn_collect_amount_stars: '{0} 🪙 + {1} ⭐ einsammeln',
         ffa_payout_winner_review: '🎯 FFA Ergebnis wartet auf Überprüfung',
         ffa_payout_notif: '🎯 FFA Challenge Ergebnis: Platz {0}',
 

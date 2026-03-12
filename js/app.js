@@ -4415,7 +4415,7 @@ function getNowPlus10() {
             const attendeesOrAll = state.attendees.length ? state.attendees : state.players;
             const opponents = attendeesOrAll.filter(p => p !== state.currentPlayer);
 
-            const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt' };
+            const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt', released: t('duel_status_released') };
 
             function renderCard(c) {
                 const isOpponent = c.opponent === state.currentPlayer;
@@ -4448,6 +4448,18 @@ function getNowPlus10() {
 
                 if (admin && c.status !== 'paid') {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave ch-delete" data-id="${c.id}">${t('btn_delete_duel')}</button></div>`;
+                }
+
+                // Collect button for released challenges
+                const isParticipant = [c.challenger, c.opponent].includes(state.currentPlayer);
+                const collectedArr = JSON.parse(c.collected || '[]');
+                if (c.status === 'released' && isParticipant && !collectedArr.includes(state.currentPlayer)) {
+                    const amounts = JSON.parse(c.payoutAmounts || '{}');
+                    const starAmounts = JSON.parse(c.payoutStarAmounts || '{}');
+                    const myCoins = amounts[state.currentPlayer] || 0;
+                    const myStars = starAmounts[state.currentPlayer] || 0;
+                    const label = myStars > 0 ? t('btn_collect_amount_stars', myCoins, myStars) : t('btn_collect_amount', myCoins);
+                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary ch-collect" data-id="${c.id}" data-coins="${myCoins}" data-stars="${myStars}" style="width:100%;font-weight:700">${label}</button></div>`;
                 }
 
                 const winnerInfo = c.winner ? `<div style="display:flex;justify-content:flex-end;margin-top:0.3rem;"><span style="font-size:1.1rem;color:var(--accent-gold,#ffd700);font-weight:700;">🏆 ${c.winner}</span></div>` : '';
@@ -4495,7 +4507,8 @@ function getNowPlus10() {
                     completed: t('duel_status_completed'),
                     paid: t('duel_status_paid'),
                     rejected: t('duel_status_rejected'),
-                    conflict: t('duel_status_conflict') || 'Konflikt'
+                    conflict: t('duel_status_conflict') || 'Konflikt',
+                    released: t('duel_status_released')
                 };
 
                 const potLines = [];
@@ -4540,6 +4553,17 @@ function getNowPlus10() {
 
                 if (admin && tc.status !== 'paid') {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave tc-delete" data-id="${tc.id}">${t('btn_delete_duel')}</button></div>`;
+                }
+
+                // Collect button for released team challenges
+                const tcCollectedArr = JSON.parse(tc.collected || '[]');
+                if (tc.status === 'released' && inChallenge && !tcCollectedArr.includes(state.currentPlayer)) {
+                    const tcAmounts = JSON.parse(tc.payoutAmounts || '{}');
+                    const tcStarAmounts = JSON.parse(tc.payoutStarAmounts || '{}');
+                    const tcMyCoins = tcAmounts[state.currentPlayer] || 0;
+                    const tcMyStars = tcStarAmounts[state.currentPlayer] || 0;
+                    const tcLabel = tcMyStars > 0 ? t('btn_collect_amount_stars', tcMyCoins, tcMyStars) : t('btn_collect_amount', tcMyCoins);
+                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary tc-collect" data-id="${tc.id}" data-coins="${tcMyCoins}" data-stars="${tcMyStars}" style="width:100%;font-weight:700">${tcLabel}</button></div>`;
                 }
 
                 // Sort creator first in their team; render GL badge for creator
@@ -4663,7 +4687,7 @@ function getNowPlus10() {
                 const totalPot = ffa.stakeCoinsPerPerson * players.length;
                 const totalStarPot = ffa.stakeStarsPerPerson * players.length;
 
-                const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected') };
+                const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), released: t('duel_status_released') };
 
                 // Acceptance badges
                 const acceptanceBadges = ffa.status === 'pending' ? players.map(p => {
@@ -4700,6 +4724,16 @@ function getNowPlus10() {
                 }
                 if (admin && ffa.status !== 'paid') {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave ffa-delete" data-id="${ffa.id}">${t('btn_delete_duel')}</button></div>`;
+                }
+                // Collect button for released FFA challenges
+                const ffaCollectedArr = JSON.parse(ffa.collected || '[]');
+                if (ffa.status === 'released' && inChallenge && !ffaCollectedArr.includes(state.currentPlayer)) {
+                    const ffaAmounts = JSON.parse(ffa.payoutAmounts || '{}');
+                    const ffaStarAmounts = JSON.parse(ffa.payoutStarAmounts || '{}');
+                    const ffaMyCoins = ffaAmounts[state.currentPlayer] || 0;
+                    const ffaMyStars = ffaStarAmounts[state.currentPlayer] || 0;
+                    const ffaLabel = ffaMyStars > 0 ? t('btn_collect_amount_stars', ffaMyCoins, ffaMyStars) : t('btn_collect_amount', ffaMyCoins);
+                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary ffa-collect" data-id="${ffa.id}" data-coins="${ffaMyCoins}" data-stars="${ffaMyStars}" style="width:100%;font-weight:700">${ffaLabel}</button></div>`;
                 }
 
                 // Placements display (for completed/paid)
@@ -5125,6 +5159,26 @@ function getNowPlus10() {
                         }
                     });
                 });
+
+                // Event: Collect (1v1)
+                container.querySelectorAll('.ch-collect').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const res = await api('PUT', `/challenges/${btn.dataset.id}/collect`, { player: state.currentPlayer });
+                            const coins = Number(btn.dataset.coins);
+                            const stars = Number(btn.dataset.stars) || 0;
+                            if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
+                            playSound('coin');
+                            const coinsData = await api('GET', '/coins');
+                            state.coins = coinsData;
+                            updateHeaderCoins();
+                            renderChallenges();
+                        } catch (e) {
+                            showToast(e.message || String(e), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
             }
 
             // Live pot preview + stake cap based on selected players
@@ -5376,6 +5430,26 @@ function getNowPlus10() {
                         }
                     });
                 });
+
+                // Event: Collect (team)
+                container.querySelectorAll('.tc-collect').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/team-challenges/${btn.dataset.id}/collect`, { player: state.currentPlayer });
+                            const coins = Number(btn.dataset.coins);
+                            const stars = Number(btn.dataset.stars) || 0;
+                            if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
+                            playSound('coin');
+                            const coinsData = await api('GET', '/coins');
+                            state.coins = coinsData;
+                            updateHeaderCoins();
+                            renderChallenges();
+                        } catch (e) {
+                            showToast(e.message || String(e), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
             }
 
             // ---- FFA Tab Events ----
@@ -5611,6 +5685,26 @@ function getNowPlus10() {
                             renderChallenges();
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Event: Collect (FFA)
+                container.querySelectorAll('.ffa-collect').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/ffa-challenges/${btn.dataset.id}/collect`, { player: state.currentPlayer });
+                            const coins = Number(btn.dataset.coins);
+                            const stars = Number(btn.dataset.stars) || 0;
+                            if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
+                            playSound('coin');
+                            const coinsData = await api('GET', '/coins');
+                            state.coins = coinsData;
+                            updateHeaderCoins();
+                            renderChallenges();
+                        } catch (e) {
+                            showToast(e.message || String(e), 'error');
                             playSound('error');
                         }
                     });
