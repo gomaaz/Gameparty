@@ -2432,7 +2432,7 @@ app.post('/api/live-sessions/:id/approve', (req, res) => {
     db.prepare("UPDATE live_sessions SET status = 'released', sessionPayoutAmounts = ?, sessionCollected = '[]' WHERE id = ?").run(JSON.stringify(payoutAmounts), req.params.id);
     // Notify all participants via player_events (inform that coins are ready to collect)
     if (coinsPerPlayer > 0) {
-        const payoutPayload = JSON.stringify({ game: session.game, coins: coinsPerPlayer, playerCount: players.length, durationMin: session.duration_min || 0, coinRate: session.coin_rate || 0 });
+        const payoutPayload = JSON.stringify({ sessionId: req.params.id, game: session.game, coins: coinsPerPlayer, playerCount: players.length, durationMin: session.duration_min || 0, coinRate: session.coin_rate || 0 });
         const payoutNow = Date.now();
         for (const p of players) {
             db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'session_payout', '', payoutPayload, payoutNow, 'active');

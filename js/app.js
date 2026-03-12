@@ -6064,6 +6064,16 @@ function getNowPlus10() {
                 return itemHtml({ id: n.id, icon, title, sub, actions, accent, navigate, ts: n.ts });
             }),
             ...incomingActivities.map(a => {
+                if (a.type === 'session_payout') {
+                    let payload = {};
+                    try { payload = JSON.parse(a.message); } catch {}
+                    const coins = payload.coins || 0;
+                    const icon  = coinSvgIcon('1.1em');
+                    const title = `+${fmt(coins)} ${coinSvgIcon()} ${t('btn_collect')}`;
+                    const sub   = payload.game || '';
+                    const actions = `<button class="notif-btn notif-btn-ok notif-session-collect" data-id="${a.id}" data-sid="${payload.sessionId || ''}" data-coins="${coins}">${t('btn_collect')}</button>`;
+                    return itemHtml({ id: 'activity-' + a.id, icon, title, sub, actions, accent: 'gold', navigate: null, ts: a.ts });
+                }
                 const icon    = TASK_ICONS[a.type] || '⚡';
                 const actions = btnOk('notif-task-done', `data-id="${a.id}" data-from="${a.from_player || ''}" data-type="${a.type}"`);
                 return itemHtml({ id: 'activity-' + a.id, icon, title: a.message, sub: a.from_player || '', actions, accent: null, navigate: null, ts: a.ts });
@@ -6180,6 +6190,28 @@ function getNowPlus10() {
                     showToast('Aufgabe erledigt!', 'success');
                     renderNotifPanel();
                 } catch {}
+            });
+        });
+
+        // Collect session payout from bell
+        panel.querySelectorAll('.notif-session-collect').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const sid   = btn.dataset.sid;
+                const coins = Number(btn.dataset.coins);
+                const evId  = btn.dataset.id;
+                try {
+                    await api('PUT', `/live-sessions/${sid}/collect`, { player: state.currentPlayer });
+                    await api('DELETE', `/player-events/${evId}`);
+                    if (coins > 0) showCoinAnimation(coins, 0);
+                    else playSound('coin');
+                    notifPanelOpen = false;
+                    panel.classList.remove('open');
+                    renderDashboard();
+                    renderNotifPanel();
+                } catch (err) {
+                    showToast(err.message || t('save_error'), 'error');
+                }
             });
         });
 
