@@ -2287,6 +2287,37 @@ body {
     flex-shrink: 0;
 }
 
+/* Team challenge stake/payout info block */
+.tc-stake-info {
+    margin: 0.45rem 0 0.35rem;
+    padding: 0.5rem 0.6rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.tc-stake-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    opacity: 0.75;
+}
+
+.tc-stake-row {
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.tc-stake-none {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
 .status-badge {
     display: inline-block;
     padding: 0.15rem 0.6rem;

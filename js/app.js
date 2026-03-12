@@ -4550,15 +4550,55 @@ function getNowPlus10() {
                     released: t('duel_status_released')
                 };
 
-                const potLines = [];
-                if (tc.stakeCoinsPerPerson > 0) potLines.push(`${coinSvgIcon()} ${fmt(tc.stakeCoinsPerPerson)} Coins/Person · Gesamtpott: ${fmt(totalPot)} Coins`);
-                if (tc.stakeStarsPerPerson > 0) potLines.push(`${controllerSvgIcon()} ${fmt(tc.stakeStarsPerPerson)} Controller/Person · Gesamtpott: ${fmt(totalStarPot)} Controller`);
-                const potStr = potLines.length ? potLines.join('<br>') : t('no_stake');
-                let tcPayoutBadge = '';
-                if (tc.payoutMode === 'percentage' && tc.payoutConfig) {
-                    const cfg = typeof tc.payoutConfig === 'string' ? JSON.parse(tc.payoutConfig) : tc.payoutConfig;
-                    tcPayoutBadge = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;"><span style="color:var(--accent-gold);">🏆 ${cfg.winner}%</span> / <span style="color:var(--accent-red);">😔 ${cfg.loser}%</span></div>`;
+                // Build structured stake/payout info block
+                const showPayoutDetails = tc.status === 'paid' || tc.status === 'released' || !!tc.winnerTeam;
+                let winnerCoinsPer = 0;
+                let loserCoinsPer = 0;
+                if (showPayoutDetails && tc.stakeCoinsPerPerson > 0 && tc.winnerTeam) {
+                    const winnerCount = tc.winnerTeam === 'A' ? teamA.length : teamB.length;
+                    const loserCount = tc.winnerTeam === 'A' ? teamB.length : teamA.length;
+                    if (tc.payoutMode === 'percentage' && tc.payoutConfig) {
+                        const cfg = typeof tc.payoutConfig === 'string' ? JSON.parse(tc.payoutConfig) : tc.payoutConfig;
+                        winnerCoinsPer = winnerCount > 0 ? Math.floor(totalPot * (cfg.winner / 100) / winnerCount) : 0;
+                        loserCoinsPer = loserCount > 0 ? Math.floor(totalPot * (cfg.loser / 100) / loserCount) : 0;
+                    } else {
+                        winnerCoinsPer = winnerCount > 0 ? Math.floor(totalPot / winnerCount) : 0;
+                        loserCoinsPer = 0;
+                    }
                 }
+
+                const tcStakeRows = [];
+                if (tc.stakeCoinsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-gold);font-weight:600;">${fmt(tc.stakeCoinsPerPerson)} 🪙</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
+                if (tc.stakeStarsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(tc.stakeStarsPerPerson)} ⭐</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
+
+                const tcPotParts = [];
+                if (tc.stakeCoinsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-gold);font-weight:600;">${fmt(totalPot)} 🪙</span>`);
+                if (tc.stakeStarsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(totalStarPot)} ⭐</span>`);
+
+                let tcPayoutDetailsHTML = '';
+                if (showPayoutDetails && tc.winnerTeam && tc.stakeCoinsPerPerson > 0) {
+                    tcPayoutDetailsHTML += `<div style="margin-top:0.35rem;padding-top:0.35rem;border-top:1px solid var(--border);">`;
+                    tcPayoutDetailsHTML += `<div class="tc-stake-label">${t('tc_winner_payout')}:</div>`;
+                    tcPayoutDetailsHTML += `<div class="tc-stake-row"><span style="color:var(--accent-green,#00e676);font-weight:700;">${fmt(winnerCoinsPer)} 🪙</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span></div>`;
+                    if (loserCoinsPer > 0) {
+                        tcPayoutDetailsHTML += `<div class="tc-stake-label" style="margin-top:0.2rem;">${t('tc_loser_payout')}:</div>`;
+                        tcPayoutDetailsHTML += `<div class="tc-stake-row"><span style="color:var(--accent-red,#ff5252);font-weight:600;">${fmt(loserCoinsPer)} 🪙</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span></div>`;
+                    }
+                    tcPayoutDetailsHTML += `</div>`;
+                }
+
+                const tcStakeInfoBlock = tcStakeRows.length > 0 ? `
+                    <div class="tc-stake-info">
+                        <div>
+                            <div class="tc-stake-label">${t('tc_stake_label')}:</div>
+                            ${tcStakeRows.map(r => `<div class="tc-stake-row">${r}</div>`).join('')}
+                        </div>
+                        <div style="margin-top:0.35rem;padding-top:0.35rem;border-top:1px solid var(--border);">
+                            <div class="tc-stake-label">${t('tc_pot_label')}:</div>
+                            <div class="tc-stake-row">${tcPotParts.join(' / ')}</div>
+                        </div>
+                        ${tcPayoutDetailsHTML}
+                    </div>` : `<div class="tc-stake-info tc-stake-none">${t('no_stake')}</div>`;
 
                 const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
                 const highlightClass = inChallenge ? ' highlight' : '';
@@ -4632,8 +4672,7 @@ function getNowPlus10() {
                             <div style="color:${teamBLabelColor}">${t('team_b')}: ${teamBDisplay}</div>
                         </div>
                         <div class="game-meta">${tc.game}</div>
-                        <div class="game-meta" style="line-height:1.6">${potStr}</div>
-                        ${tcPayoutBadge}
+                        ${tcStakeInfoBlock}
                         ${acceptanceHTML}
                         ${winnerLabel ? `<div style="display:flex;justify-content:flex-end;margin-top:0.3rem;"><span style="font-size:1.1rem;color:var(--accent-gold,#ffd700);font-weight:700;">🏆 ${winnerLabel}</span></div>` : ''}
                         ${actionsHTML}
