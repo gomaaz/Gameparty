@@ -2,6 +2,7 @@
 // Gameparty - Express + SQLite Backend
 // ============================================================
 const express = require('express');
+const compression = require('compression');
 const Database = require('better-sqlite3');
 const cors = require('cors');
 const path = require('path');
@@ -34,6 +35,7 @@ const shopCooldownTs = {}; // { rob_controller: timestamp }
 const SHOP_COOLDOWN_MS = { rob_controller: 5 * 60 * 1000 };
 
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 
 // index.html mit versionierten Asset-URLs ausliefern (Cache-Busting)
@@ -48,7 +50,13 @@ app.get('/', (req, res) => {
     res.send(html);
 });
 
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname), {
+    setHeaders(res, filePath) {
+        if (/\.(js|css|svg|png|jpg|jpeg|webp|ico|woff2?)$/.test(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }
+}));
 
 // ---- RAWG: Static file serving for downloaded covers + screenshots ----
 const gamefilesDir = process.env.GAMEFILES_PATH || path.join(__dirname, 'gamefiles');
