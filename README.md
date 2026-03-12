@@ -55,10 +55,16 @@ Spend Coins on actions that shake up the session:
 
 Targeted actions (Force Play, Drink Order, Pickpocket) trigger a real-time notification for the recipient, including an acknowledgement flow.
 
-### Duels & Team Duels
+### Duels, Team Duels & FFA
 **1v1 Duels:** Challenge another player head-to-head — stakes are deducted from both sides the moment a duel is accepted. No backing out.
 
 **Team Duels:** Build two teams from everyone present, set a stake per person, and every participant must individually accept before it goes live. The winner is set by the Group Leader; the admin pays out the pot.
+
+**FFA (Free-for-All):** The third challenge type — everyone against everyone. Any number of players (minimum 3) enter with equal stakes, and the payout is distributed by finishing position. Configure exactly how much each place earns (e.g. 1st: 50%, 2nd: 30%, 3rd: 20%) or use a preset. Quick picks included: 50/30/20, 60/40, 70/20/10, and Winner-Takes-All. Every participant must accept individually before stakes are locked. Once the session ends, the creator assigns the final standings; the admin reviews and triggers the payout.
+
+**Payout Modes** (available for all three challenge types):
+- *Winner Takes All* — the default. The full pot goes to the winner (or winning team).
+- *Split by %* — configure a custom winner/loser percentage split. The loser gets a partial refund; the winner takes the rest. The winner must receive at least 50%.
 
 ### Game Library
 The game list is the heart of Gameparty — all approved games in one place, each with cover art visible as a faded background on every card.
@@ -209,8 +215,8 @@ All configuration lives in `docker-compose.yml`:
 
 | Role | Permissions |
 |---|---|
-| `player` | Earn Coins, use Shop, create and accept Duels & Team Duels, mark game interest, join sessions |
-| `admin` | + Start/end sessions, manage players, adjust Coins, configure coin rates, pay out duel pots, manage game library, run RAWG enrichment |
+| `player` | Earn Coins, use Shop, create and accept Duels, Team Duels & FFA Challenges, mark game interest, join sessions |
+| `admin` | + Start/end sessions, manage players, adjust Coins, configure coin rates, pay out duel/FFA pots, manage game library, run RAWG enrichment |
 
 ---
 
