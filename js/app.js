@@ -536,6 +536,10 @@ function getNowPlus10() {
         return Math.round(n || 0).toLocaleString('de-DE');
     }
 
+    function escapeHtml(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     // ---- Navigation ----
     function navigateTo(viewId) {
         $$('.view').forEach(v => v.classList.remove('active'));
@@ -2630,14 +2634,20 @@ function getNowPlus10() {
                 if (prevBtn) {
                     prevBtn.addEventListener('click', () => {
                         historyPage++;
-                        histCard.outerHTML = buildHistoryHTML(historyPage);
+                        const current = container.querySelector('#profile-history-card');
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = buildHistoryHTML(historyPage);
+                        current.replaceWith(tmp.firstElementChild);
                         attachHistoryPagination();
                     });
                 }
                 if (nextBtn) {
                     nextBtn.addEventListener('click', () => {
                         historyPage--;
-                        histCard.outerHTML = buildHistoryHTML(historyPage);
+                        const current = container.querySelector('#profile-history-card');
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = buildHistoryHTML(historyPage);
+                        current.replaceWith(tmp.firstElementChild);
                         attachHistoryPagination();
                     });
                 }
@@ -4527,8 +4537,8 @@ function getNowPlus10() {
             }
 
             function renderTeamCard(tc) {
-                const teamA = JSON.parse(tc.teamA);
-                const teamB = JSON.parse(tc.teamB);
+                const teamA = JSON.parse(tc.teamA || '[]');
+                const teamB = JSON.parse(tc.teamB || '[]');
                 const admin = isAdmin();
                 const inTeamA = teamA.includes(state.currentPlayer);
                 const inTeamB = teamB.includes(state.currentPlayer);
