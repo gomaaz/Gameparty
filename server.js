@@ -2151,7 +2151,10 @@ app.post('/api/games/enrich', async (req, res) => {
     if (!key) return res.status(500).json({ error: 'RAWG_API_KEY not set' });
 
     // Process all approved games — full re-fetch and overwrite
-    const games = db.prepare(`SELECT name, rawg_id, cover_url FROM games WHERE status = 'approved'`).all();
+    const { name: singleName } = req.body;
+    const games = singleName
+        ? db.prepare(`SELECT name, rawg_id, cover_url FROM games WHERE name = ?`).all(singleName)
+        : db.prepare(`SELECT name, rawg_id, cover_url FROM games WHERE status = 'approved'`).all();
 
     logger.info(`RAWG enrich started: ${games.length} games to process`);
     let enriched = 0, skipped = 0;

@@ -800,6 +800,11 @@ body {
     color: var(--accent-red);
 }
 
+.game-action-btn.rawg:hover {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+}
+
 .mb-1 { margin-bottom: 0.5rem; }
 
 /* ---- Profile ---- */

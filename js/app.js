@@ -1686,6 +1686,25 @@ function getNowPlus10() {
                 return;
             }
 
+            const rawgBtn = e.target.closest('.game-rawg-btn');
+            if (rawgBtn) {
+                e.stopPropagation();
+                const gameName = rawgBtn.dataset.game;
+                rawgBtn.disabled = true;
+                rawgBtn.textContent = '⏳';
+                try {
+                    await api('POST', '/games/enrich', { name: gameName });
+                    showToast(`RAWG-Daten für "${gameName}" aktualisiert`, 'success');
+                    renderMatcher();
+                } catch (e2) {
+                    showToast('RAWG-Reload fehlgeschlagen', 'error');
+                } finally {
+                    rawgBtn.disabled = false;
+                    rawgBtn.innerHTML = '&#x21BA;';
+                }
+                return;
+            }
+
             const createRoomBtn = e.target.closest('.game-create-room-btn');
             if (createRoomBtn) {
                 e.stopPropagation();
@@ -2059,10 +2078,15 @@ function getNowPlus10() {
                     👍
                 </button>` : '<span></span>';
 
+            const rawgReloadBtn = (admin && state.rawgEnabled)
+                ? `<button class="game-action-btn rawg game-rawg-btn" data-game="${g.name}" title="RAWG-Daten neu laden">&#x21BA;</button>`
+                : '';
+
             const adminBtns = admin ? `
                 <div class="game-admin-controls">
                     <button class="game-action-btn edit game-edit-btn" data-game="${g.name}" title="Bearbeiten">&#x270E;</button>
                     <button class="game-action-btn delete game-delete-btn" data-game="${g.name}" title="Loeschen">&#x2716;</button>
+                    ${rawgReloadBtn}
                 </div>` : '';
 
             const createRoomBtn = player ? `<button class="game-create-room-btn" data-game="${g.name}" title="${t('btn_create_room')}">🖥️</button>` : '<span></span>';
