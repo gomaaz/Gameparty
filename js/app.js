@@ -987,12 +987,39 @@ function getNowPlus10() {
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>` };
                 });
-                liveSessionsHTML = allRenderedSessions.filter(r => r.status !== 'ended').map(r => r.html).join('');
+                liveSessionsHTML = allRenderedSessions.filter(r => r.status !== 'ended' && r.status !== 'released').map(r => r.html).join('');
                 endedSessionsHTML = allRenderedSessions.filter(r => r.status === 'ended').map(r => r.html).join('');
             }
 
             const activeProposalsHTML = activeProposals.map(renderProposalCard).join('');
-            const hasAnything = liveSessionsData.filter(s => s.status !== 'ended').length > 0 || activeProposals.length > 0;
+            const hasAnything = liveSessionsData.filter(s => s.status !== 'ended' && s.status !== 'released').length > 0 || activeProposals.length > 0;
+
+            // Build "Abholbereit" section for released sessions where current player hasn't collected yet
+            let releasedSessionsHTML = '';
+            if (liveSessionsData.length > 0 && state.currentPlayer) {
+                const releasedForMe = liveSessionsData.filter(s => {
+                    if (s.status !== 'released') return false;
+                    const isInSession = s.players.some(p => (p.player || p) === state.currentPlayer);
+                    if (!isInSession) return false;
+                    const collected = JSON.parse(s.sessionCollected || '[]');
+                    return !collected.includes(state.currentPlayer);
+                });
+                releasedSessionsHTML = releasedForMe.map(s => {
+                    const amounts = JSON.parse(s.sessionPayoutAmounts || '{}');
+                    const myCoins = amounts[state.currentPlayer] || 0;
+                    const label = `+${fmt(myCoins)} ${coinSvgIcon()} ${t('btn_collect')}`;
+                    return `
+                        <div class="live-session-card released-session-card">
+                            <div class="live-session-header">
+                                <span class="live-session-game">${s.game}</span>
+                                <span style="color:var(--accent-green,#00e676);font-size:0.8rem;font-weight:600">✅ ${t('duel_status_released')}</span>
+                            </div>
+                            <div class="live-session-actions">
+                                <button class="btn-session-start session-collect-btn" data-sid="${s.id}" data-coins="${myCoins}" style="font-weight:700;width:100%">${label}</button>
+                            </div>
+                        </div>`;
+                }).join('');
+            }
 
             // Detect new running duel sessions and show start modal
             liveSessionsData.filter(s =>
@@ -1029,6 +1056,10 @@ function getNowPlus10() {
                         ? liveSessionsHTML + activeProposalsHTML
                         : `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_active_sessions')}</div>`}
                 </div>
+                ${releasedSessionsHTML ? `<div class="card" id="released-sessions-container">
+                    <div class="card-title">${t('section_ready_to_collect')}</div>
+                    ${releasedSessionsHTML}
+                </div>` : ''}
                 <div class="card" id="planned-sessions-container">
                     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
                         ${t('planned_sessions')}
@@ -1082,6 +1113,21 @@ function getNowPlus10() {
                         showToast(e.message || t('save_error'), 'error');
                     }
                     renderDashboard();
+                });
+            });
+
+            // Event: Collect session payout
+            container.querySelectorAll('.session-collect-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    try {
+                        await api('PUT', `/live-sessions/${btn.dataset.sid}/collect`, { player: state.currentPlayer });
+                        const coins = Number(btn.dataset.coins);
+                        if (coins > 0) showCoinAnimation(coins, 0);
+                        playSound('coin');
+                        renderDashboard();
+                    } catch (e) {
+                        showToast(e.message || t('save_error'), 'error');
+                    }
                 });
             });
 
@@ -2939,7 +2985,6 @@ function getNowPlus10() {
                     const coinsPerPlayer = parseInt(coinsInput?.value ?? 0);
                     try {
                         await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer, player: state.currentPlayer });
-                        showCoinAnimation(coinsPerPlayer);
                         showToast(t('session_approved', fmt(coinsPerPlayer)), 'success');
                         renderSession();
                     } catch (e) { showToast(t('session_error_approve'), 'error'); }
@@ -4203,7 +4248,7 @@ function getNowPlus10() {
         const coins = data.coins || 0;
         modal.innerHTML = `
             <div class="modal-title" style="color:var(--accent-gold);">
-                🧾 ${t('session_payout_title')}
+                🪙 ${t('section_ready_to_collect')}
             </div>
             <div style="text-align:center;font-size:1.5rem;font-weight:700;margin:0.75rem 0;color:var(--accent-gold);">
                 +${fmt(coins)} ${coinSvgIcon('1.2em')}
@@ -4223,7 +4268,6 @@ function getNowPlus10() {
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
                 overlay.classList.remove('show');
-                if (coins > 0) showCoinAnimation(coins, 0);
             });
         }
     }
