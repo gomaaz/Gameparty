@@ -2501,9 +2501,9 @@ function getNowPlus10() {
                 const pageEntries = sortedHistory.slice(page * HIST_PAGE_SIZE, page * HIST_PAGE_SIZE + HIST_PAGE_SIZE);
                 const paginationHTML = total > HIST_PAGE_SIZE ? `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
-                        <button class="btn-session-end hist-prev" ${page >= maxPage ? 'disabled' : ''}>← ${t('older')}</button>
+                        <button class="btn-session-end hist-next" ${page <= 0 ? 'disabled' : ''}>← ${t('newer')}</button>
                         <span style="font-size:0.8rem;color:var(--text-secondary);">${page * HIST_PAGE_SIZE + 1}–${Math.min((page + 1) * HIST_PAGE_SIZE, total)} / ${total}</span>
-                        <button class="btn-session-end hist-next" ${page <= 0 ? 'disabled' : ''}>→ ${t('newer')}</button>
+                        <button class="btn-session-end hist-prev" ${page >= maxPage ? 'disabled' : ''}>${t('older')} →</button>
                     </div>` : '';
                 return `
                     <div class="card" id="profile-history-card">
