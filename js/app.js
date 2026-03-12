@@ -58,6 +58,8 @@
     let _filterDebounce;
     let _audioCtx = null;
     const _audioBuffers = {};
+    let _serverTimeOffset = 0; // ms difference: serverTime - clientTime
+    function serverNow() { return Date.now() + _serverTimeOffset; }
     let focusChallengeId = null;
     let challengeActiveTab = '1v1'; // '1v1' | 'team' | 'ffa'
     let tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
@@ -151,14 +153,14 @@
                 const startedAt = parseInt(el.dataset.startedAt || '0');
                 const rate = parseFloat(el.dataset.rate || '0');
                 if (!startedAt || !rate) return;
-                const minutes = (Date.now() - startedAt) / 60000;
+                const minutes = (serverNow() - startedAt) / 60000;
                 const coins = Math.ceil(minutes * rate);
                 el.innerHTML = `~${fmt(coins)} ${coinSvgIcon('', true)}`;
             });
             rtEls.forEach(el => {
                 const startedAt = parseInt(el.dataset.startedAt || '0');
                 if (!startedAt) return;
-                const mins = Math.floor((Date.now() - startedAt) / 60000);
+                const mins = Math.floor((serverNow() - startedAt) / 60000);
                 el.textContent = `${mins} Min.`;
             });
         }, 1000);
@@ -798,10 +800,10 @@ function getNowPlus10() {
                             actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">${t('btn_cancel')}</button>`;
                         }
                     } else if (s.status === 'running') {
-                        const initialMins0 = s.startedAt ? Math.floor((Date.now() - s.startedAt) / 60000) : 0;
+                        const initialMins0 = s.startedAt ? Math.floor((serverNow() - s.startedAt) / 60000) : 0;
                         statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ ' + t('duel_label') + ' · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
                         if (rate > 0 && s.startedAt) {
-                            const initialMinutes = (Date.now() - s.startedAt) / 60000;
+                            const initialMinutes = (serverNow() - s.startedAt) / 60000;
                             const initialCoins = Math.ceil(initialMinutes * rate);
                             const sd = new Date(s.startedAt);
                             const startTimeStr = `${sd.toLocaleDateString('de-DE')} ${sd.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
@@ -2236,7 +2238,7 @@ function getNowPlus10() {
         // Status badge like live-session-card
         let statusBadge = '';
         if (p.status === 'active') {
-            const initialMins0 = p.startedAt ? Math.floor((Date.now() - p.startedAt) / 60000) : 0;
+            const initialMins0 = p.startedAt ? Math.floor((serverNow() - p.startedAt) / 60000) : 0;
             statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('status_active')} · <span class="session-runtime" data-started-at="${p.startedAt || 0}">${initialMins0} Min.</span></span>`;
         } else if (p.status === 'completed' && !p.coinsApproved) {
             statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
@@ -2266,7 +2268,7 @@ function getNowPlus10() {
             statusBadge = `<div class="status-badge-column" style="color:var(--accent-green)"><span>${t('status_approved')}</span>${proposalRateStr}</div>`;
         }
         if (p.status === 'active' && proposalRate > 0 && p.startedAt) {
-            const initialMinutes = (Date.now() - p.startedAt) / 60000;
+            const initialMinutes = (serverNow() - p.startedAt) / 60000;
             const initialCoins = Math.ceil(initialMinutes * proposalRate);
             const pd = new Date(p.startedAt);
             const startTimeStr = `${pd.toLocaleDateString('de-DE')} ${pd.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
@@ -6312,7 +6314,6 @@ function getNowPlus10() {
                                 renderDashboard();
                             });
                         }
-                        if (getNotifPref('sound')) playSound('coin');
                     } catch {}
                     continue;
                 }
@@ -7367,6 +7368,11 @@ function getNowPlus10() {
 
     // ---- Init ----
     async function init() {
+        // Sync server clock offset (fire-and-forget, non-blocking)
+        fetch('/api/time', { cache: 'no-store' }).then(r => r.json()).then(d => {
+            _serverTimeOffset = d.now - Date.now();
+        }).catch(() => {});
+
         // Restore session from localStorage
         try {
             state.currentPlayer = JSON.parse(localStorage.getItem(LOCAL_KEYS.PLAYER));

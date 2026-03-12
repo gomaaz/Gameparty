@@ -115,11 +115,15 @@ const PUBLIC_ROUTES = [
     { method: 'GET',  path: '/users' },
     { method: 'GET',  path: '/events' },
     { method: 'GET',  path: '/logs' },
+    { method: 'GET',  path: '/time' },
 ];
 app.use('/api', (req, res, next) => {
     if (PUBLIC_ROUTES.some(p => p.method === req.method && req.path === p.path)) return next();
     requireAuth(req, res, next);
 });
+
+// GET /api/time — server timestamp for client clock sync
+app.get('/api/time', (req, res) => res.json({ now: Date.now() }));
 
 // GET /api/logs
 app.get('/api/logs', (req, res) => {
