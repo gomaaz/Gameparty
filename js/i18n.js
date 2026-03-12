@@ -359,6 +359,7 @@ const TRANSLATIONS = {
         // --- Team Duels ---
         tab_1v1: '1v1',
         tab_team: 'Team',
+        tab_ffa: 'FFA',
         new_team_duel: '👥 New Team Duel',
         team_a: 'Team A',
         team_b: 'Team B',
@@ -386,6 +387,24 @@ const TRANSLATIONS = {
         notif_tc_winner_review: '🏆 Winner set!',
         notif_game_approved: 'Proposal for "{0}" was approved! 🎮',
         notif_game_rejected: 'Proposal for "{0}" was rejected.',
+
+        // --- FFA Challenges ---
+        new_ffa_challenge: '🎯 FFA Challenge',
+        no_ffa_challenges: 'No FFA challenges yet.',
+        ffa_players_label: 'Players (min. 3)',
+        ffa_payout_label: 'Payout by Placement (%)',
+        ffa_pct_sum_label: 'Sum: {0}%',
+        ffa_created: 'FFA Challenge created!',
+        ffa_accepted: 'FFA Challenge accepted!',
+        ffa_rejected: 'FFA Challenge rejected',
+        ffa_placements_set: 'Placements set!',
+        ffa_payout_done: 'FFA pot paid out!',
+        ffa_deleted: 'FFA Challenge deleted',
+        ffa_select_players_error: 'Select at least 2 other players (3 total)',
+        ffa_pct_error: 'Percentages must add up to 100%',
+        ffa_placement_error: 'All players need a placement',
+        ffa_payout_winner_review: '🎯 FFA results awaiting review',
+        ffa_payout_notif: '🎯 FFA Challenge result: Place {0}',
 
         // --- Pickpocket Shop Items ---
         item_rob_coins_name: 'Coin Pickpocket',
@@ -912,6 +931,7 @@ const TRANSLATIONS = {
         // --- Team Duelle ---
         tab_1v1: '1v1',
         tab_team: 'Team',
+        tab_ffa: 'FFA',
         new_team_duel: '👥 Neues Team-Duell',
         team_a: 'Team A',
         team_b: 'Team B',
@@ -939,6 +959,24 @@ const TRANSLATIONS = {
         notif_tc_winner_review: '🏆 Gewinner gesetzt!',
         notif_game_approved: 'Vorschlag für "{0}" wurde angenommen! 🎮',
         notif_game_rejected: 'Vorschlag für "{0}" wurde abgelehnt.',
+
+        // --- FFA Challenges ---
+        new_ffa_challenge: '🎯 FFA Challenge',
+        no_ffa_challenges: 'Noch keine FFA Challenges.',
+        ffa_players_label: 'Spieler (mind. 3)',
+        ffa_payout_label: 'Auszahlung nach Platz (%)',
+        ffa_pct_sum_label: 'Summe: {0}%',
+        ffa_created: 'FFA Challenge erstellt!',
+        ffa_accepted: 'FFA Challenge angenommen!',
+        ffa_rejected: 'FFA Challenge abgelehnt',
+        ffa_placements_set: 'Platzierungen gesetzt!',
+        ffa_payout_done: 'FFA Pott ausgezahlt!',
+        ffa_deleted: 'FFA Challenge gelöscht',
+        ffa_select_players_error: 'Mind. 2 weitere Spieler wählen (3 gesamt)',
+        ffa_pct_error: 'Prozente müssen 100% ergeben',
+        ffa_placement_error: 'Alle Spieler brauchen eine Platzierung',
+        ffa_payout_winner_review: '🎯 FFA Ergebnis wartet auf Überprüfung',
+        ffa_payout_notif: '🎯 FFA Challenge Ergebnis: Platz {0}',
 
         // --- Taschendieb Shop-Items ---
         item_rob_coins_name: 'Taschendieb Münzen',

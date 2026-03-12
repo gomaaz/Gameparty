@@ -55,9 +55,10 @@
     const shownNotifToastIds = new Set(JSON.parse(localStorage.getItem('gameparty_shown_notif_toast_ids') || '[]'));
     let notifPanelOpen = false;
     let focusChallengeId = null;
-    let challengeActiveTab = '1v1'; // '1v1' | 'team'
-    let tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '' };
-    let v1FormState = { opponent: '', coins: '', stars: '' };
+    let challengeActiveTab = '1v1'; // '1v1' | 'team' | 'ffa'
+    let tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
+    let v1FormState = { opponent: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
+    let ffaFormState = { players: [], game: '', coins: '', stars: '', payoutConfig: [{place:1,pct:50},{place:2,pct:30},{place:3,pct:20}] };
     let rawgTimeout = null;
     let rawgSelected = null;
 
@@ -4358,9 +4359,10 @@ function getNowPlus10() {
         }
 
         try {
-            const [challenges, teamChallenges, coinsData, starsData] = await Promise.all([
+            const [challenges, teamChallenges, ffaChallenges, coinsData, starsData] = await Promise.all([
                 api('GET', '/challenges'),
                 api('GET', '/team-challenges'),
+                api('GET', '/ffa-challenges'),
                 api('GET', '/coins'),
                 api('GET', '/stars')
             ]);
@@ -4381,6 +4383,11 @@ function getNowPlus10() {
                 if (c.stakeCoins > 0) pot.push(`${fmt(c.stakeCoins * 2)} ${coinSvgIcon()}`);
                 if (c.stakeStars > 0) pot.push(`${fmt(c.stakeStars * 2)} ${controllerSvgIcon()}`);
                 const potStr = pot.length ? pot.join(' + ') : t('no_stake');
+                let payoutBadge = '';
+                if (c.payoutMode === 'percentage' && c.payoutConfig) {
+                    const cfg = typeof c.payoutConfig === 'string' ? JSON.parse(c.payoutConfig) : c.payoutConfig;
+                    payoutBadge = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;"><span style="color:var(--accent-gold);">🏆 ${cfg.winner}%</span> / <span style="color:var(--accent-red);">😔 ${cfg.loser}%</span></div>`;
+                }
 
                 let actionsHTML = '';
 
@@ -4421,6 +4428,7 @@ function getNowPlus10() {
                             <div class="game-meta">${c.game}</div>
                             <div class="vote-pot-display" style="margin:0">${t('pot_label')} ${potStr}</div>
                         </div>
+                        ${payoutBadge}
                         ${winnerInfo}
                         ${actionsHTML}
                     </div>`;
@@ -4453,6 +4461,11 @@ function getNowPlus10() {
                 if (tc.stakeCoinsPerPerson > 0) potLines.push(`${coinSvgIcon()} ${fmt(tc.stakeCoinsPerPerson)} Coins/Person · Gesamtpott: ${fmt(totalPot)} Coins`);
                 if (tc.stakeStarsPerPerson > 0) potLines.push(`${controllerSvgIcon()} ${fmt(tc.stakeStarsPerPerson)} Controller/Person · Gesamtpott: ${fmt(totalStarPot)} Controller`);
                 const potStr = potLines.length ? potLines.join('<br>') : t('no_stake');
+                let tcPayoutBadge = '';
+                if (tc.payoutMode === 'percentage' && tc.payoutConfig) {
+                    const cfg = typeof tc.payoutConfig === 'string' ? JSON.parse(tc.payoutConfig) : tc.payoutConfig;
+                    tcPayoutBadge = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;"><span style="color:var(--accent-gold);">🏆 ${cfg.winner}%</span> / <span style="color:var(--accent-red);">😔 ${cfg.loser}%</span></div>`;
+                }
 
                 const winnerLabel = tc.winnerTeam === 'A' ? t('team_a_wins') : tc.winnerTeam === 'B' ? t('team_b_wins') : '';
                 const highlightClass = inChallenge ? ' highlight' : '';
@@ -4516,6 +4529,7 @@ function getNowPlus10() {
                         </div>
                         <div class="game-meta">${tc.game}</div>
                         <div class="game-meta" style="line-height:1.6">${potStr}</div>
+                        ${tcPayoutBadge}
                         ${acceptanceHTML}
                         ${winnerLabel ? `<div style="display:flex;justify-content:flex-end;margin-top:0.3rem;"><span style="font-size:1.1rem;color:var(--accent-gold,#ffd700);font-weight:700;">🏆 ${winnerLabel}</span></div>` : ''}
                         ${actionsHTML}
@@ -4526,6 +4540,7 @@ function getNowPlus10() {
                 <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
                     <button class="ch-tab-btn" data-tab="1v1" style="flex:1;padding:0.5rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:${challengeActiveTab === '1v1' ? 'var(--accent-purple)' : 'var(--bg-input)'};color:${challengeActiveTab === '1v1' ? '#fff' : 'var(--text-secondary)'};cursor:pointer;font-weight:${challengeActiveTab === '1v1' ? '700' : '400'};">⚔️ ${t('tab_1v1')}</button>
                     <button class="ch-tab-btn" data-tab="team" style="flex:1;padding:0.5rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:${challengeActiveTab === 'team' ? 'var(--accent-purple)' : 'var(--bg-input)'};color:${challengeActiveTab === 'team' ? '#fff' : 'var(--text-secondary)'};cursor:pointer;font-weight:${challengeActiveTab === 'team' ? '700' : '400'};">👥 ${t('tab_team')}</button>
+                    <button class="ch-tab-btn" data-tab="ffa" style="flex:1;padding:0.5rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:${challengeActiveTab === 'ffa' ? 'var(--accent-purple)' : 'var(--bg-input)'};color:${challengeActiveTab === 'ffa' ? '#fff' : 'var(--text-secondary)'};cursor:pointer;font-weight:${challengeActiveTab === 'ffa' ? '700' : '400'};">🎯 ${t('tab_ffa')}</button>
                 </div>`;
 
             const allPlayers = state.attendees.length ? state.attendees : state.players;
@@ -4568,6 +4583,21 @@ function getNowPlus10() {
                     </div>
                     <div id="tc-pot-preview" style="font-size:0.85rem;color:var(--accent-gold);margin-top:0.25rem;min-height:1.2rem;"></div>
                     <div id="tc-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;"></div>
+                    <div class="datetime-label">Auszahlungsmodus</div>
+                    <select id="tc-payout-mode" style="width:100%;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;margin-bottom:0.3rem;">
+                        <option value="winner_takes_all" ${tcFormState.payoutMode === 'winner_takes_all' ? 'selected' : ''}>🏆 Alles an den Gewinner</option>
+                        <option value="percentage" ${tcFormState.payoutMode === 'percentage' ? 'selected' : ''}>% Aufteilen</option>
+                    </select>
+                    <div id="tc-payout-pct" style="display:${tcFormState.payoutMode === 'percentage' ? 'block' : 'none'};margin-top:0.4rem;">
+                        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                            <span style="color:var(--accent-gold);font-size:0.8rem;">🏆 Gewinner %</span>
+                            <input id="tc-pct-winner" type="number" min="50" max="100" value="${tcFormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
+                            <span style="color:var(--text-secondary);">/</span>
+                            <span style="color:var(--accent-red);font-size:0.8rem;">😔 Verlierer %</span>
+                            <input id="tc-pct-loser" type="number" readonly value="${100 - tcFormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
+                        </div>
+                        <div id="tc-pct-error" style="color:#ff4444;font-size:0.78rem;min-height:1rem;"></div>
+                    </div>
                     <button class="btn-propose" id="tc-create">${t('btn_challenge')}</button>
                 </div>
             ` : '';
@@ -4579,6 +4609,144 @@ function getNowPlus10() {
             const teamCardsHTML = teamChallenges.length
                 ? `<div class="proposal-list">${teamChallenges.map(renderTeamCard).join('')}</div>`
                 : `<div class="empty-state"><div class="empty-state-text">${t('no_team_duels')}</div></div>`;
+
+            function renderFFACard(ffa) {
+                const admin = isAdmin();
+                const players = JSON.parse(ffa.players || '[]');
+                const acceptances = JSON.parse(ffa.acceptances || '[]');
+                const payoutConfig = ffa.payoutConfig ? JSON.parse(ffa.payoutConfig) : [];
+                const placements = ffa.placements ? JSON.parse(ffa.placements) : {};
+                const inChallenge = players.includes(state.currentPlayer);
+                const hasAccepted = acceptances.includes(state.currentPlayer);
+                const isCreator = ffa.createdBy === state.currentPlayer;
+                const totalPot = ffa.stakeCoinsPerPerson * players.length;
+                const totalStarPot = ffa.stakeStarsPerPerson * players.length;
+
+                const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected') };
+
+                // Acceptance badges
+                const acceptanceBadges = ffa.status === 'pending' ? players.map(p => {
+                    const acc = acceptances.includes(p);
+                    return `<span style="display:inline-flex;align-items:center;gap:0.25rem;font-size:0.8rem;padding:0.15rem 0.4rem;border-radius:var(--radius-sm);background:${acc ? 'rgba(0,230,118,0.12)' : 'rgba(255,255,255,0.05)'};color:${acc ? 'var(--accent-green,#00e676)' : 'var(--text-secondary)'};border:1px solid ${acc ? 'rgba(0,230,118,0.3)' : 'var(--border)'};">${p}${p === ffa.createdBy ? ' <span style="font-size:0.65rem;color:var(--accent-gold)">GL</span>' : ''}${acc ? ' ✓' : ' ⏳'}</span>`;
+                }).join('') : '';
+
+                // Pot display
+                const potParts = [];
+                if (ffa.stakeCoinsPerPerson > 0) potParts.push(`${coinSvgIcon()} ${fmt(ffa.stakeCoinsPerPerson)}/Person · Pott: ${fmt(totalPot)}`);
+                if (ffa.stakeStarsPerPerson > 0) potParts.push(`${controllerSvgIcon()} ${fmt(ffa.stakeStarsPerPerson)}/Person · Pott: ${fmt(totalStarPot)}`);
+                const potStr = potParts.length ? potParts.join('<br>') : t('no_stake');
+
+                // Payout table
+                const payoutTable = payoutConfig.length ? `<div style="margin-top:0.3rem;font-size:0.78rem;color:var(--text-secondary);">` + payoutConfig.map(e => {
+                    const coinAmt = ffa.stakeCoinsPerPerson > 0 ? Math.floor(totalPot * e.pct / 100) : null;
+                    return `<span style="display:inline-block;margin-right:0.6rem;">Platz ${e.place}: ${e.pct}%${coinAmt !== null ? ` = ${fmt(coinAmt)}` : ''}</span>`;
+                }).join('') + `</div>` : '';
+
+                // Actions
+                let actionsHTML = '';
+                if (ffa.status === 'pending' && inChallenge && !hasAccepted) {
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-join ffa-accept" data-id="${ffa.id}">${t('notif_accept')}</button><button class="btn-leave ffa-reject" data-id="${ffa.id}">${t('notif_reject')}</button></div>`;
+                }
+                if (ffa.status === 'pending' && isCreator) {
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave ffa-cancel-gl" data-id="${ffa.id}">${t('btn_cancel')}</button></div>`;
+                }
+                if (ffa.status === 'accepted' && isCreator) {
+                    const placementSelects = players.map(p => `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;"><span style="flex:1;font-size:0.85rem;">${p}</span><select class="ffa-place-select" data-player="${p}" style="background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem;"><option value="">-</option>${players.map((_, idx) => `<option value="${idx+1}">${idx+1}.</option>`).join('')}</select></div>`).join('');
+                    actionsHTML += `<div style="margin-top:0.5rem;border-top:1px solid var(--border);padding-top:0.5rem;"><div style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem;">Platzierungen eintragen:</div>${placementSelects}<button class="btn-join ffa-complete" data-id="${ffa.id}" style="margin-top:0.4rem;width:100%;">Ergebnis einreichen</button></div>`;
+                }
+                if (admin && ffa.status === 'completed') {
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-join ffa-payout" data-id="${ffa.id}">🏆 Pott freigeben</button></div>`;
+                }
+                if (admin && ffa.status !== 'paid') {
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave ffa-delete" data-id="${ffa.id}">${t('btn_delete_duel')}</button></div>`;
+                }
+
+                // Placements display (for completed/paid)
+                let placementsHTML = '';
+                if ((ffa.status === 'completed' || ffa.status === 'paid') && Object.keys(placements).length > 0) {
+                    const sorted = [...players].sort((a, b) => (placements[a] || 99) - (placements[b] || 99));
+                    placementsHTML = `<div style="margin-top:0.4rem;font-size:0.82rem;">` + sorted.map(p => `<div style="display:flex;justify-content:space-between;padding:0.1rem 0;"><span>${p}</span><span style="color:var(--accent-gold);font-weight:700;">Platz ${placements[p] || '?'}</span></div>`).join('') + `</div>`;
+                }
+
+                return `
+                    <div class="proposal-card${inChallenge ? ' highlight' : ''}" data-id="${ffa.id}">
+                        <div class="proposal-card-header">
+                            <span style="font-weight:700;">🎯 FFA – ${ffa.game}</span>
+                            <span class="status-badge ${ffa.status}">${statusLabels[ffa.status] || ffa.status}</span>
+                        </div>
+                        <div style="font-size:0.85rem;color:var(--text-secondary);margin:0.2rem 0;">${players.length} Spieler: ${players.join(', ')}</div>
+                        <div class="game-meta" style="line-height:1.6">${potStr}</div>
+                        ${payoutTable}
+                        ${ffa.status === 'pending' ? `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin:0.4rem 0;">${acceptanceBadges}</div>` : ''}
+                        ${placementsHTML}
+                        ${actionsHTML}
+                    </div>`;
+            }
+
+            const ffaCardsHTML = ffaChallenges.length
+                ? `<div class="proposal-list">${ffaChallenges.map(renderFFACard).join('')}</div>`
+                : `<div class="empty-state"><div class="empty-state-text">${t('no_ffa_challenges')}</div></div>`;
+
+            // FFA form (for ffa tab)
+            function buildFFAPayoutRows() {
+                const totalPlayers = ffaFormState.players.length + 1; // +1 for self
+                const rowCount = Math.max(2, totalPlayers);
+                // Fill/trim payoutConfig to match rowCount
+                while (ffaFormState.payoutConfig.length < rowCount) {
+                    ffaFormState.payoutConfig.push({ place: ffaFormState.payoutConfig.length + 1, pct: 0 });
+                }
+                ffaFormState.payoutConfig = ffaFormState.payoutConfig.slice(0, rowCount);
+                return ffaFormState.payoutConfig.map((e, i) => `
+                    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+                        <span style="width:4rem;font-size:0.82rem;color:var(--text-secondary);">Platz ${e.place}:</span>
+                        <input class="ffa-pct-input" data-idx="${i}" type="number" min="0" max="100" value="${e.pct}" style="width:60px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
+                        <span style="color:var(--text-secondary);font-size:0.82rem;">%</span>
+                    </div>`).join('');
+            }
+
+            const ffaFormHTML = challengeActiveTab === 'ffa' ? `
+                <div class="proposal-form">
+                    <div class="card-title" style="margin-bottom:0.75rem;">${t('new_ffa_challenge')}</div>
+                    <div class="datetime-label">${t('ffa_players_label')}</div>
+                    <div id="ffa-player-grid" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.4rem;">
+                        ${allPlayers.filter(p => p !== state.currentPlayer).map(p => `
+                            <button type="button" class="ffa-player-btn${ffaFormState.players.includes(p) ? ' active' : ''}" data-player="${p}" style="padding:0.3rem 0.7rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:${ffaFormState.players.includes(p) ? 'var(--accent-purple)' : 'var(--bg-input)'};color:${ffaFormState.players.includes(p) ? '#fff' : 'var(--text-secondary)'};cursor:pointer;font-size:0.85rem;">${p}</button>
+                        `).join('')}
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.5rem;">Du (${state.currentPlayer}) nimmst automatisch teil</div>
+                    <div class="datetime-label">Spiel</div>
+                    <select id="ffa-game" style="width:100%;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;margin-bottom:0.5rem;">
+                        <option value="">${t('select_game')}</option>
+                        ${state.games.filter(g => g.status === 'approved').sort((a, b) => a.name.localeCompare(b.name)).map(g => `<option value="${g.name}" ${ffaFormState.game === g.name ? 'selected' : ''}>${g.name}</option>`).join('')}
+                    </select>
+                    <div class="datetime-label">Einsatz pro Person</div>
+                    <div class="proposal-row" style="margin-bottom:0.3rem;">
+                        <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
+                            ${coinSvgIcon()}
+                            <input id="ffa-coins" type="number" min="0" placeholder="Coins" value="${ffaFormState.coins}"
+                                style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
+                            ${controllerSvgIcon()}
+                            <input id="ffa-stars" type="number" min="0" placeholder="Stars" value="${ffaFormState.stars}"
+                                style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
+                        </div>
+                    </div>
+                    <div id="ffa-pot-preview" style="font-size:0.8rem;color:var(--accent-gold);min-height:1rem;margin-bottom:0.5rem;"></div>
+                    <div class="datetime-label">${t('ffa_payout_label')}</div>
+                    <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.4rem;">Summe muss 100% ergeben</div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+                        <button class="ffa-preset-btn" data-preset="50,30,20" style="padding:0.25rem 0.5rem;font-size:0.78rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer;">50/30/20</button>
+                        <button class="ffa-preset-btn" data-preset="60,40" style="padding:0.25rem 0.5rem;font-size:0.78rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer;">60/40</button>
+                        <button class="ffa-preset-btn" data-preset="70,20,10" style="padding:0.25rem 0.5rem;font-size:0.78rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer;">70/20/10</button>
+                        <button class="ffa-preset-btn" data-preset="100" style="padding:0.25rem 0.5rem;font-size:0.78rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer;">Winner All</button>
+                    </div>
+                    <div id="ffa-payout-rows">${buildFFAPayoutRows()}</div>
+                    <div id="ffa-pct-sum" style="font-size:0.8rem;margin-top:0.3rem;color:var(--text-secondary);">${t('ffa_pct_sum_label', ffaFormState.payoutConfig.reduce((s,e)=>s+e.pct,0))}</div>
+                    <div id="ffa-pct-error" style="color:#ff4444;font-size:0.78rem;min-height:1rem;"></div>
+                    <button class="btn-propose" id="ffa-create">${t('btn_challenge')}</button>
+                </div>
+            ` : '';
 
             const oneVOneContentHTML = challengeActiveTab === '1v1' ? `
                 <div class="proposal-form">
@@ -4609,6 +4777,21 @@ function getNowPlus10() {
                         </div>
                     </div>
                     <div id="ch-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;margin-bottom:0.25rem;"></div>
+                    <div class="datetime-label">Auszahlungsmodus</div>
+                    <select id="ch-payout-mode" style="width:100%;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;margin-bottom:0.3rem;">
+                        <option value="winner_takes_all" ${v1FormState.payoutMode === 'winner_takes_all' ? 'selected' : ''}>🏆 Alles an den Gewinner</option>
+                        <option value="percentage" ${v1FormState.payoutMode === 'percentage' ? 'selected' : ''}>% Aufteilen</option>
+                    </select>
+                    <div id="ch-payout-pct" style="display:${v1FormState.payoutMode === 'percentage' ? 'block' : 'none'};margin-top:0.4rem;">
+                        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                            <span style="color:var(--accent-gold);font-size:0.8rem;">🏆 Gewinner %</span>
+                            <input id="ch-pct-winner" type="number" min="50" max="100" value="${v1FormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
+                            <span style="color:var(--text-secondary);">/</span>
+                            <span style="color:var(--accent-red);font-size:0.8rem;">😔 Verlierer %</span>
+                            <input id="ch-pct-loser" type="number" readonly value="${100 - v1FormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
+                        </div>
+                        <div id="ch-pct-error" style="color:#ff4444;font-size:0.78rem;min-height:1rem;"></div>
+                    </div>
                     <button class="btn-propose" id="ch-create">${t('btn_challenge')}</button>
                 </div>
                 <div style="margin-top:1rem">${cardsHTML}</div>
@@ -4623,15 +4806,37 @@ function getNowPlus10() {
                 tcFormState.game = container.querySelector('#tc-game')?.value || tcFormState.game;
                 tcFormState.coins = container.querySelector('#tc-coins')?.value || tcFormState.coins;
                 tcFormState.stars = container.querySelector('#tc-stars')?.value || tcFormState.stars;
+                const tcMode = container.querySelector('#tc-payout-mode')?.value;
+                if (tcMode) { tcFormState.payoutMode = tcMode; tcFormState.payoutPctWinner = parseInt(container.querySelector('#tc-pct-winner')?.value) || 70; }
             }
             const prevOpponent = container.querySelector('#ch-opponent')?.value;
             if (prevOpponent) {
                 v1FormState.opponent = prevOpponent;
                 v1FormState.coins = container.querySelector('#ch-coins')?.value || v1FormState.coins;
                 v1FormState.stars = container.querySelector('#ch-stars')?.value || v1FormState.stars;
+                const chMode = container.querySelector('#ch-payout-mode')?.value;
+                if (chMode) { v1FormState.payoutMode = chMode; v1FormState.payoutPctWinner = parseInt(container.querySelector('#ch-pct-winner')?.value) || 70; }
+            }
+            // Save FFA form state
+            if (challengeActiveTab === 'ffa') {
+                const prevFfaPlayers = [...container.querySelectorAll('.ffa-player-btn.active')].map(b => b.dataset.player);
+                if (prevFfaPlayers.length || container.querySelector('#ffa-game')) {
+                    ffaFormState.players = prevFfaPlayers;
+                    ffaFormState.game = container.querySelector('#ffa-game')?.value || ffaFormState.game;
+                    ffaFormState.coins = container.querySelector('#ffa-coins')?.value || ffaFormState.coins;
+                    ffaFormState.stars = container.querySelector('#ffa-stars')?.value || ffaFormState.stars;
+                    container.querySelectorAll('.ffa-pct-input').forEach(inp => {
+                        const idx = parseInt(inp.dataset.idx);
+                        if (ffaFormState.payoutConfig[idx] !== undefined) ffaFormState.payoutConfig[idx].pct = parseInt(inp.value) || 0;
+                    });
+                }
             }
 
-            container.innerHTML = tabToggleHTML + (challengeActiveTab === '1v1' ? oneVOneContentHTML : teamFormHTML + `<div style="margin-top:1rem">${teamCardsHTML}</div>`);
+            let tabContent = '';
+            if (challengeActiveTab === '1v1') tabContent = oneVOneContentHTML;
+            else if (challengeActiveTab === 'team') tabContent = teamFormHTML + `<div style="margin-top:1rem">${teamCardsHTML}</div>`;
+            else tabContent = ffaFormHTML + `<div style="margin-top:1rem">${ffaCardsHTML}</div>`;
+            container.innerHTML = tabToggleHTML + tabContent;
 
             // Wire tab buttons
             container.querySelectorAll('.ch-tab-btn').forEach(btn => {
@@ -4691,6 +4896,27 @@ function getNowPlus10() {
                     chStars.addEventListener('input', validate1v1Stake);
                 }
 
+                // Payout mode wiring (1v1)
+                const chPayoutMode = container.querySelector('#ch-payout-mode');
+                const chPayoutPct = container.querySelector('#ch-payout-pct');
+                const chPctWinner = container.querySelector('#ch-pct-winner');
+                const chPctLoser = container.querySelector('#ch-pct-loser');
+                const chPctError = container.querySelector('#ch-pct-error');
+                if (chPayoutMode) {
+                    chPayoutMode.addEventListener('change', () => {
+                        v1FormState.payoutMode = chPayoutMode.value;
+                        if (chPayoutPct) chPayoutPct.style.display = chPayoutMode.value === 'percentage' ? 'block' : 'none';
+                    });
+                }
+                if (chPctWinner) {
+                    chPctWinner.addEventListener('input', () => {
+                        const w = parseInt(chPctWinner.value) || 0;
+                        v1FormState.payoutPctWinner = w;
+                        if (chPctLoser) chPctLoser.value = 100 - w;
+                        if (chPctError) chPctError.textContent = (w < 50 || w > 100) ? 'Gewinner ≥50%, ≤100%' : '';
+                    });
+                }
+
                 // Event: Create challenge
                 $('#ch-create').addEventListener('click', async () => {
                     const opponent = $('#ch-opponent').value;
@@ -4704,10 +4930,17 @@ function getNowPlus10() {
                         if (stakeCoins > 0 && (stakeCoins > myCoins || stakeCoins > getPlayerCoins(opponent))) { showToast(t('stake_coins_too_high'), 'error'); playSound('error'); return; }
                         if (stakeStars > 0 && (stakeStars > myStars || stakeStars > getPlayerStars(opponent))) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
                     }
+                    const payoutMode = container.querySelector('#ch-payout-mode')?.value || 'winner_takes_all';
+                    let payoutConfig = null;
+                    if (payoutMode === 'percentage') {
+                        const w = parseInt(container.querySelector('#ch-pct-winner')?.value) || 70;
+                        if (w < 50 || w > 100) { showToast('Gewinner ≥50%, ≤100%', 'error'); playSound('error'); return; }
+                        payoutConfig = { winner: w, loser: 100 - w };
+                    }
                     try {
-                        await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars });
+                        await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars, payoutMode, payoutConfig });
                         showToast(t('duel_created', opponent), 'success');
-                        v1FormState = { opponent: '', coins: '', stars: '' };
+                        v1FormState = { opponent: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
                         renderChallenges();
                     } catch (e) {
                         showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -4911,6 +5144,27 @@ function getNowPlus10() {
                 const tcStars = container.querySelector('#tc-stars');
                 if (tcStars) tcStars.addEventListener('input', updateTcPotPreview);
 
+                // Payout mode wiring (team)
+                const tcPayoutMode = container.querySelector('#tc-payout-mode');
+                const tcPayoutPct = container.querySelector('#tc-payout-pct');
+                const tcPctWinner = container.querySelector('#tc-pct-winner');
+                const tcPctLoser = container.querySelector('#tc-pct-loser');
+                const tcPctError = container.querySelector('#tc-pct-error');
+                if (tcPayoutMode) {
+                    tcPayoutMode.addEventListener('change', () => {
+                        tcFormState.payoutMode = tcPayoutMode.value;
+                        if (tcPayoutPct) tcPayoutPct.style.display = tcPayoutMode.value === 'percentage' ? 'block' : 'none';
+                    });
+                }
+                if (tcPctWinner) {
+                    tcPctWinner.addEventListener('input', () => {
+                        const w = parseInt(tcPctWinner.value) || 0;
+                        tcFormState.payoutPctWinner = w;
+                        if (tcPctLoser) tcPctLoser.value = 100 - w;
+                        if (tcPctError) tcPctError.textContent = (w < 50 || w > 100) ? 'Gewinner ≥50%, ≤100%' : '';
+                    });
+                }
+
                 // Create
                 const tcCreateBtn = container.querySelector('#tc-create');
                 if (tcCreateBtn) {
@@ -4933,10 +5187,17 @@ function getNowPlus10() {
                             if (stakeCoinsPerPerson > minCoins) { showToast(t('stake_coins_too_high'), 'error'); playSound('error'); return; }
                             if (stakeStarsPerPerson > minStars) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
                         }
+                        const payoutMode = container.querySelector('#tc-payout-mode')?.value || 'winner_takes_all';
+                        let payoutConfig = null;
+                        if (payoutMode === 'percentage') {
+                            const w = parseInt(container.querySelector('#tc-pct-winner')?.value) || 70;
+                            if (w < 50 || w > 100) { showToast('Gewinner ≥50%, ≤100%', 'error'); playSound('error'); return; }
+                            payoutConfig = { winner: w, loser: 100 - w };
+                        }
                         try {
-                            await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB });
+                            await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB, payoutMode, payoutConfig });
                             showToast(t('team_duel_created'), 'success');
-                            tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '' };
+                            tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
                             renderChallenges();
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
@@ -5044,6 +5305,238 @@ function getNowPlus10() {
                 });
             }
 
+            // ---- FFA Tab Events ----
+            if (challengeActiveTab === 'ffa') {
+                // Player toggle
+                container.querySelectorAll('.ffa-player-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const p = btn.dataset.player;
+                        if (ffaFormState.players.includes(p)) {
+                            ffaFormState.players = ffaFormState.players.filter(x => x !== p);
+                        } else {
+                            ffaFormState.players.push(p);
+                        }
+                        // Rebuild payout rows based on new count
+                        const totalPlayers = ffaFormState.players.length + 1;
+                        const rowCount = Math.max(2, totalPlayers);
+                        while (ffaFormState.payoutConfig.length < rowCount) {
+                            ffaFormState.payoutConfig.push({ place: ffaFormState.payoutConfig.length + 1, pct: 0 });
+                        }
+                        ffaFormState.payoutConfig = ffaFormState.payoutConfig.slice(0, rowCount);
+                        const rowsEl = container.querySelector('#ffa-payout-rows');
+                        if (rowsEl) rowsEl.innerHTML = ffaFormState.payoutConfig.map((e, i) => `
+                            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+                                <span style="width:4rem;font-size:0.82rem;color:var(--text-secondary);">Platz ${e.place}:</span>
+                                <input class="ffa-pct-input" data-idx="${i}" type="number" min="0" max="100" value="${e.pct}" style="width:60px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
+                                <span style="color:var(--text-secondary);font-size:0.82rem;">%</span>
+                            </div>`).join('');
+                        // Re-wire pct inputs
+                        wireFFAPctInputs();
+                        // Update player button states
+                        btn.classList.toggle('active', ffaFormState.players.includes(p));
+                        btn.style.background = ffaFormState.players.includes(p) ? 'var(--accent-purple)' : 'var(--bg-input)';
+                        btn.style.color = ffaFormState.players.includes(p) ? '#fff' : 'var(--text-secondary)';
+                        // Update pot preview
+                        updateFFAPotPreview();
+                    });
+                });
+
+                function updateFFAPotPreview() {
+                    const preview = container.querySelector('#ffa-pot-preview');
+                    if (!preview) return;
+                    const totalPlayers = ffaFormState.players.length + 1;
+                    const coinsVal = parseInt(container.querySelector('#ffa-coins')?.value) || 0;
+                    const starsVal = parseInt(container.querySelector('#ffa-stars')?.value) || 0;
+                    if (totalPlayers >= 3 && (coinsVal > 0 || starsVal > 0)) {
+                        const parts = [];
+                        if (coinsVal > 0) parts.push(`${fmt(coinsVal * totalPlayers)} Coins`);
+                        if (starsVal > 0) parts.push(`${fmt(starsVal * totalPlayers)} Stars`);
+                        preview.textContent = `Gesamtpott: ${parts.join(' + ')}`;
+                    } else {
+                        preview.textContent = '';
+                    }
+                }
+
+                function updateFFAPctSum() {
+                    const sum = ffaFormState.payoutConfig.reduce((s, e) => s + (parseInt(e.pct) || 0), 0);
+                    const sumEl = container.querySelector('#ffa-pct-sum');
+                    if (sumEl) sumEl.textContent = t('ffa_pct_sum_label', sum);
+                    const errEl = container.querySelector('#ffa-pct-error');
+                    if (errEl) errEl.textContent = sum !== 100 ? t('ffa_pct_error') : '';
+                }
+
+                function wireFFAPctInputs() {
+                    container.querySelectorAll('.ffa-pct-input').forEach(inp => {
+                        inp.addEventListener('input', () => {
+                            const idx = parseInt(inp.dataset.idx);
+                            ffaFormState.payoutConfig[idx].pct = parseInt(inp.value) || 0;
+                            updateFFAPctSum();
+                        });
+                    });
+                }
+
+                wireFFAPctInputs();
+                updateFFAPctSum();
+
+                const ffaCoins = container.querySelector('#ffa-coins');
+                if (ffaCoins) ffaCoins.addEventListener('input', () => { ffaFormState.coins = ffaCoins.value; updateFFAPotPreview(); });
+                const ffaStars = container.querySelector('#ffa-stars');
+                if (ffaStars) ffaStars.addEventListener('input', () => { ffaFormState.stars = ffaStars.value; updateFFAPotPreview(); });
+                const ffaGame = container.querySelector('#ffa-game');
+                if (ffaGame) ffaGame.addEventListener('change', () => { ffaFormState.game = ffaGame.value; });
+
+                // Preset buttons
+                container.querySelectorAll('.ffa-preset-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const pcts = btn.dataset.preset.split(',').map(Number);
+                        const totalPlayers = ffaFormState.players.length + 1;
+                        const rowCount = Math.max(2, totalPlayers);
+                        ffaFormState.payoutConfig = Array.from({ length: rowCount }, (_, i) => ({
+                            place: i + 1,
+                            pct: pcts[i] !== undefined ? pcts[i] : 0
+                        }));
+                        const rowsEl = container.querySelector('#ffa-payout-rows');
+                        if (rowsEl) rowsEl.innerHTML = ffaFormState.payoutConfig.map((e, i) => `
+                            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+                                <span style="width:4rem;font-size:0.82rem;color:var(--text-secondary);">Platz ${e.place}:</span>
+                                <input class="ffa-pct-input" data-idx="${i}" type="number" min="0" max="100" value="${e.pct}" style="width:60px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
+                                <span style="color:var(--text-secondary);font-size:0.82rem;">%</span>
+                            </div>`).join('');
+                        wireFFAPctInputs();
+                        updateFFAPctSum();
+                    });
+                });
+
+                // Create FFA challenge
+                const ffaCreateBtn = container.querySelector('#ffa-create');
+                if (ffaCreateBtn) {
+                    ffaCreateBtn.addEventListener('click', async () => {
+                        const players = [state.currentPlayer, ...ffaFormState.players];
+                        if (players.length < 3) { showToast(t('ffa_select_players_error'), 'error'); playSound('error'); return; }
+                        const game = container.querySelector('#ffa-game')?.value;
+                        if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
+                        const stakeCoinsPerPerson = parseInt(container.querySelector('#ffa-coins')?.value) || 0;
+                        const stakeStarsPerPerson = parseInt(container.querySelector('#ffa-stars')?.value) || 0;
+                        // Sync pct inputs
+                        container.querySelectorAll('.ffa-pct-input').forEach(inp => {
+                            const idx = parseInt(inp.dataset.idx);
+                            ffaFormState.payoutConfig[idx].pct = parseInt(inp.value) || 0;
+                        });
+                        const sum = ffaFormState.payoutConfig.reduce((s, e) => s + e.pct, 0);
+                        if (sum !== 100) { showToast(t('ffa_pct_error'), 'error'); playSound('error'); return; }
+                        try {
+                            await api('POST', '/ffa-challenges', {
+                                createdBy: state.currentPlayer, game, players,
+                                stakeCoinsPerPerson, stakeStarsPerPerson,
+                                payoutConfig: ffaFormState.payoutConfig
+                            });
+                            showToast(t('ffa_created'), 'success');
+                            ffaFormState = { players: [], game: '', coins: '', stars: '', payoutConfig: [{place:1,pct:50},{place:2,pct:30},{place:3,pct:20}] };
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                }
+
+                // Accept FFA
+                container.querySelectorAll('.ffa-accept').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/ffa-challenges/${btn.dataset.id}/accept`, { player: state.currentPlayer });
+                            showToast(t('ffa_accepted'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Reject FFA
+                container.querySelectorAll('.ffa-reject').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/ffa-challenges/${btn.dataset.id}/reject`, { player: state.currentPlayer });
+                            showToast(t('ffa_rejected'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Cancel GL (FFA)
+                container.querySelectorAll('.ffa-cancel-gl').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('DELETE', `/ffa-challenges/${btn.dataset.id}`);
+                            showToast(t('ffa_deleted'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Complete FFA (set placements)
+                container.querySelectorAll('.ffa-complete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const card = btn.closest('.proposal-card');
+                        if (!card) return;
+                        const selects = [...card.querySelectorAll('.ffa-place-select')];
+                        const placements = {};
+                        for (const sel of selects) {
+                            if (!sel.value) { showToast(t('ffa_placement_error'), 'error'); playSound('error'); return; }
+                            placements[sel.dataset.player] = parseInt(sel.value);
+                        }
+                        try {
+                            await api('PUT', `/ffa-challenges/${btn.dataset.id}/complete`, { createdBy: state.currentPlayer, placements });
+                            showToast(t('ffa_placements_set'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Payout FFA (admin)
+                container.querySelectorAll('.ffa-payout').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('PUT', `/ffa-challenges/${btn.dataset.id}/payout`);
+                            showToast(t('ffa_payout_done'), 'success');
+                            playSound('coin');
+                            const coinsData = await api('GET', '/coins');
+                            state.coins = coinsData;
+                            updateHeaderCoins();
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Delete FFA (admin)
+                container.querySelectorAll('.ffa-delete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            await api('DELETE', `/ffa-challenges/${btn.dataset.id}`);
+                            showToast(t('ffa_deleted'), 'success');
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+            }
+
             updateHeaderCoins();
 
             if (focusChallengeId) {
@@ -5075,7 +5568,7 @@ function getNowPlus10() {
                     }
                     updateTcPotPreview();
                 }
-            } else {
+            } else if (challengeActiveTab === '1v1') {
                 if (v1FormState.opponent) {
                     const sel = container.querySelector('#ch-opponent');
                     if (sel) { sel.value = v1FormState.opponent; sel.dispatchEvent(new Event('change')); }
