@@ -7495,6 +7495,23 @@ function getNowPlus10() {
         init();
     }
 
+    // Auto-inject close X into every modal
+    (function() {
+        const overlay = document.getElementById('modal-overlay');
+        if (!overlay) return;
+        new MutationObserver(() => {
+            if (!overlay.classList.contains('show')) return;
+            const modal = overlay.querySelector('.modal');
+            if (!modal || modal.querySelector('.modal-x-btn')) return;
+            const x = document.createElement('button');
+            x.className = 'modal-x-btn';
+            x.setAttribute('aria-label', 'Schließen');
+            x.textContent = '✕';
+            x.addEventListener('click', () => overlay.classList.remove('show'));
+            modal.insertBefore(x, modal.firstChild);
+        }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+    })();
+
     // ---- Player Info Tooltip ----
     let activeTooltip = null;
     function showPlayerTooltip(chip) {
