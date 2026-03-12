@@ -4583,17 +4583,17 @@ function getNowPlus10() {
                     </div>
                     <div id="tc-pot-preview" style="font-size:0.85rem;color:var(--accent-gold);margin-top:0.25rem;min-height:1.2rem;"></div>
                     <div id="tc-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;"></div>
-                    <div class="datetime-label">Auszahlungsmodus</div>
+                    <div class="datetime-label">${t('payout_mode_label')}</div>
                     <select id="tc-payout-mode" style="width:100%;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;margin-bottom:0.3rem;">
-                        <option value="winner_takes_all" ${tcFormState.payoutMode === 'winner_takes_all' ? 'selected' : ''}>🏆 Alles an den Gewinner</option>
-                        <option value="percentage" ${tcFormState.payoutMode === 'percentage' ? 'selected' : ''}>% Aufteilen</option>
+                        <option value="winner_takes_all" ${tcFormState.payoutMode === 'winner_takes_all' ? 'selected' : ''}>${t('payout_winner_takes_all')}</option>
+                        <option value="percentage" ${tcFormState.payoutMode === 'percentage' ? 'selected' : ''}>${t('payout_percentage')}</option>
                     </select>
                     <div id="tc-payout-pct" style="display:${tcFormState.payoutMode === 'percentage' ? 'block' : 'none'};margin-top:0.4rem;">
                         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                            <span style="color:var(--accent-gold);font-size:0.8rem;">🏆 Gewinner %</span>
+                            <span style="color:var(--accent-gold);font-size:0.8rem;">${t('payout_winner_pct')}</span>
                             <input id="tc-pct-winner" type="number" min="50" max="100" value="${tcFormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
                             <span style="color:var(--text-secondary);">/</span>
-                            <span style="color:var(--accent-red);font-size:0.8rem;">😔 Verlierer %</span>
+                            <span style="color:var(--accent-red);font-size:0.8rem;">${t('payout_loser_pct')}</span>
                             <input id="tc-pct-loser" type="number" readonly value="${100 - tcFormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
                         </div>
                         <div id="tc-pct-error" style="color:#ff4444;font-size:0.78rem;min-height:1rem;"></div>
@@ -4777,17 +4777,17 @@ function getNowPlus10() {
                         </div>
                     </div>
                     <div id="ch-stake-error" style="color:var(--danger,#ff4444);font-size:0.78rem;min-height:1rem;margin-bottom:0.25rem;"></div>
-                    <div class="datetime-label">Auszahlungsmodus</div>
+                    <div class="datetime-label">${t('payout_mode_label')}</div>
                     <select id="ch-payout-mode" style="width:100%;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;font-size:0.9rem;margin-bottom:0.3rem;">
-                        <option value="winner_takes_all" ${v1FormState.payoutMode === 'winner_takes_all' ? 'selected' : ''}>🏆 Alles an den Gewinner</option>
-                        <option value="percentage" ${v1FormState.payoutMode === 'percentage' ? 'selected' : ''}>% Aufteilen</option>
+                        <option value="winner_takes_all" ${v1FormState.payoutMode === 'winner_takes_all' ? 'selected' : ''}>${t('payout_winner_takes_all')}</option>
+                        <option value="percentage" ${v1FormState.payoutMode === 'percentage' ? 'selected' : ''}>${t('payout_percentage')}</option>
                     </select>
                     <div id="ch-payout-pct" style="display:${v1FormState.payoutMode === 'percentage' ? 'block' : 'none'};margin-top:0.4rem;">
                         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                            <span style="color:var(--accent-gold);font-size:0.8rem;">🏆 Gewinner %</span>
+                            <span style="color:var(--accent-gold);font-size:0.8rem;">${t('payout_winner_pct')}</span>
                             <input id="ch-pct-winner" type="number" min="50" max="100" value="${v1FormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
                             <span style="color:var(--text-secondary);">/</span>
-                            <span style="color:var(--accent-red);font-size:0.8rem;">😔 Verlierer %</span>
+                            <span style="color:var(--accent-red);font-size:0.8rem;">${t('payout_loser_pct')}</span>
                             <input id="ch-pct-loser" type="number" readonly value="${100 - v1FormState.payoutPctWinner}" style="width:60px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.3rem;font-size:0.9rem;">
                         </div>
                         <div id="ch-pct-error" style="color:#ff4444;font-size:0.78rem;min-height:1rem;"></div>

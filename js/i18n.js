@@ -406,6 +406,13 @@ const TRANSLATIONS = {
         ffa_payout_winner_review: '🎯 FFA results awaiting review',
         ffa_payout_notif: '🎯 FFA Challenge result: Place {0}',
 
+        // --- Payout Mode UI ---
+        payout_mode_label: 'Payout Mode',
+        payout_winner_takes_all: '🏆 Winner Takes All',
+        payout_percentage: '% Split',
+        payout_winner_pct: '🏆 Winner %',
+        payout_loser_pct: '😔 Loser %',
+
         // --- Pickpocket Shop Items ---
         item_rob_coins_name: 'Coin Pickpocket',
         item_rob_coins_desc: 'Steal 0–20 coins from another player.',
@@ -977,6 +984,13 @@ const TRANSLATIONS = {
         ffa_placement_error: 'Alle Spieler brauchen eine Platzierung',
         ffa_payout_winner_review: '🎯 FFA Ergebnis wartet auf Überprüfung',
         ffa_payout_notif: '🎯 FFA Challenge Ergebnis: Platz {0}',
+
+        // --- Payout Mode UI ---
+        payout_mode_label: 'Auszahlungsmodus',
+        payout_winner_takes_all: '🏆 Alles an den Gewinner',
+        payout_percentage: '% Aufteilen',
+        payout_winner_pct: '🏆 Gewinner %',
+        payout_loser_pct: '😔 Verlierer %',
 
         // --- Taschendieb Shop-Items ---
         item_rob_coins_name: 'Taschendieb Münzen',
