@@ -3011,46 +3011,6 @@ function getNowPlus10() {
             return;
         }
 
-        // Prepare freigabe section
-        const endedSessions = liveSessionsData.filter(s => s.status === 'ended' && !s.challenge_id);
-        const completedProposals = allProposals.filter(p => p.status === 'completed' && !p.coinsApproved);
-        const hasFreigabe = endedSessions.length > 0 || completedProposals.length > 0;
-
-        let freigabeHTML = '';
-        if (hasFreigabe) {
-            freigabeHTML = `
-                <div class="card" style="border-left: 3px solid var(--accent-gold)">
-                    <div class="card-title" style="color:var(--accent-gold)">📋 ${t('freigabe_pending', 'Ausstehende Freigaben')} (${endedSessions.length + completedProposals.length})</div>
-                    ${endedSessions.map(s => {
-                        const coins = s.pending_coins > 0 ? s.pending_coins : calculateSessionCoins(s.players.length, state.attendees.length);
-                        return `
-                            <div style="padding:0.5rem 0;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
-                                <div style="font-weight:600">${s.game}</div>
-                                <div style="font-size:0.85rem;color:var(--text-secondary)">Leader: ${s.leader} · ${s.players.length} Spieler${s.startedAt && s.endedAt ? ` · ${Math.ceil((s.endedAt - s.startedAt) / 60000)} Min` : ''}</div>
-                                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin:0.3rem 0">
-                                    ${s.players.map(p => `<span class="player-chip">${p}</span>`).join('')}
-                                </div>
-                                <input type="number" class="freigabe-coins-input" data-sid="${s.id}" value="${coins}" min="0" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);width:60px;margin-right:0.5rem">
-                                <button class="btn-approve freigabe-approve-btn" data-sid="${s.id}" style="padding:4px 8px;font-size:0.75rem">✓ Freigeben</button>
-                            </div>`;
-                    }).join('')}
-                    ${completedProposals.map(p => {
-                        const coins = p.pendingCoins || 0;
-                        const playersList = p.players && Array.isArray(p.players) ? p.players : [];
-                        return `
-                            <div style="padding:0.5rem 0;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
-                                <div style="font-weight:600">${p.game}</div>
-                                <div style="font-size:0.85rem;color:var(--text-secondary)">Leader: ${p.leader} · ${playersList.length} Spieler</div>
-                                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin:0.3rem 0">
-                                    ${playersList.map(pl => `<span class="player-chip">${pl}</span>`).join('')}
-                                </div>
-                                <input type="number" class="freigabe-coins-input" data-pid="${p.id}" value="${coins}" min="0" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);width:60px;margin-right:0.5rem">
-                                <button class="btn-approve freigabe-approve-btn" data-pid="${p.id}" style="padding:4px 8px;font-size:0.75rem">✓ Freigeben</button>
-                            </div>`;
-                    }).join('')}
-                </div>`;
-        }
-
         const maxMultiplier = parseInt(settingsData?.max_multiplier || '10');
         const playerMultipliersMap = (() => { try { return JSON.parse(settingsData?.player_multipliers || '{}'); } catch { return {}; } })();
         const approvedGames = (state.games || []).filter(g => g.status === 'approved');
@@ -3086,7 +3046,6 @@ function getNowPlus10() {
             </div>
             <div class="admin-panel-body">
 
-                ${freigabeHTML}
                 ${attendeesGridHTML}
 
                 <div class="card">
@@ -3284,33 +3243,6 @@ function getNowPlus10() {
         }, 4000);
 
         // Freigabe Events
-        panel.querySelectorAll('.freigabe-approve-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const sid = btn.dataset.sid;
-                const pid = btn.dataset.pid;
-
-                if (sid) {
-                    // Live Session approval
-                    const coinsInput = panel.querySelector(`.freigabe-coins-input[data-sid="${sid}"]`);
-                    const coins = parseInt(coinsInput.value) || 0;
-                    try {
-                        await api('POST', `/live-sessions/${sid}/approve`, { coinsPerPlayer: coins, player: state.currentPlayer });
-                        showToast('Session freigegeben', 'success');
-                        renderAdminPanel();
-                    } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
-                } else if (pid) {
-                    // Proposal approval
-                    const coinsInput = panel.querySelector(`.freigabe-coins-input[data-pid="${pid}"]`);
-                    const coins = parseInt(coinsInput.value) || 0;
-                    try {
-                        await api('POST', `/proposals/${pid}/approve`, { coins, approvedBy: state.currentPlayer });
-                        showToast('Geplante Session freigegeben', 'success');
-                        renderAdminPanel();
-                    } catch (e) { showToast('Fehler beim Freigeben', 'error'); console.error(e); }
-                }
-            });
-        });
-
         // Live-save: Max-Spieler-Limit + Tabelle neu aufbauen
         panel.querySelector('#max-multiplier-input')?.addEventListener('change', async (e) => {
             const val = parseInt(e.target.value);
