@@ -744,8 +744,8 @@ function getNowPlus10() {
                     const rate = getPlayerRate(playerCount);
 
                     if (s.status === 'lobby') {
-                        const rateStr = rate > 0 ? `<span class="session-coin-rate" style="margin-left:0.5rem">${rate} ${coinSvgIcon()} / min</span>` : '';
-                        statusBadge = `<span style="color:#6699ff;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem">${s.challenge_id ? '⚔️ ' + t('duel_label') + ' · ' : ''}${t('session_lobby')}${rateStr}</span>`;
+                        const rateStr = rate > 0 ? `<span class="session-coin-rate" style="font-size:0.75rem;opacity:0.85">${rate} ${coinSvgIcon()} / min</span>` : '';
+                        statusBadge = `<div style="color:#6699ff;font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem">${s.challenge_id ? `<span>⚔️ ${t('duel_label')}</span>` : ''}<span>${t('session_lobby')}</span>${rateStr}</div>`;
                         if (!isInSession && (s.max_slots === 0 || s.players.length < s.max_slots)) {
                             actionsHTML += `<button class="btn-session-join" data-sid="${s.id}" data-action="join">${t('btn_join')}</button>`;
                         } else if (!isLeader) {
