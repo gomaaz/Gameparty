@@ -187,6 +187,17 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fadeOutCollect {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    60%  { opacity: 0.3; transform: translateY(-6px) scale(0.97); }
+    100% { opacity: 0; transform: translateY(-12px) scale(0.95); max-height: 0; margin: 0; padding: 0; }
+}
+.card-collect-out {
+    animation: fadeOutCollect 0.45s ease forwards;
+    overflow: hidden;
+    pointer-events: none;
+}
+
 /* ---- Cards ---- */
 .card {
     background: var(--bg-card);

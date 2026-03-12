@@ -1122,9 +1122,15 @@ function getNowPlus10() {
                     try {
                         await api('PUT', `/live-sessions/${btn.dataset.sid}/collect`, { player: state.currentPlayer });
                         const coins = Number(btn.dataset.coins);
+                        const card = btn.closest('.live-session-card');
                         if (coins > 0) showCoinAnimation(coins, 0);
-                        playSound('coin');
-                        renderDashboard();
+                        else playSound('coin');
+                        if (card) {
+                            card.classList.add('card-collect-out');
+                            card.addEventListener('animationend', () => renderDashboard(), { once: true });
+                        } else {
+                            renderDashboard();
+                        }
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
                     }
