@@ -192,16 +192,6 @@ button, a, input, select, textarea, label, [role="button"] {
     to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes fadeOutCollect {
-    0%   { opacity: 1; transform: translateY(0) scale(1); }
-    60%  { opacity: 0.3; transform: translateY(-6px) scale(0.97); }
-    100% { opacity: 0; transform: translateY(-12px) scale(0.95); max-height: 0; margin: 0; padding: 0; }
-}
-.card-collect-out {
-    animation: fadeOutCollect 0.45s ease forwards;
-    overflow: hidden;
-    pointer-events: none;
-}
 
 /* ---- Cards ---- */
 .card {
@@ -2768,7 +2758,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-session-join { background:none; border:1px solid var(--accent-green-dim); color:var(--accent-green); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .btn-session-leave { background:none; border:1px solid var(--accent-red-dim); color:var(--accent-red); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .btn-session-start { background:none; border:1px solid var(--accent-blue-dim,#2255aa); color:#6699ff; border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; font-weight:600; }
-.session-collect-btn { padding: 10px 12px; }
 .btn-session-end { background:none; border:1px solid var(--border-bright); color:var(--text-secondary); border-radius:6px; padding:4px 12px; cursor:pointer; font-size:0.82rem; }
 .session-leader-badge { font-size:0.62rem; color:var(--accent-gold); border:1px solid var(--accent-gold-dim); border-radius:4px; padding:1px 5px; margin-right:0.3rem; vertical-align:middle; position:relative; cursor:default; }
 .session-leader-badge[data-tooltip]:hover::after {
@@ -3135,7 +3124,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     border-color: var(--accent-red-dim); font-size: 0.9rem;
 }
 .notif-btn-no:hover { background: rgba(255,68,68,0.25); }
-.notif-session-collect { width: auto; padding: 0 0.6rem; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
 .notif-accent-red {
     background: rgba(255,68,68,0.06);
     border-left: 3px solid var(--accent-red);

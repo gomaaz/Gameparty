@@ -1028,29 +1028,6 @@ function getNowPlus10() {
             const activeProposalsHTML = activeProposals.map(renderProposalCard).join('');
             const hasAnything = liveSessionsData.filter(s => s.status !== 'ended' && s.status !== 'released').length > 0 || activeProposals.length > 0;
 
-            // Build "Abholbereit" section for released sessions where current player hasn't collected yet
-            let releasedSessionsHTML = '';
-            if (liveSessionsData.length > 0 && state.currentPlayer) {
-                const releasedForMe = liveSessionsData
-                    .filter(s => s.status === 'released' && s.players.some(p => (p.player || p) === state.currentPlayer))
-                    .filter(s => !JSON.parse(s.sessionCollected || '[]').includes(state.currentPlayer));
-                releasedSessionsHTML = releasedForMe.map(s => {
-                    const amounts = JSON.parse(s.sessionPayoutAmounts || '{}');
-                    const myCoins = amounts[state.currentPlayer] || 0;
-                    const label = `+${fmt(myCoins)} ${coinSvgIcon()} ${t('btn_collect')}`;
-                    return `
-                        <div class="live-session-card released-session-card">
-                            <div class="live-session-header">
-                                <span class="live-session-game">${s.game}</span>
-                                <span style="color:var(--accent-green,#00e676);font-size:0.8rem;font-weight:600">✅ ${t('duel_status_released')}</span>
-                            </div>
-                            <div class="live-session-actions">
-                                <button class="btn-session-start session-collect-btn" data-sid="${s.id}" data-coins="${myCoins}" style="font-weight:700;width:100%">${label}</button>
-                            </div>
-                        </div>`;
-                }).join('');
-            }
-
             // Detect new running duel sessions and show start modal
             liveSessionsData.filter(s =>
                 s.status === 'running' &&
@@ -1086,10 +1063,6 @@ function getNowPlus10() {
                         ? liveSessionsHTML + activeProposalsHTML
                         : `<div class="empty-state-text" style="padding:0.5rem 0;font-size:0.85rem;color:var(--text-secondary)">${t('no_active_sessions')}</div>`}
                 </div>
-                ${releasedSessionsHTML ? `<div class="card" id="released-sessions-container">
-                    <div class="card-title">${t('section_ready_to_collect')}</div>
-                    ${releasedSessionsHTML}
-                </div>` : ''}
                 <div class="card" id="planned-sessions-container">
                     <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
                         ${t('planned_sessions')}
@@ -1147,48 +1120,6 @@ function getNowPlus10() {
                         btn.style.opacity = '';
                     }
                     renderDashboard();
-                });
-            });
-
-            // Event: Collect session payout
-            container.querySelectorAll('.session-collect-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                    try {
-                        await api('PUT', `/live-sessions/${btn.dataset.sid}/collect`, { player: state.currentPlayer });
-                        const coins = Number(btn.dataset.coins);
-                        const card = btn.closest('.live-session-card');
-                        if (coins > 0) showCoinAnimation(coins, 0);
-                        else playSound('coin');
-                        if (card) {
-                            card.classList.add('card-collect-out');
-                            card.addEventListener('animationend', () => {
-                                const releasedContainer = document.getElementById('released-sessions-container');
-                                const remainingCards = releasedContainer ? releasedContainer.querySelectorAll('.session-collect-btn').length : 0;
-                                // card is still in DOM (invisible), so <=1 means this was the last one
-                                if (remainingCards <= 1 && releasedContainer) {
-                                    releasedContainer.style.maxHeight = releasedContainer.offsetHeight + 'px';
-                                    releasedContainer.style.overflow = 'hidden';
-                                    releasedContainer.style.transition = 'max-height 0.35s ease, opacity 0.28s ease, margin-top 0.35s ease';
-                                    requestAnimationFrame(() => {
-                                        releasedContainer.style.maxHeight = '0';
-                                        releasedContainer.style.opacity = '0';
-                                        releasedContainer.style.marginTop = '0';
-                                        releasedContainer.addEventListener('transitionend', () => renderDashboard(), { once: true });
-                                    });
-                                } else {
-                                    renderDashboard();
-                                }
-                            }, { once: true });
-                        } else {
-                            renderDashboard();
-                        }
-                    } catch (e) {
-                        showToast(e.message || t('save_error'), 'error');
-                        btn.disabled = false;
-                        btn.style.opacity = '';
-                    }
                 });
             });
 
@@ -6140,16 +6071,6 @@ function getNowPlus10() {
                 return itemHtml({ id: n.id, icon, title, sub, actions, accent, navigate, ts: n.ts });
             }),
             ...incomingActivities.map(a => {
-                if (a.type === 'session_payout') {
-                    let payload = {};
-                    try { payload = JSON.parse(a.message); } catch {}
-                    const coins = payload.coins || 0;
-                    const icon  = coinSvgIcon('1.1em');
-                    const title = payload.game || '';
-                    const sub   = '';
-                    const actions = `<button class="notif-btn notif-btn-ok notif-session-collect" data-id="${a.id}" data-sid="${payload.sessionId || ''}" data-coins="${coins}">+${fmt(coins)}&nbsp;${coinSvgIcon()}</button>`;
-                    return itemHtml({ id: 'activity-' + a.id, icon, title, sub, actions, accent: 'gold', navigate: null, ts: a.ts });
-                }
                 const icon    = TASK_ICONS[a.type] || '⚡';
                 const actions = btnOk('notif-task-done', `data-id="${a.id}" data-from="${a.from_player || ''}" data-type="${a.type}"`);
                 return itemHtml({ id: 'activity-' + a.id, icon, title: a.message, sub: a.from_player || '', actions, accent: null, navigate: null, ts: a.ts });
@@ -6269,30 +6190,7 @@ function getNowPlus10() {
             });
         });
 
-        // Collect session payout from bell
-        panel.querySelectorAll('.notif-session-collect').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const sid   = btn.dataset.sid;
-                const coins = Number(btn.dataset.coins);
-                const evId  = btn.dataset.id;
-                try {
-                    let collectFailed = false;
-                    try {
-                        await api('PUT', `/live-sessions/${sid}/collect`, { player: state.currentPlayer });
-                    } catch (collectErr) {
-                        // Session already archived or already collected — treat as done, just clean up the event
-                        collectFailed = true;
-                    }
-                    await api('DELETE', `/player-events/${evId}`);
-                    if (!collectFailed && coins > 0) showCoinAnimation(coins, 0);
-                    renderDashboard();
-                    renderNotifPanel();
-                } catch (err) {
-                    showToast(err.message || t('save_error'), 'error');
-                }
-            });
-        });
+        // (session_payout collect is now handled via pollChallenges modal)
 
         // Click to navigate (duels, team duels, admin review)
         panel.querySelectorAll('.notif-item[data-navigate]').forEach(item => {
@@ -6366,7 +6264,45 @@ function getNowPlus10() {
                     continue;
                 }
                 if (ev.type === 'session_payout') {
-                    // Handled via notification bell — event stays in DB until player collects
+                    try {
+                        const data = JSON.parse(ev.message);
+                        const coins = data.coins || 0;
+                        const overlay = $('#modal-overlay');
+                        const modal = overlay.querySelector('.modal');
+                        modal.innerHTML = `
+                            <div class="modal-title" style="color:var(--accent-gold);">
+                                🪙 ${t('session_payout_title')}
+                            </div>
+                            <div style="text-align:center;font-size:1.5rem;font-weight:700;margin:0.75rem 0;color:var(--accent-gold);">
+                                +${fmt(coins)} ${coinSvgIcon('1.2em')}
+                            </div>
+                            <div style="text-align:center;font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:0.4rem;">
+                                🎮 ${escapeHtml(data.game || '')}
+                            </div>
+                            ${data.playerCount ? `<div style="text-align:center;font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">${data.playerCount} ${t('session_payout_players')}</div>` : ''}
+                            ${data.durationMin ? `<div style="text-align:center;font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.25rem;">⏱ ${data.durationMin} min</div>` : ''}
+                            <div style="margin-bottom:0.75rem;"></div>
+                            <div style="text-align:center;"><button class="btn-propose" id="session-payout-ok">OK</button></div>
+                        `;
+                        overlay.classList.add('show');
+                        const okBtn = modal.querySelector('#session-payout-ok');
+                        if (okBtn) {
+                            okBtn.addEventListener('click', async () => {
+                                overlay.classList.remove('show');
+                                try {
+                                    let collectFailed = false;
+                                    try {
+                                        await api('PUT', `/live-sessions/${data.sessionId}/collect`, { player: state.currentPlayer });
+                                    } catch { collectFailed = true; }
+                                    if (!collectFailed && coins > 0) showCoinAnimation(coins, 0);
+                                    else if (!collectFailed) playSound('coin');
+                                } catch {}
+                                try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                                renderDashboard();
+                            });
+                        }
+                        if (getNotifPref('sound')) playSound('coin');
+                    } catch {}
                     continue;
                 }
                 if (ev.type === 'tc_winner_review') {
