@@ -5672,17 +5672,19 @@ function getNowPlus10() {
                 const isRob       = n.type === 'rob';
                 const isReview    = n.type === 'review';
                 const isTeam      = n.isTeam;
+                const isFFA       = n.isFFA;
                 const isGameEvent = n.type === 'game_approved' || n.type === 'game_rejected';
                 const icon   = isGameEvent ? (n.type === 'game_approved' ? '✅' : '❌')
-                             : isRob ? '🥷' : isReview ? '🏆' : isTeam ? '👥' : '⚔️';
+                             : isRob ? '🥷' : isReview ? '🏆' : isTeam ? '👥' : isFFA ? '🎯' : '⚔️';
                 const accent = isGameEvent ? (n.type === 'game_approved' ? 'gold' : 'red')
                              : isRob ? 'red' : isReview ? 'gold' : null;
                 const title  = (isRob || isReview || isGameEvent) ? n.title
                              : isTeam ? (n.title || t('notif_team_challenge', n.challenger))
+                             : isFFA ? (n.title || t('new_ffa_challenge'))
                              : t('notif_challenge_from', n.challenger);
                 const sub    = (!isRob && !isReview && !isGameEvent && (n.game || n.stakeStr))
                              ? `${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}` : '';
-                const navigate = (!isRob && !isGameEvent) ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : 'duel') : null;
+                const navigate = (!isRob && !isGameEvent) ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : isFFA ? 'ffa' : 'duel') : null;
                 let actions = '';
                 if (isRob || isGameEvent) actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
                 else if (!isReview)        actions = btnOk('notif-accept', `data-id="${n.id}"`) + btnNo('notif-reject', `data-id="${n.id}"`);
@@ -5729,7 +5731,7 @@ function getNowPlus10() {
             });
         }
 
-        // Accept (1v1 + team duels)
+        // Accept (1v1 + team duels + FFA)
         panel.querySelectorAll('.notif-accept').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -5741,6 +5743,11 @@ function getNowPlus10() {
                         showToast(t('team_duel_accepted'), 'success');
                         if (result.allAccepted) navigateTo('dashboard');
                         else if ($('#view-challenges').classList.contains('active')) renderChallenges();
+                    } else if (id.startsWith('ffa_')) {
+                        await api('PUT', `/ffa-challenges/${id.slice(4)}/accept`, { player: state.currentPlayer });
+                        removeNotification(id);
+                        showToast(t('ffa_accepted'), 'success');
+                        if ($('#view-challenges').classList.contains('active')) renderChallenges();
                     } else {
                         await api('PUT', `/challenges/${id}/accept`, { player: state.currentPlayer });
                         removeNotification(id);
@@ -5751,7 +5758,7 @@ function getNowPlus10() {
             });
         });
 
-        // Reject (1v1 + team duels)
+        // Reject (1v1 + team duels + FFA)
         panel.querySelectorAll('.notif-reject').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -5761,6 +5768,10 @@ function getNowPlus10() {
                         await api('PUT', `/team-challenges/${id.slice(3)}/reject`, { player: state.currentPlayer });
                         removeNotification(id);
                         showToast(t('team_duel_rejected'), 'success');
+                    } else if (id.startsWith('ffa_')) {
+                        await api('PUT', `/ffa-challenges/${id.slice(4)}/reject`, { player: state.currentPlayer });
+                        removeNotification(id);
+                        showToast(t('ffa_rejected'), 'success');
                     } else {
                         await api('PUT', `/challenges/${id}/reject`, { player: state.currentPlayer });
                         removeNotification(id);
@@ -5809,6 +5820,9 @@ function getNowPlus10() {
                     challengeActiveTab = 'team';
                     if (id.startsWith('tc_'))       focusChallengeId = id.slice(3);
                     else if (id.startsWith('tcw_')) { focusChallengeId = id.slice(4); removeNotification(id); }
+                } else if (nav === 'ffa') {
+                    challengeActiveTab = 'ffa';
+                    if (id.startsWith('ffa_')) focusChallengeId = id.slice(4);
                 } else {
                     focusChallengeId = id;
                 }
@@ -6009,6 +6023,31 @@ function getNowPlus10() {
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
                     new Notification('👥 Team Duel!', {
                         body: t('notif_team_challenge', tc.createdBy) + '\n' + tc.game
+                    });
+                }
+                if (getNotifPref('sound')) playSound('challenge');
+            }
+        } catch (e) { /* Polling-Fehler ignorieren */ }
+        try {
+            const ffaChallenges = await api('GET', '/ffa-challenges');
+            const newFFAOnes = ffaChallenges.filter(ffa => {
+                const players = JSON.parse(ffa.players || '[]');
+                const acceptances = JSON.parse(ffa.acceptances || '[]');
+                return ffa.status === 'pending' &&
+                       players.includes(state.currentPlayer) &&
+                       !acceptances.includes(state.currentPlayer) &&
+                       !notifiedChallengeIds.has('ffa_' + ffa.id);
+            });
+            for (const ffa of newFFAOnes) {
+                notifiedChallengeIds.add('ffa_' + ffa.id);
+                localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
+                const stakeStr = ffa.stakeCoinsPerPerson > 0 ? `${fmt(ffa.stakeCoinsPerPerson)} ${coinSvgIcon()}/Person` : t('no_stake');
+                pendingNotifications.push({ id: 'ffa_' + ffa.id, challenger: ffa.createdBy, game: ffa.game, stakeStr, isFFA: true, ts: ffa.createdAt, title: t('new_ffa_challenge') });
+                showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                updateBadge();
+                if (getNotifPref('visual') && Notification.permission === 'granted') {
+                    new Notification(t('new_ffa_challenge'), {
+                        body: t('notif_team_challenge', ffa.createdBy) + '\n' + ffa.game
                     });
                 }
                 if (getNotifPref('sound')) playSound('challenge');
