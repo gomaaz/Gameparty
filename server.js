@@ -957,6 +957,8 @@ app.put('/api/proposals/:id', (req, res) => {
         req.body.pendingCoins = Math.round(durationMin * playerRate);
     }
     if (req.body.status === 'active') {
+        req.body.pendingCoins = 0;
+        req.body.coinsApproved = 0;
         const playerCount = db.prepare('SELECT COUNT(*) as cnt FROM proposal_players WHERE proposal_id = ?').get(req.params.id).cnt;
         if (playerCount < 2) return res.status(400).json({ error: 'Eine Session benötigt mindestens 2 Spieler' });
         const players = db.prepare('SELECT player FROM proposal_players WHERE proposal_id = ?').all(req.params.id);
@@ -978,7 +980,7 @@ app.put('/api/proposals/:id', (req, res) => {
     const updates = [];
     const params = [];
     for (const [key, value] of Object.entries(req.body)) {
-        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'approvedAt', 'startedAt', 'completedAt', 'pendingCoins', 'coinsApproved', 'medium', 'medium_account'].includes(key)) {
+        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'approvedAt', 'startedAt', 'completedAt', 'pendingCoins', 'medium', 'medium_account'].includes(key)) {
             updates.push(`${key} = ?`);
             params.push(value);
         }

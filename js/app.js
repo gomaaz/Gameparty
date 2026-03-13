@@ -805,7 +805,7 @@ function getNowPlus10() {
                         }
                         if (isLeader || isAdmin()) {
                             actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="start">${t('btn_start_session')}</button>`;
-                            actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">${t('btn_cancel')}</button>`;
+                            actionsHTML += `<button class="btn-danger" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;padding:4px 12px">${t('btn_cancel')}</button>`;
                         }
                     } else if (s.status === 'running') {
                         const initialMins0 = s.startedAt ? Math.floor((serverNow() - s.startedAt) / 60000) : 0;
@@ -1052,7 +1052,7 @@ function getNowPlus10() {
                         coinInfoHTML = timeInfoHTML;
                         if (isAdmin()) {
                             actionsHTML += `<button class="btn-session-start" data-sid="${s.id}" data-action="approve" data-coins="${coins}">${t('btn_approve_coins', fmt(coins))}</button>`;
-                            actionsHTML += `<button class="btn-session-end" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;opacity:0.6">🗑️</button>`;
+                            actionsHTML += `<button class="btn-danger" data-sid="${s.id}" data-action="cancel" style="font-size:0.75rem;padding:4px 12px">🗑️ ${t('btn_cancel')}</button>`;
                         }
                     }
 
@@ -4678,7 +4678,7 @@ function getNowPlus10() {
                 // GL (challenger) can cancel their own pending challenge
                 const isChallenger = c.challenger === state.currentPlayer;
                 if (c.status === 'pending' && isChallenger) {
-                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave ch-cancel-gl" data-id="${c.id}">${t('btn_cancel')}</button></div>`;
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-danger ch-cancel-gl" data-id="${c.id}">${t('btn_cancel')}</button></div>`;
                 }
 
                 if (admin && c.status !== 'paid') {
@@ -4824,7 +4824,7 @@ function getNowPlus10() {
                 }
                 // GL (creator) can cancel their own pending team challenge
                 if (tc.status === 'pending' && tc.createdBy === state.currentPlayer) {
-                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave tc-cancel-gl" data-id="${tc.id}">${t('btn_cancel')}</button></div>`;
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-danger tc-cancel-gl" data-id="${tc.id}">${t('btn_cancel')}</button></div>`;
                 }
 
                 if (admin && tc.status !== 'paid') {
@@ -4988,7 +4988,7 @@ function getNowPlus10() {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-join ffa-accept" data-id="${ffa.id}">${t('notif_accept')}</button><button class="btn-leave ffa-reject" data-id="${ffa.id}">${t('notif_reject')}</button></div>`;
                 }
                 if (ffa.status === 'pending' && isCreator) {
-                    actionsHTML += `<div class="proposal-actions"><button class="btn-leave ffa-cancel-gl" data-id="${ffa.id}">${t('btn_cancel')}</button></div>`;
+                    actionsHTML += `<div class="proposal-actions"><button class="btn-danger ffa-cancel-gl" data-id="${ffa.id}">${t('btn_cancel')}</button></div>`;
                 }
                 if (ffa.status === 'accepted' && isCreator) {
                     const placementSelects = players.map(p => `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;"><span style="flex:1;font-size:0.85rem;">${p}</span><select class="ffa-place-select" data-player="${p}" style="background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem;"><option value="">-</option>${players.map((_, idx) => `<option value="${idx+1}">${idx+1}.</option>`).join('')}</select></div>`).join('');
