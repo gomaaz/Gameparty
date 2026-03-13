@@ -699,8 +699,10 @@ function getNowPlus10() {
             let nextGameHTML = '';
             if (topGame) {
                 const matchPlayers = getMatchingPlayers(topGame);
+                const nextGameCover = topGame.cover_url || '';
                 nextGameHTML = `
                     <div class="card next-game-card">
+                        ${nextGameCover ? `<div class="next-game-cover-bg" style="background-image:url('${nextGameCover}')"></div>` : ''}
                         <div class="card-title">${t('next_game_title')}</div>
                         <div class="match-count">${matchPlayers.length}</div>
                         <div class="next-game-name">${topGame.name}</div>

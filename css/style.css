@@ -380,6 +380,28 @@ button, a, input, select, textarea, label, [role="button"] {
     border-color: var(--accent-purple);
     text-align: center;
     padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.next-game-cover-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.next-game-card > *:not(.next-game-cover-bg) {
+    position: relative;
+    z-index: 1;
 }
 
 .next-game-name {
