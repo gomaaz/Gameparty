@@ -871,6 +871,9 @@ function getNowPlus10() {
                         if (s.challenge_id && (isLeader || isAdmin())) {
                             actionsHTML += `<button class="btn-danger duel-running-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px;margin-left:auto">${t('btn_cancel')}</button>`;
                         }
+                        if (!s.challenge_id && isAdmin()) {
+                            actionsHTML += `<button class="btn-danger spontan-running-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px;margin-left:auto">${t('btn_cancel')}</button>`;
+                        }
                     } else if (s.status === 'ended' && s.challenge_id) {
                         // Duel session — show voting UI instead of admin approval
                         const duelVotes = duelVotesMap[s.id] || [];
@@ -1227,6 +1230,20 @@ function getNowPlus10() {
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
                     }
+                });
+            });
+
+            // Admin: Laufende spontane Session abbrechen (ohne Challenge, keine Einsatz-Erstattung noetig)
+            container.querySelectorAll('.spontan-running-cancel-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    showConfirm(t('confirm_cancel_room'), async () => {
+                        try {
+                            await api('DELETE', `/live-sessions/${btn.dataset.sid}`);
+                            showToast(t('btn_cancel'), 'success');
+                        } catch (e) {
+                            showToast(e.message || t('save_error'), 'error');
+                        }
+                    });
                 });
             });
 
