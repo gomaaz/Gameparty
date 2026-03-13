@@ -989,9 +989,9 @@ function getNowPlus10() {
                                         <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
                                             🏆 ${t('duel_consensus')} <strong>${winner}</strong>
                                         </div>
-                                        <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve')}</button>
-                                        <div style="text-align:right;margin-top:0.4rem">
-                                            <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px">${t('btn_cancel')}</button>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.4rem">
+                                            <button class="btn-approve duel-approve-btn" data-sid="${s.id}">${t('btn_freigabe_approve') || 'Freigeben'}</button>
+                                            <button class="btn-danger duel-cancel-btn" data-sid="${s.id}" style="font-size:0.82rem;padding:4px 12px">${t('btn_cancel') || 'Abbrechen'}</button>
                                         </div>
                                     </div>`;
                             } else if (isVoted && !isAdmin()) {
@@ -1210,6 +1210,7 @@ function getNowPlus10() {
                     if (!sid) return;
                     try {
                         await api('POST', '/duel-votes/approve', { sessionId: sid, player: state.currentPlayer });
+                        renderDashboard();
                     } catch (e) {
                         showToast(e.message || t('save_error'), 'error');
                     }
