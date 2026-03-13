@@ -400,6 +400,8 @@ const TRANSLATIONS = {
 
         // --- FFA Challenges ---
         new_ffa_challenge: '🎯 FFA Challenge',
+        notif_ffa_challenge: '🎯 {0} starts an FFA!',
+        notif_ffa_body: '{0} starts FFA · Players: {1}',
         no_ffa_challenges: 'No FFA challenges yet.',
         ffa_players_label: 'Players (min. 3)',
         ffa_payout_label: 'Payout by Placement (%)',
@@ -995,6 +997,8 @@ const TRANSLATIONS = {
 
         // --- FFA Challenges ---
         new_ffa_challenge: '🎯 FFA Challenge',
+        notif_ffa_challenge: '🎯 {0} startet ein FFA!',
+        notif_ffa_body: '{0} startet FFA · Spieler: {1}',
         no_ffa_challenges: 'Noch keine FFA Challenges.',
         ffa_players_label: 'Spieler (mind. 3)',
         ffa_payout_label: 'Auszahlung nach Platz (%)',

@@ -113,6 +113,12 @@
         }
     }
 
+    function buildFFANotifTitle(players, createdBy) {
+        const others = players.filter(p => p !== createdBy);
+        const participantList = others.join(', ');
+        return { title: t('notif_ffa_challenge', createdBy), participants: participantList };
+    }
+
     function showNegativeCoinAnimation(coins, stars) {
         const popup = document.createElement('div');
         popup.className = 'coin-popup';
@@ -6085,8 +6091,8 @@ function getNowPlus10() {
                              : isTeam ? (n.title || t('notif_team_challenge', n.challenger))
                              : isFFA ? (n.title || t('new_ffa_challenge'))
                              : t('notif_challenge_from', n.challenger);
-                const sub    = (!isRob && !isReview && !isGameEvent && (n.game || n.stakeStr))
-                             ? `${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}` : '';
+                const sub    = (!isRob && !isReview && !isGameEvent)
+                             ? (n.sub || ((n.game || n.stakeStr) ? `${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}` : '')) : '';
                 const navigate = (!isRob && !isGameEvent) ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : isFFA ? 'ffa' : 'duel') : null;
                 let actions = '';
                 if (isRob || isGameEvent) actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
@@ -6489,12 +6495,15 @@ function getNowPlus10() {
                 notifiedChallengeIds.add('ffa_' + ffa.id);
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = ffa.stakeCoinsPerPerson > 0 ? `${fmt(ffa.stakeCoinsPerPerson)} ${coinSvgIcon()}/Person` : t('no_stake');
-                pendingNotifications.push({ id: 'ffa_' + ffa.id, challenger: ffa.createdBy, game: ffa.game, stakeStr, isFFA: true, ts: ffa.createdAt, title: t('new_ffa_challenge') });
+                const ffaPlayers = JSON.parse(ffa.players || '[]');
+                const { title: ffaTitle, participants: ffaParticipants } = buildFFANotifTitle(ffaPlayers, ffa.createdBy);
+                const ffaSub = `${ffa.game}${ffa.game && stakeStr ? ' · ' : ''}${stakeStr}${ffaParticipants ? ' · ' + ffaParticipants : ''}`;
+                pendingNotifications.push({ id: 'ffa_' + ffa.id, challenger: ffa.createdBy, game: ffa.game, stakeStr, isFFA: true, ts: ffa.createdAt, title: ffaTitle, sub: ffaSub });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                 updateBadge();
                 if (getNotifPref('visual') && Notification.permission === 'granted') {
                     new Notification(t('new_ffa_challenge'), {
-                        body: t('notif_team_challenge', ffa.createdBy) + '\n' + ffa.game
+                        body: t('notif_ffa_body', ffa.createdBy, ffaParticipants || ffaPlayers.join(', '))
                     });
                 }
                 if (getNotifPref('sound')) playSound('challenge');
