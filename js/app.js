@@ -194,7 +194,7 @@
         if (body) opts.body = JSON.stringify(body);
         const res = await fetch('/api' + path, opts);
         if (res.status === 401) {
-            logout();
+            if (token) logout(); // only logout if we had a token (= session expired)
             throw new Error('Sitzung abgelaufen');
         }
         if (!res.ok) {
