@@ -2082,8 +2082,54 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
         db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
             .run(loser, 'duel_payout', '', JSON.stringify({ ...duelPayload, isWinner: false }), notifyNow, 'active');
     } else if (session.challenge_type === 'ffa') {
-        // FFA-Auszahlung erfolgt über /ffa-challenges/:id/payout Endpoint
-        return;
+        const ffa = db.prepare('SELECT * FROM ffa_challenges WHERE id = ?').get(session.challenge_id);
+        if (!ffa) return;
+
+        const players = JSON.parse(ffa.players);
+        const placements = JSON.parse(ffa.placements || '{}');
+        const config = JSON.parse(ffa.payoutConfig || '[]');
+
+        const totalPot = ffa.stakeCoinsPerPerson * players.length;
+        const totalStarPot = ffa.stakeStarsPerPerson * players.length;
+
+        const coinPayouts = {};
+        let coinRemainder = totalPot;
+        for (const entry of config) {
+            const pct = Number(entry.pct);
+            const playerForPlace = players.find(p => placements[p] === entry.place);
+            if (playerForPlace) {
+                const amount = Math.floor(totalPot * pct / 100);
+                coinPayouts[playerForPlace] = amount;
+                coinRemainder -= amount;
+            }
+        }
+        const place1Player = players.find(p => placements[p] === 1);
+        if (place1Player && coinRemainder > 0) {
+            coinPayouts[place1Player] = (coinPayouts[place1Player] || 0) + coinRemainder;
+        }
+
+        const starPayouts = {};
+        let starRemainder = totalStarPot;
+        for (const entry of config) {
+            const pct = Number(entry.pct);
+            const playerForPlace = players.find(p => placements[p] === entry.place);
+            if (playerForPlace) {
+                const amount = Math.floor(totalStarPot * pct / 100);
+                starPayouts[playerForPlace] = amount;
+                starRemainder -= amount;
+            }
+        }
+        if (place1Player && starRemainder > 0) {
+            starPayouts[place1Player] = (starPayouts[place1Player] || 0) + starRemainder;
+        }
+
+        for (const p of players) {
+            if (coinPayouts[p] === undefined) coinPayouts[p] = 0;
+            if (starPayouts[p] === undefined) starPayouts[p] = 0;
+        }
+
+        db.prepare("UPDATE ffa_challenges SET status='released', payoutAmounts=?, payoutStarAmounts=?, collected='[]' WHERE id=?")
+            .run(JSON.stringify(coinPayouts), JSON.stringify(starPayouts), ffa.id);
     } else {
         const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(session.challenge_id);
         if (!tc) return;
