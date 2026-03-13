@@ -21,18 +21,17 @@ It's not about winning. It's about getting everyone off their corner of the couc
 
 ## Screenshots
 
-<table>
-  <tr>
-    <td align="center"><img src="screenshots/2026-03-07%2018-23-45.png" width="160"/><br/><sub>Home &amp; Leaderboard</sub></td>
-    <td align="center"><img src="screenshots/2026-03-07%2018-23-56.png" width="160"/><br/><sub>Duels</sub></td>
-    <td align="center"><img src="screenshots/2026-03-07%2018-24-05.png" width="160"/><br/><sub>Shop</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/2026-03-07%2018-24-24.png" width="160"/><br/><sub>Game List</sub></td>
-    <td align="center"><img src="screenshots/2026-03-07%2018-24-46.png" width="160"/><br/><sub>Game Library</sub></td>
-    <td></td>
-  </tr>
-</table>
+<img width="552" height="1084" alt="2" src="https://github.com/user-attachments/assets/21da1e5e-3cf4-478f-a7d0-64d7b62f4425" />
+<img width="560" height="1075" alt="3" src="https://github.com/user-attachments/assets/babb70d6-594a-4312-bdd6-7d337b9d1d0c" />
+<img width="554" height="1084" alt="4" src="https://github.com/user-attachments/assets/fc240af9-1da5-4fd7-ad81-5ca2f01ec054" />
+<img width="552" height="1077" alt="5" src="https://github.com/user-attachments/assets/678fa0c1-186a-4a91-b575-e434484f6b4c" />
+<img width="553" height="1080" alt="6" src="https://github.com/user-attachments/assets/7353fcb1-284b-4839-9124-e13f4c50d3cb" />
+<img width="548" height="1075" alt="7" src="https://github.com/user-attachments/assets/a895de44-d354-4a5f-9718-a23702bc5879" />
+<img width="556" height="1081" alt="8" src="https://github.com/user-attachments/assets/869172fc-7af2-406f-9877-5e686175d54c" />
+<img width="543" height="1077" alt="9" src="https://github.com/user-attachments/assets/1d25f2ca-ef0e-4440-b462-f030381bb40d" />
+<img width="557" height="1089" alt="10" src="https://github.com/user-attachments/assets/27629f6c-897d-4893-b97b-024b87d1f2f8" />
+<img width="551" height="1080" alt="1" src="https://github.com/user-attachments/assets/e1011f7c-da92-4c15-b212-3e57380ce859" />
+
 
 ---
 
