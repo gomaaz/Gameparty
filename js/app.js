@@ -842,7 +842,13 @@ function getNowPlus10() {
                         if (s.challenge_id) {
                             const chRun2 = challengeMap[s.challenge_id];
                             if (chRun2) {
-                                if (s.challenge_type !== '1v1') {
+                                if (s.challenge_type === 'ffa') {
+                                    const ffaPlayers = Array.isArray(chRun2.players) ? chRun2.players : JSON.parse(chRun2.players || '[]');
+                                    const glName = chRun2.createdBy;
+                                    const renderTName = name => name === glName ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>${name}` : name;
+                                    const sortGL = arr => [...arr].sort((a, b) => a === glName ? -1 : b === glName ? 1 : 0);
+                                    playersHTML = `<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin:0.25rem 0;">${sortGL(ffaPlayers).map(n => `<span class="player-chip">${renderTName(n)}</span>`).join('')}</div>`;
+                                } else if (s.challenge_type !== '1v1') {
                                     const tA = Array.isArray(chRun2.teamA) ? chRun2.teamA : JSON.parse(chRun2.teamA || '[]');
                                     const tB = Array.isArray(chRun2.teamB) ? chRun2.teamB : JSON.parse(chRun2.teamB || '[]');
                                     const glName = chRun2.createdBy;
@@ -902,6 +908,25 @@ function getNowPlus10() {
                         }
                         const potDisplay = potStr ? `<div class="vote-pot-display">${t('pot_label')} ${potStr}</div>` : '';
 
+                        // FFA: payout breakdown per place
+                        let ffaPayoutBreakdown = '';
+                        if (s.challenge_type === 'ffa' && ch?.payoutConfig) {
+                            const ffaPayCfg = Array.isArray(ch.payoutConfig) ? ch.payoutConfig : JSON.parse(ch.payoutConfig || '[]');
+                            const tp = s.players?.length || 0;
+                            const totalCoinPot = (ch.stakeCoinsPerPerson || 0) * tp;
+                            const totalStarPot = (ch.stakeStarsPerPerson || 0) * tp;
+                            if (ffaPayCfg.length > 0) {
+                                const rows = ffaPayCfg.map(e => {
+                                    const coinAmt = totalCoinPot > 0 ? Math.floor(totalCoinPot * e.pct / 100) : null;
+                                    const starAmt = totalStarPot > 0 ? Math.floor(totalStarPot * e.pct / 100) : null;
+                                    let amtStr = coinAmt !== null ? `${fmt(coinAmt)} ${coinSvgIcon()}` : '';
+                                    if (starAmt !== null) amtStr += (amtStr ? ' + ' : '') + `${fmt(starAmt)} ${controllerSvgIcon()}`;
+                                    return `<div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-secondary);margin:0.1rem 0;"><span>Platz ${e.place} (${e.pct}%)</span><span>${amtStr}</span></div>`;
+                                }).join('');
+                                ffaPayoutBreakdown = `<div style="margin-top:0.3rem;border-top:1px solid var(--border);padding-top:0.25rem;">${rows}</div>`;
+                            }
+                        }
+
                         if (isPaid) {
                             const winner = s.challenge_type === '1v1' ? ch?.winner : (ch?.winnerTeam === 'A' ? 'Team A' : 'Team B');
                             statusBadge = `<span class="pending-approval-badge" style="background:var(--accent-green);color:#000">${t('duel_won_badge', winner)}</span>`;
@@ -931,7 +956,7 @@ function getNowPlus10() {
                                 const voteSummary = duelVotes.map(v => `${v.player} → ${optionLabel(v.voted_for)}`).join(' | ');
                                 actionsHTML = `
                                     <div class="duel-vote-section">
-                                        ${potDisplay}
+                                        ${potDisplay}${ffaPayoutBreakdown}
                                         ${voterStatusHTML}
                                         <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                         ${voteSummary ? `<div class="vote-summary" style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.3rem">${voteSummary}</div>` : ''}
@@ -943,7 +968,7 @@ function getNowPlus10() {
                             } else if (isConflict) {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
-                                        ${potDisplay}
+                                        ${potDisplay}${ffaPayoutBreakdown}
                                         ${voterStatusHTML}
                                         <div class="vote-label conflict-label">⚠️ ${t('duel_conflict') || 'Abstimmungskonflikt'}</div>
                                         <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
@@ -959,7 +984,7 @@ function getNowPlus10() {
                                 }
                                 actionsHTML = `
                                     <div class="duel-vote-section">
-                                        ${potDisplay}
+                                        ${potDisplay}${ffaPayoutBreakdown}
                                         ${voterStatusHTML}
                                         <div class="vote-label" style="color:var(--accent-green);margin-bottom:0.5rem">
                                             🏆 ${t('duel_consensus')} <strong>${winner}</strong>
@@ -972,7 +997,7 @@ function getNowPlus10() {
                             } else if (isVoted && !isAdmin()) {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
-                                        ${potDisplay}
+                                        ${potDisplay}${ffaPayoutBreakdown}
                                         ${voterStatusHTML}
                                         <div class="vote-label" style="color:var(--accent-green)">🏆 ${t('duel_voting_complete')}</div>
                                         <div class="vote-label">${t('duel_vote_waiting') || 'Warte auf Admin...'}</div>
@@ -980,7 +1005,7 @@ function getNowPlus10() {
                             } else if (myVote) {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
-                                        ${potDisplay}
+                                        ${potDisplay}${ffaPayoutBreakdown}
                                         ${voterStatusHTML}
                                         <div class="vote-label">${t('duel_vote_waiting_others') || 'Warte auf Abstimmung...'}</div>
                                         ${options.map(opt => `<button class="duel-vote-btn ${myVote === opt ? 'voted' : ''}" data-sid="${s.id}" data-vote="${opt}" disabled>${optionLabel(opt)}</button>`).join('')}
@@ -988,9 +1013,9 @@ function getNowPlus10() {
                             } else {
                                 actionsHTML = `
                                     <div class="duel-vote-section">
-                                        ${potDisplay}
+                                        ${potDisplay}${ffaPayoutBreakdown}
                                         ${voterStatusHTML}
-                                        <div class="vote-label">${t('duel_vote_label') || 'Stimme ab:'}</div>
+                                        <div class="vote-label">${t('duel_vote_header') || 'Wer hat gewonnen?'}</div>
                                         ${options.map(opt => `<button class="duel-vote-btn" data-sid="${s.id}" data-vote="${opt}">${optionLabel(opt)}</button>`).join('')}
                                     </div>`;
                             }
@@ -4585,15 +4610,22 @@ function getNowPlus10() {
         }
 
         try {
-            const [challenges, teamChallenges, ffaChallenges, coinsData, starsData] = await Promise.all([
+            const [challenges, teamChallenges, ffaChallenges, coinsData, starsData, liveSessionsForChallenges] = await Promise.all([
                 api('GET', '/challenges'),
                 api('GET', '/team-challenges'),
                 api('GET', '/ffa-challenges'),
                 api('GET', '/coins'),
-                api('GET', '/stars')
+                api('GET', '/stars'),
+                api('GET', '/live-sessions')
             ]);
             state.coins = coinsData;
             state.stars = starsData;
+
+            // Map from challenge_id to session id (for voted FFA approve button)
+            const challengeSessionMap = {};
+            (liveSessionsForChallenges || []).forEach(s => {
+                if (s.challenge_id) challengeSessionMap[s.challenge_id] = s.id;
+            });
 
             const myCoins = getPlayerCoins(state.currentPlayer);
             const myStars = getPlayerStars(state.currentPlayer);
@@ -4947,7 +4979,14 @@ function getNowPlus10() {
                 if (admin && ffa.status === 'completed') {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-join ffa-payout" data-id="${ffa.id}">🏆 Pott freigeben</button></div>`;
                 }
-                if (admin && ffa.status !== 'paid') {
+                if (admin && ffa.status === 'voted') {
+                    const votedSid = challengeSessionMap[ffa.id] || '';
+                    actionsHTML += `<div class="proposal-actions" style="padding-top:0.5rem;margin-top:0.5rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;justify-content:space-between;">
+                        <button class="btn-join ffa-vote-approve" data-id="${ffa.id}" data-sid="${votedSid}" style="flex:1">🏆 ${t('btn_freigabe_approve')}</button>
+                        <button class="btn-leave ffa-delete" data-id="${ffa.id}" style="flex:0 0 auto">${t('btn_delete_duel')}</button>
+                    </div>`;
+                }
+                if (admin && ffa.status !== 'paid' && ffa.status !== 'voted') {
                     actionsHTML += `<div class="proposal-actions"><button class="btn-leave ffa-delete" data-id="${ffa.id}">${t('btn_delete_duel')}</button></div>`;
                 }
                 // Collect button for released FFA challenges
@@ -5896,6 +5935,26 @@ function getNowPlus10() {
                             renderChallenges();
                         } catch (e) {
                             showToast('Fehler: ' + (JSON.parse(e.message).error || e.message), 'error');
+                            playSound('error');
+                        }
+                    });
+                });
+
+                // Freigeben for voted FFA (admin) — calls duel-votes/approve with session id
+                container.querySelectorAll('.ffa-vote-approve').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const sid = btn.dataset.sid;
+                        if (!sid) { showToast(t('save_error'), 'error'); return; }
+                        try {
+                            await api('POST', '/duel-votes/approve', { sessionId: sid, player: state.currentPlayer });
+                            showToast(t('ffa_payout_done'), 'success');
+                            playSound('coin');
+                            const coinsData = await api('GET', '/coins');
+                            state.coins = coinsData;
+                            updateHeaderCoins();
+                            renderChallenges();
+                        } catch (e) {
+                            showToast('Fehler: ' + (e.message || String(e)), 'error');
                             playSound('error');
                         }
                     });
