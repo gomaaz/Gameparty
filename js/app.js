@@ -3795,7 +3795,7 @@ function getNowPlus10() {
                 showToast(t('star_bought', fmt(state.stars[player])), 'success');
                 updateHeader();
                 renderShop();
-            } catch (e) { showToast(t('not_enough_coins'), 'error'); playSound('error'); }
+            } catch (e) { showToast(e.message || t('not_enough_coins'), 'error'); playSound('error'); }
             return;
         }
 
@@ -3816,7 +3816,7 @@ function getNowPlus10() {
                     showToast(t('item_bought', item.name), 'gold');
                     renderShop();
                 } catch (e) {
-                    showToast(t('not_enough_coins'), 'error');
+                    showToast(e.message || t('not_enough_coins'), 'error');
                     playSound('error');
                 }
             });
@@ -3860,7 +3860,7 @@ function getNowPlus10() {
                     });
                     renderShop();
                 } catch (e) {
-                    showToast('Nicht genug Coins!', 'error');
+                    showToast(e.message || t('not_enough_coins'), 'error');
                     playSound('error');
                 }
             });
@@ -3932,7 +3932,7 @@ function getNowPlus10() {
                     if (e.message === 'cooldown') {
                         showToast('Noch nicht verfügbar – Cooldown läuft!', 'error');
                     } else {
-                        showToast(t('not_enough_coins'), 'error');
+                        showToast(e.message || t('not_enough_coins'), 'error');
                     }
                     playSound('error');
                     renderShop();
@@ -7484,6 +7484,8 @@ function getNowPlus10() {
         // Close modal on overlay click
         $('#modal-overlay').addEventListener('click', (e) => {
             if (e.target === e.currentTarget && state.currentPlayer) {
+                const okBtn = e.currentTarget.querySelector('#session-payout-ok');
+                if (okBtn) { okBtn.click(); return; }
                 const iframe = e.currentTarget.querySelector('iframe');
                 if (iframe) iframe.src = '';
                 e.currentTarget.classList.remove('show');

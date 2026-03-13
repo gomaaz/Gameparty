@@ -117,6 +117,7 @@ const PUBLIC_ROUTES = [
     { method: 'GET',  path: '/logs' },
     { method: 'GET',  path: '/time' },
     { method: 'GET',  path: '/init' },
+    { method: 'GET',  path: '/settings' },
 ];
 app.use('/api', (req, res, next) => {
     if (PUBLIC_ROUTES.some(p => p.method === req.method && req.path === p.path)) return next();
