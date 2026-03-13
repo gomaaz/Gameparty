@@ -630,7 +630,7 @@ function getNowPlus10() {
         const container = $('#view-dashboard');
 
         try {
-            const [coinsData, starsData, proposalsData, liveSessionsData, usersData, settingsData, challengesData, teamChallengesData, sessionsData] = await Promise.all([
+            const [coinsData, starsData, proposalsData, liveSessionsData, usersData, settingsData, challengesData, teamChallengesData, ffaChallengesData, sessionsData] = await Promise.all([
                 api('GET', '/coins'),
                 api('GET', '/stars'),
                 api('GET', '/proposals'),
@@ -639,6 +639,7 @@ function getNowPlus10() {
                 api('GET', '/settings'),
                 api('GET', '/challenges'),
                 api('GET', '/team-challenges'),
+                api('GET', '/ffa-challenges'),
                 api('GET', '/sessions')
             ]);
 
@@ -657,6 +658,7 @@ function getNowPlus10() {
             const challengeMap = {};
             (challengesData || []).forEach(c => { challengeStatusMap[c.id] = c.status; challengeMap[c.id] = c; });
             (teamChallengesData || []).forEach(tc => { challengeStatusMap[tc.id] = tc.status; challengeMap[tc.id] = tc; });
+            (ffaChallengesData || []).forEach(ffa => { challengeStatusMap[ffa.id] = ffa.status; challengeMap[ffa.id] = ffa; });
             const userIpMap = Object.fromEntries((usersData || []).map(u => [u.name, u.ip || '']));
             state.coins = coinsData;
             state.stars = starsData;

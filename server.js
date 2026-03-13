@@ -2081,6 +2081,9 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
             .run(winner, 'duel_payout', '', JSON.stringify({ ...duelPayload, isWinner: true }), notifyNow, 'active');
         db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
             .run(loser, 'duel_payout', '', JSON.stringify({ ...duelPayload, isWinner: false }), notifyNow, 'active');
+    } else if (session.challenge_type === 'ffa') {
+        // FFA-Auszahlung erfolgt über /ffa-challenges/:id/payout Endpoint
+        return;
     } else {
         const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(session.challenge_id);
         if (!tc) return;
@@ -2199,7 +2202,7 @@ app.post('/api/duel-votes/resolve', (req, res) => {
     } else {
         db.prepare(`UPDATE team_challenges SET winnerTeam = ? WHERE id = ?`).run(winner, session.challenge_id);
     }
-    _duelPayout(session, winner, db, true);
+    _duelPayout(session, winner, db);
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
@@ -2209,7 +2212,7 @@ app.post('/api/duel-votes/approve', (req, res) => {
     const { sessionId } = req.body;
     const session = db.prepare('SELECT * FROM live_sessions WHERE id = ?').get(sessionId);
     if (!session || !session.challenge_id) return res.status(400).json({ error: 'invalid session' });
-    _duelPayout(session, null, db, true);
+    _duelPayout(session, null, db);
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
@@ -2243,21 +2246,27 @@ app.post('/api/duel-votes', (req, res) => {
         const consensus = unique.length === 1;
 
         if (consensus) {
-            // KONSENS: Sofortige Auszahlung ohne Admin-Freigabe
+            // KONSENS: 1v1 direkte Auszahlung; team/ffa → Status 'voted', Admin muss freigeben
             if (session.challenge_type === '1v1') {
                 db.prepare(`UPDATE challenges SET winner = ? WHERE id = ?`)
                     .run(unique[0], session.challenge_id);
-            } else {
-                db.prepare(`UPDATE team_challenges SET winnerTeam = ? WHERE id = ?`)
+                _duelPayout(session, unique[0], db);
+            } else if (session.challenge_type === 'team') {
+                db.prepare(`UPDATE team_challenges SET winnerTeam = ?, status = 'voted' WHERE id = ?`)
                     .run(unique[0], session.challenge_id);
+            } else if (session.challenge_type === 'ffa') {
+                db.prepare(`UPDATE ffa_challenges SET status = 'voted' WHERE id = ?`)
+                    .run(session.challenge_id);
             }
-            _duelPayout(session, unique[0], db);
         } else {
             if (session.challenge_type === '1v1') {
                 db.prepare(`UPDATE challenges SET status = 'conflict' WHERE id = ?`)
                     .run(session.challenge_id);
-            } else {
+            } else if (session.challenge_type === 'team') {
                 db.prepare(`UPDATE team_challenges SET status = 'conflict' WHERE id = ?`)
+                    .run(session.challenge_id);
+            } else if (session.challenge_type === 'ffa') {
+                db.prepare(`UPDATE ffa_challenges SET status = 'conflict' WHERE id = ?`)
                     .run(session.challenge_id);
             }
             const admins = db.prepare("SELECT name FROM users WHERE role = 'admin'").all();
