@@ -3,3 +3,4 @@ data/
 # Rogue agent artifacts — never commit these
 VERSION
 CHANGELOG.md
+.claude/
