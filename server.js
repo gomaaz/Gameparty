@@ -2618,6 +2618,16 @@ app.post('/api/live-sessions/:id/duel-cancel', (req, res) => {
                 }
                 db.prepare("UPDATE challenges SET status = 'cancelled' WHERE id = ?").run(c.id);
             }
+        } else if (session.challenge_type === 'ffa') {
+            const ffa = db.prepare('SELECT * FROM ffa_challenges WHERE id = ?').get(session.challenge_id);
+            if (ffa) {
+                const players = JSON.parse(ffa.players || '[]');
+                for (const p of players) {
+                    if (ffa.stakeCoinsPerPerson > 0) db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(ffa.stakeCoinsPerPerson, p);
+                    if (ffa.stakeStarsPerPerson > 0) db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(ffa.stakeStarsPerPerson, p);
+                }
+                db.prepare("UPDATE ffa_challenges SET status = 'cancelled' WHERE id = ?").run(ffa.id);
+            }
         } else {
             const tc = db.prepare('SELECT * FROM team_challenges WHERE id = ?').get(session.challenge_id);
             if (tc) {
