@@ -943,7 +943,14 @@ function getNowPlus10() {
                                         <div class="vote-label">${t('duel_conflict_waiting') || 'Admin entscheidet...'}</div>
                                     </div>`;
                             } else if (isVoted && isAdmin()) {
-                                const winner = s.challenge_type !== '1v1' ? ('Team ' + (ch?.winnerTeam || '')) : (ch?.winner || ch?.winnerTeam);
+                                let winner;
+                                if (s.challenge_type === '1v1') {
+                                    winner = ch?.winner || ch?.winnerTeam;
+                                } else if (s.challenge_type === 'ffa') {
+                                    winner = t('tab_ffa');
+                                } else {
+                                    winner = 'Team ' + (ch?.winnerTeam || '');
+                                }
                                 actionsHTML = `
                                     <div class="duel-vote-section">
                                         ${potDisplay}
@@ -4587,7 +4594,7 @@ function getNowPlus10() {
             const attendeesOrAll = state.attendees.length ? state.attendees : state.players;
             const opponents = attendeesOrAll.filter(p => p !== state.currentPlayer);
 
-            const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt', released: t('duel_status_released') };
+            const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt', voted: t('duel_status_voted'), released: t('duel_status_released') };
 
             function renderCard(c) {
                 const isOpponent = c.opponent === state.currentPlayer;
@@ -4680,6 +4687,7 @@ function getNowPlus10() {
                     paid: t('duel_status_paid'),
                     rejected: t('duel_status_rejected'),
                     conflict: t('duel_status_conflict') || 'Konflikt',
+                    voted: t('duel_status_voted'),
                     released: t('duel_status_released')
                 };
 
@@ -4898,7 +4906,7 @@ function getNowPlus10() {
                 const totalPot = ffa.stakeCoinsPerPerson * players.length;
                 const totalStarPot = ffa.stakeStarsPerPerson * players.length;
 
-                const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), released: t('duel_status_released') };
+                const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt', voted: t('duel_status_voted'), released: t('duel_status_released') };
 
                 // Acceptance badges
                 const acceptanceBadges = ffa.status === 'pending' ? players.map(p => {
