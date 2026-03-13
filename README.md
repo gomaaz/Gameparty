@@ -21,11 +21,6 @@ It's not about winning. It's about getting everyone off their corner of the couc
 
 ## Screenshots
 
-## Screenshots
-
-<details>
-<summary>📸 Screenshots anzeigen (10 Bilder)</summary>
-<br>
 
 <p align="center">
   <a href="https://github.com/user-attachments/assets/e1011f7c-da92-4c15-b212-3e57380ce859"><img src="https://github.com/user-attachments/assets/e1011f7c-da92-4c15-b212-3e57380ce859" width="160"></a>
@@ -39,8 +34,6 @@ It's not about winning. It's about getting everyone off their corner of the couc
   <a href="https://github.com/user-attachments/assets/1d25f2ca-ef0e-4440-b462-f030381bb40d"><img src="https://github.com/user-attachments/assets/1d25f2ca-ef0e-4440-b462-f030381bb40d" width="160"></a>
   <a href="https://github.com/user-attachments/assets/27629f6c-897d-4893-b97b-024b87d1f2f8"><img src="https://github.com/user-attachments/assets/27629f6c-897d-4893-b97b-024b87d1f2f8" width="160"></a>
 </p>
-
-</details>
 
 
 ---
