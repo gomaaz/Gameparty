@@ -2686,15 +2686,24 @@ function getNowPlus10() {
                         <div class="card-title">${t('history_title')}</div>
                         <div class="history-list">
                             ${pageEntries.map(h => {
-                                const cls = h.amount > 0 ? 'positive' : 'negative';
+                                const coinPart = h.amount !== 0
+                                    ? `<span class="history-coins ${h.amount > 0 ? 'positive' : 'negative'}">${h.amount > 0 ? '+' : ''}${h.amount} ${coinSvgIcon('0.85em')}</span>`
+                                    : '';
+                                const cpPart = h.cp_amount !== 0
+                                    ? `<span class="history-coins ${h.cp_amount > 0 ? 'positive' : 'negative'}">${h.cp_amount > 0 ? '+' : ''}${h.cp_amount} ${controllerSvgIcon()}</span>`
+                                    : '';
+                                const iconChar = (h.amount > 0 || h.cp_amount > 0) ? '+' : (h.amount < 0 || h.cp_amount < 0) ? '-' : '·';
                                 return `
                                     <div class="history-item">
-                                        <div class="history-icon">${h.amount > 0 ? '+' : '-'}</div>
+                                        <div class="history-icon">${iconChar}</div>
                                         <div>
                                             <div class="history-text">${escapeHtml(h.reason)}</div>
                                             <div class="history-time">${formatTime(h.timestamp)}</div>
                                         </div>
-                                        <div class="history-coins ${cls}">${h.amount > 0 ? '+' : ''}${h.amount}</div>
+                                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem;">
+                                            ${coinPart}
+                                            ${cpPart}
+                                        </div>
                                     </div>`;
                             }).join('')}
                         </div>

@@ -351,6 +351,7 @@ try { db.prepare("CREATE INDEX IF NOT EXISTS idx_challenges_status ON challenges
 try { db.prepare("CREATE INDEX IF NOT EXISTS idx_team_challenges_status ON team_challenges(status)").run(); } catch {}
 try { db.prepare("CREATE INDEX IF NOT EXISTS idx_ffa_challenges_status ON ffa_challenges(status)").run(); } catch {}
 try { db.prepare("CREATE INDEX IF NOT EXISTS idx_history_player ON history(player)").run(); } catch {}
+try { db.prepare("ALTER TABLE history ADD COLUMN cp_amount INT DEFAULT 0").run(); } catch {}
 
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN duration_min INT DEFAULT 0").run(); } catch {}
 try { db.prepare("ALTER TABLE live_sessions ADD COLUMN coin_rate REAL DEFAULT 0").run(); } catch {}
@@ -923,12 +924,14 @@ app.post('/api/shop/rob-controller', (req, res) => {
     const tx = db.transaction(() => {
         // Kosten vom Täter abziehen
         db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(expectedCost, thief);
-        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, -expectedCost, `Shop: Taschendieb Controller (Ziel: ${target})`, Date.now());
-
         if (success) {
+            db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)').run(thief, -expectedCost, 1, `Shop: Taschendieb Controller (Ziel: ${target})`, Date.now());
             // 1 Controller-Punkt vom Opfer stehlen
             db.prepare('UPDATE controllerpoints SET amount = amount - 1 WHERE player = ?').run(target);
             db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(thief);
+            db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)').run(target, 0, -1, `Controller-Punkt gestohlen von ${thief}`, Date.now());
+        } else {
+            db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)').run(thief, -expectedCost, 0, `Shop: Taschendieb Controller (Ziel: ${target}) – Fehlschlag`, Date.now());
         }
     });
 
@@ -957,7 +960,7 @@ app.post('/api/shop/buy-controllerpoint', (req, res) => {
     if (!coinRow || coinRow.amount < expectedCost) return res.status(400).json({ error: 'Nicht genug Coins' });
     const tx = db.transaction(() => {
         db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(expectedCost, player);
-        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, -expectedCost, 'Shop: Controller-Punkt kaufen', Date.now());
+        db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)').run(player, -expectedCost, 1, 'Shop: Controller-Punkt kaufen', Date.now());
         db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
     });
     tx();
@@ -2054,8 +2057,8 @@ app.put('/api/ffa-challenges/:id/collect', (req, res) => {
         if (controllerpointsPayout > 0) {
             db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(controllerpointsPayout, player);
         }
-        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)')
-            .run(player, coins, `FFA-Challenge Auszahlung (${ffa.game})`, now);
+        db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)')
+            .run(player, coins - ffa.stakeCoinsPerPerson, controllerpointsPayout - ffa.stakeControllerpointsPerPerson, `FFA-Challenge Auszahlung (${ffa.game})`, now);
         collected.push(player);
         db.prepare('UPDATE ffa_challenges SET collected = ? WHERE id = ?').run(JSON.stringify(collected), ffa.id);
     });
@@ -2143,21 +2146,17 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
         }
         const now = Date.now();
         const payout = db.transaction(() => {
-            if (c.stakeCoins > 0) {
-                const { winnerCoins, loserCoins } = calcPayout(c.stakeCoins * 2, c.payoutMode, c.payoutConfig);
-                db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, winnerCoins, winnerCoins);
-                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(winner, winnerCoins, `Duell gewonnen vs ${loser} (${c.game})`, now);
-                if (loserCoins > 0) {
-                    db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(loser, loserCoins, loserCoins);
-                }
-                db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(loser, loserCoins - c.stakeCoins, `Duell verloren vs ${winner} (${c.game})`, now);
-            }
-            if (c.stakeControllerpoints > 0) {
-                const { winnerCoins: winnerStars, loserCoins: loserStars } = calcPayout(c.stakeControllerpoints * 2, c.payoutMode, c.payoutConfig);
-                db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, winnerStars, winnerStars);
-                if (loserStars > 0) {
-                    db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(loser, loserStars, loserStars);
-                }
+            const { winnerCoins, loserCoins } = c.stakeCoins > 0 ? calcPayout(c.stakeCoins * 2, c.payoutMode, c.payoutConfig) : { winnerCoins: 0, loserCoins: 0 };
+            const { winnerCoins: winnerCp, loserCoins: loserCp } = c.stakeControllerpoints > 0 ? calcPayout(c.stakeControllerpoints * 2, c.payoutMode, c.payoutConfig) : { winnerCoins: 0, loserCoins: 0 };
+            if (winnerCoins > 0) db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, winnerCoins, winnerCoins);
+            if (loserCoins > 0) db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(loser, loserCoins, loserCoins);
+            if (winnerCp > 0) db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, winnerCp, winnerCp);
+            if (loserCp > 0) db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(loser, loserCp, loserCp);
+            if (c.stakeCoins > 0 || c.stakeControllerpoints > 0) {
+                db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)')
+                    .run(winner, winnerCoins - c.stakeCoins, winnerCp - c.stakeControllerpoints, `Duell gewonnen vs ${loser} (${c.game})`, now);
+                db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)')
+                    .run(loser, loserCoins - c.stakeCoins, loserCp - c.stakeControllerpoints, `Duell verloren vs ${winner} (${c.game})`, now);
             }
             db.prepare('UPDATE challenges SET status = ?, winner = ?, resolvedAt = ? WHERE id = ?').run('paid', winner, now, c.id);
         });
@@ -2271,10 +2270,13 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
                 const starAmount = baseStars + (idx === 0 ? starRemainder : 0);
                 if (coinAmount > 0) {
                     db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, coinAmount, coinAmount);
-                    db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(p, coinAmount, `Team-Duell gewonnen (${winnerTeamLabel}) – ${tc.game}`, now);
                 }
                 if (starAmount > 0) {
                     db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, starAmount, starAmount);
+                }
+                if (tc.stakeCoinsPerPerson > 0 || tc.stakeControllerpointsPerPerson > 0) {
+                    db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)')
+                        .run(p, coinAmount - tc.stakeCoinsPerPerson, starAmount - tc.stakeControllerpointsPerPerson, `Team-Duell gewonnen (${winnerTeamLabel}) – ${tc.game}`, now);
                 }
             });
             losers.forEach((p, idx) => {
@@ -2284,9 +2286,11 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
                         db.prepare('INSERT INTO coins (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, loserCoinAmount, loserCoinAmount);
                     }
                 }
-                if (tc.stakeCoinsPerPerson > 0) {
+                if (tc.stakeCoinsPerPerson > 0 || tc.stakeControllerpointsPerPerson > 0) {
                     const netAmount = (loserTeamCoins > 0 ? (baseLoserCoins + (idx === 0 ? loserRemainder : 0)) : 0) - tc.stakeCoinsPerPerson;
-                    db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(p, netAmount, `Team-Duell verloren (${loserTeamLabel}) – ${tc.game}`, now);
+                    const loserStarAmountForHistory = loserTeamStars > 0 ? (baseLoserStars + (idx === 0 ? loserStarRemainder : 0)) : 0;
+                    const netCpAmount = loserStarAmountForHistory - tc.stakeControllerpointsPerPerson;
+                    db.prepare('INSERT INTO history (player, amount, cp_amount, reason, timestamp) VALUES (?, ?, ?, ?, ?)').run(p, netAmount, netCpAmount, `Team-Duell verloren (${loserTeamLabel}) – ${tc.game}`, now);
                 }
                 if (loserTeamStars > 0) {
                     const loserStarAmount = baseLoserStars + (idx === 0 ? loserStarRemainder : 0);
