@@ -4411,8 +4411,10 @@ function getNowPlus10() {
             closeBtn.addEventListener('click', () => {
                 overlay.classList.remove('show');
                 if (isWinner) {
+                    playSound('coin');
                     if (wonCoins > 0 || wonControllerpoints > 0) showCoinAnimation(wonCoins, wonControllerpoints);
                 } else {
+                    playSound('spend');
                     if (stakeCoins > 0 || stakeControllerpoints > 0) showNegativeCoinAnimation(stakeCoins, stakeControllerpoints);
                 }
             });
@@ -4482,10 +4484,12 @@ function getNowPlus10() {
             overlay.classList.remove('show');
             const myIdx = winners.indexOf(state.currentPlayer);
             if (isWinner) {
+                playSound('coin');
                 const myCoins = data.baseCoins + (myIdx === 0 ? (data.remainder || 0) : 0);
                 const myStars = (data.baseStars || 0) + (myIdx === 0 ? (data.starRemainder || 0) : 0);
                 if (myCoins > 0 || myStars > 0) showCoinAnimation(myCoins, myStars);
             } else {
+                playSound('spend');
                 if ((data.stakeCoinsPerPerson || 0) > 0 || (data.stakeControllerpointsPerPerson || 0) > 0) {
                     showNegativeCoinAnimation(data.stakeCoinsPerPerson || 0, data.stakeControllerpointsPerPerson || 0);
                 }
@@ -4529,6 +4533,7 @@ function getNowPlus10() {
         document.body.appendChild(modal);
         modal.querySelector('#ffa-payout-collect').addEventListener('click', () => {
             modal.remove();
+            playSound(won ? 'coin' : 'spend');
             if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
             refreshCoins();
         });
@@ -6564,7 +6569,6 @@ function getNowPlus10() {
                     try {
                         const data = JSON.parse(ev.message);
                         showDuelPayoutModal(data);
-                        if (getNotifPref('sound')) playSound(data.isWinner ? 'coin' : 'error');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                     continue;
@@ -6573,7 +6577,6 @@ function getNowPlus10() {
                     try {
                         const data = JSON.parse(ev.message);
                         showTcPayoutModal(data);
-                        if (getNotifPref('sound')) playSound('coin');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                     continue;
@@ -6582,7 +6585,6 @@ function getNowPlus10() {
                     try {
                         const data = JSON.parse(ev.message);
                         showFFAPayoutModal(data);
-                        if (getNotifPref('sound')) playSound('coin');
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                     continue;
