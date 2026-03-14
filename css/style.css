@@ -176,7 +176,7 @@ button, a, input, select, textarea, label, [role="button"] {
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 99;
+    z-index: 101;
     height: 28px;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border);
