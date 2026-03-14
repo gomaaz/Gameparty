@@ -746,6 +746,7 @@ app.get('/api/coins', (req, res) => {
 
 // POST /api/coins/add
 app.post('/api/coins/add', (req, res) => {
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Admin required' });
     const { player, amount, reason } = req.body;
     if (player === 'alle') {
         const allPlayers = db.prepare('SELECT name FROM users').all();
@@ -778,20 +779,19 @@ app.post('/api/coins/spend', (req, res) => {
 
 // POST /api/shop/rob-coins
 app.post('/api/shop/rob-coins', (req, res) => {
-    const { thief, target, cost } = req.body;
+    const { thief, target } = req.body;
     const expectedCost = getShopPrice('rob_coins', 10);
-    if (cost !== expectedCost) return res.status(400).json({ error: 'Ungültiger Preis' });
     if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
 
     const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
-    if (!thiefRow || thiefRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });
+    if (!thiefRow || thiefRow.amount < expectedCost) return res.status(400).json({ error: 'Nicht genug Coins' });
 
     const stolen = Math.floor(Math.random() * 21); // 0 bis 20
 
     const tx = db.transaction(() => {
         // Kosten vom Täter abziehen
-        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(cost, thief);
-        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, -cost, `Shop: Taschendieb Münzen (Ziel: ${target})`, Date.now());
+        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(expectedCost, thief);
+        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, -expectedCost, `Shop: Taschendieb Münzen (Ziel: ${target})`, Date.now());
 
         if (stolen > 0) {
             // Gestohlene Coins vom Opfer abziehen (mindestens 0)
@@ -818,9 +818,8 @@ app.get('/api/shop/cooldowns', (req, res) => res.json(shopCooldownTs));
 
 // POST /api/shop/rob-controller
 app.post('/api/shop/rob-controller', (req, res) => {
-    const { thief, target, cost } = req.body;
+    const { thief, target } = req.body;
     const expectedCost = getShopPrice('rob_controller', 50);
-    if (cost !== expectedCost) return res.status(400).json({ error: 'Ungültiger Preis' });
     if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
 
     // Global cooldown check
@@ -829,15 +828,15 @@ app.post('/api/shop/rob-controller', (req, res) => {
     if (remainingMs > 0) return res.status(429).json({ error: 'cooldown', remainingMs });
 
     const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
-    if (!thiefRow || thiefRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });
+    if (!thiefRow || thiefRow.amount < expectedCost) return res.status(400).json({ error: 'Nicht genug Coins' });
 
     const targetStars = db.prepare('SELECT amount FROM stars WHERE player = ?').get(target);
     const success = Math.random() < 0.5 && targetStars && targetStars.amount > 0;
 
     const tx = db.transaction(() => {
         // Kosten vom Täter abziehen
-        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(cost, thief);
-        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, -cost, `Shop: Taschendieb Controller (Ziel: ${target})`, Date.now());
+        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(expectedCost, thief);
+        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(thief, -expectedCost, `Shop: Taschendieb Controller (Ziel: ${target})`, Date.now());
 
         if (success) {
             // 1 Controller-Punkt vom Opfer stehlen
@@ -861,15 +860,14 @@ app.get('/api/stars', (req, res) => {
 
 // POST /api/shop/buy-star — Spieler kauft 1 Controller-Punkt für Coins (kein Admin nötig)
 app.post('/api/shop/buy-star', (req, res) => {
-    const { player, cost } = req.body;
+    const { player } = req.body;
     const expectedCost = getShopPrice('buy_star', 20);
-    if (cost !== expectedCost) return res.status(400).json({ error: 'Ungültiger Preis' });
-    if (!player || cost == null) return res.status(400).json({ error: 'player und cost erforderlich' });
+    if (!player) return res.status(400).json({ error: 'player erforderlich' });
     const coinRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(player);
-    if (!coinRow || coinRow.amount < cost) return res.status(400).json({ error: 'Nicht genug Coins' });
+    if (!coinRow || coinRow.amount < expectedCost) return res.status(400).json({ error: 'Nicht genug Coins' });
     const tx = db.transaction(() => {
-        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(cost, player);
-        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, -cost, 'Shop: Controller-Punkt kaufen', Date.now());
+        db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(expectedCost, player);
+        db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, -expectedCost, 'Shop: Controller-Punkt kaufen', Date.now());
         db.prepare('INSERT INTO stars (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
     });
     tx();
@@ -980,7 +978,7 @@ app.put('/api/proposals/:id', (req, res) => {
     const updates = [];
     const params = [];
     for (const [key, value] of Object.entries(req.body)) {
-        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'approvedAt', 'startedAt', 'completedAt', 'pendingCoins', 'medium', 'medium_account'].includes(key)) {
+        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'completedAt', 'pendingCoins', 'medium', 'medium_account'].includes(key)) {
             updates.push(`${key} = ?`);
             params.push(value);
         }
@@ -1099,11 +1097,11 @@ app.get('/api/users', (req, res) => {
 
 // POST /api/users
 app.post('/api/users', (req, res) => {
-    const { name, pin, role } = req.body;
+    const { name, pin } = req.body;
     if (!name || !pin) return res.status(400).json({ error: 'Name und PIN erforderlich' });
     const existing = db.prepare('SELECT 1 FROM users WHERE name = ?').get(name);
     if (existing) return res.status(409).json({ error: 'Name existiert bereits' });
-    db.prepare('INSERT INTO users (name, pin, role) VALUES (?, ?, ?)').run(name, pin, role || 'player');
+    db.prepare('INSERT INTO users (name, pin, role) VALUES (?, ?, ?)').run(name, pin, 'player');
     db.prepare('INSERT OR IGNORE INTO coins (player, amount) VALUES (?, 0)').run(name);
     db.prepare('INSERT OR IGNORE INTO stars (player, amount) VALUES (?, 0)').run(name);
     res.json({ success: true });
@@ -1114,6 +1112,7 @@ app.put('/api/users/:name', (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE name = ?').get(req.params.name);
     if (!user) return res.status(404).json({ error: 'User nicht gefunden' });
     const { newName, role } = req.body;
+    if (role !== undefined && req.authRole !== 'admin') return res.status(403).json({ error: 'Admin required' });
     if (newName && newName !== req.params.name) {
         const exists = db.prepare('SELECT 1 FROM users WHERE name = ?').get(newName);
         if (exists) return res.status(409).json({ error: 'Name existiert bereits' });
@@ -1134,6 +1133,7 @@ app.put('/api/users/:name', (req, res) => {
 
 // DELETE /api/users/:name
 app.delete('/api/users/:name', (req, res) => {
+    if (req.authRole !== 'admin') return res.status(403).json({ error: 'Admin required' });
     db.prepare('DELETE FROM users WHERE name = ?').run(req.params.name);
     db.prepare('DELETE FROM attendees WHERE player = ?').run(req.params.name);
     broadcast();
@@ -2276,6 +2276,8 @@ app.post('/api/duel-votes', (req, res) => {
 
     const _playerInSession4 = db.prepare('SELECT 1 FROM live_session_players WHERE session_id = ? AND player = ?').get(sessionId, player);
     if (!_playerInSession4) return res.status(403).json({ error: 'Nicht Teilnehmer dieser Session' });
+    const validPlayer = db.prepare('SELECT 1 FROM live_session_players WHERE session_id = ? AND player = ?').get(sessionId, votedFor);
+    if (!validPlayer) return res.status(400).json({ error: 'votedFor ist kein Teilnehmer dieser Session' });
     db.prepare(`INSERT OR REPLACE INTO duel_votes (session_id, player, voted_for, created_at)
                 VALUES (?, ?, ?, ?)`).run(sessionId, player, votedFor, Date.now());
 
