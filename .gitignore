@@ -4,3 +4,8 @@ data/
 VERSION
 CHANGELOG.md
 .claude/
+# SQLite WAL files
+*.db-shm
+*.db-wal
+# Local backups
+backups/
