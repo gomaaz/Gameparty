@@ -540,7 +540,7 @@ app.get('/api/init', (req, res) => {
     db.prepare('SELECT key, value FROM settings').all().forEach(r => { settings[r.key] = r.value; });
     const players = users.map(u => u.name);
 
-    res.json({ users, games, coins, controllerpoints, attendees, settings, players, version, shopCooldowns: shopCooldownTs });
+    res.json({ users, games, coins, controllerpoints, attendees, settings, players, version, shopCooldowns: shopGlobalCooldownTs });
 });
 
 // POST /api/login
