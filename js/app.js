@@ -4085,11 +4085,13 @@ function getNowPlus10() {
         }
 
         try {
-            const [coinsData, cooldownData] = await Promise.all([
+            const [coinsData, cooldownData, settingsData] = await Promise.all([
                 api('GET', '/coins'),
-                api('GET', `/shop/cooldowns?player=${encodeURIComponent(state.currentPlayer || '')}`)
+                api('GET', `/shop/cooldowns?player=${encodeURIComponent(state.currentPlayer || '')}`),
+                api('GET', '/settings')
             ]);
             state.coins = coinsData;
+            if (settingsData && typeof settingsData === 'object') state.settings = { ...state.settings, ...settingsData };
             const now = Date.now();
             state.shopCooldowns = {};
             if (cooldownData) {
@@ -4107,10 +4109,16 @@ function getNowPlus10() {
                     <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${fmt(coins)} <img src="svg/coins.svg" class="coin-svg-icon" alt="coins" style="width:2.1rem;height:2.1rem;vertical-align:middle;margin-bottom:0.00em"></div>
                 </div>
                 <div class="shop-grid">
-                    ${CONFIG.SHOP_ITEMS.filter(item => item.enabled !== false || isAdmin()).map(item => {
+                    ${CONFIG.SHOP_ITEMS.filter(item => {
+                        const enabledSetting = state.settings[`shop_enabled_${item.id}`];
+                        const isEnabled = enabledSetting !== undefined ? enabledSetting !== '0' : item.enabled !== false;
+                        return isEnabled || isAdmin();
+                    }).map(item => {
+                        const enabledSetting = state.settings[`shop_enabled_${item.id}`];
+                        const isDisabled = enabledSetting !== undefined ? enabledSetting === '0' : item.enabled === false;
+                        const itemCost = parseInt(state.settings[`shop_price_${item.id}`] ?? item.cost) || item.cost;
                         const cdRem = getCooldownRemaining(item.id);
                         const onCooldown = cdRem > 0;
-                        const isDisabled = item.enabled === false;
                         const totalMs = item.cooldownMs || 1;
                         const cdPct = onCooldown ? Math.round(((totalMs - cdRem) / totalMs) * 100) : 0;
                         const cdM = Math.floor(cdRem / 60000);
@@ -4126,9 +4134,9 @@ function getNowPlus10() {
                                 <div class="shop-desc">${t('item_' + item.id + '_desc', CONFIG.CONTROLLERPOINT_PRICE)}${item.isPenalty ? ` • ${t('penalty_timer')}` : ''}</div>
                             </div>
                             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem">
-                                <button class="shop-buy-btn${onCooldown ? ' on-cooldown' : ''}" data-item="${item.id}" data-cost="${item.cost}"
-                                    ${(coins < item.cost || onCooldown || isDisabled) ? 'disabled' : ''}>
-                                    ${t('shop_buy_cost', fmt(item.cost))}
+                                <button class="shop-buy-btn${onCooldown ? ' on-cooldown' : ''}" data-item="${item.id}" data-cost="${itemCost}"
+                                    ${(coins < itemCost || onCooldown || isDisabled) ? 'disabled' : ''}>
+                                    ${t('shop_buy_cost', fmt(itemCost))}
                                 </button>
                                 ${onCooldown ? `<span class="shop-cooldown-timer" data-cd-item="${item.id}">⏳ ${cdM}:${cdS}</span>` : ''}
                             </div>
