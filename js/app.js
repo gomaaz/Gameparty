@@ -219,7 +219,7 @@
     const SOUNDS = {
         coin:      'sounds/coin_popup_positive.mp3',
         spend:     'sounds/loosecoins.mp3',
-        error:     'sounds/loosecoins.mp3',
+        error:     'sounds/error.ogg',
         challenge: 'sounds/notify.mp3',
         buy:       'sounds/buyitem.mp3',
     };
@@ -312,6 +312,7 @@
         toast.className = `toast ${type || 'success'}`;
         toast.textContent = message;
         container.prepend(toast);
+        if (type === 'error') playSound('error');
         // Einblenden: zwei rAF sichern Reflow vor Transition
         requestAnimationFrame(() => {
             requestAnimationFrame(() => { toast.classList.add('visible'); });
@@ -776,8 +777,9 @@ function getNowPlus10() {
                         s.players.find(p => p.player === s.leader) || { player: s.leader, slot_number: 1 },
                         ...s.players.filter(p => p.player !== s.leader).sort((a, b) => a.player.localeCompare(b.player))
                     ];
+                    const canManageLobby = (isLeader || isAdmin()) && s.status === 'lobby';
                     let playersHTML = sortedPlayerObjs.map(p =>
-                        `<span class="player-chip player-name-clickable" data-player-info="${p.player}">${p.player === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p.player}</span>`
+                        `<span class="player-chip player-name-clickable" data-player-info="${p.player}">${p.player === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p.player}${canManageLobby && p.player !== s.leader ? `<button class="ls-kick-btn" data-sid="${s.id}" data-player="${p.player}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : ''}</span>`
                     ).join('');
                     if (s.max_slots > 0) {
                         const slotMap = {};
@@ -786,9 +788,23 @@ function getNowPlus10() {
                         for (let i = 1; i <= s.max_slots; i++) {
                             const name = slotMap[i] || null;
                             const leaderBadge = name === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : '';
-                            slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${leaderBadge}${name}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
+                            const lsKickBtn = name && name !== s.leader && canManageLobby ? `<button class="ls-kick-btn" data-sid="${s.id}" data-player="${name}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : '';
+                            slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${leaderBadge}${name}${lsKickBtn}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
                         }
                         playersHTML = `<div class="session-slots">${slotItems.join('')}</div>`;
+                    }
+
+                    let lsAddPlayerHTML = '';
+                    if (canManageLobby) {
+                        const notInSession = (state.players || []).filter(pl => !s.players.some(p => p.player === pl));
+                        if (notInSession.length > 0) {
+                            lsAddPlayerHTML = `<div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;">
+                                <select class="ls-add-player-select" data-sid="${s.id}" style="flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.82rem;">
+                                    <option value="">+ Spieler hinzufügen</option>
+                                    ${notInSession.map(pl => `<option value="${pl}">${pl}</option>`).join('')}
+                                </select>
+                            </div>`;
+                        }
                     }
 
                     let statusBadge = '';
@@ -1073,6 +1089,7 @@ function getNowPlus10() {
                                 ${statusBadge}
                             </div>
                             ${coinInfoHTML}
+                            ${lsAddPlayerHTML}
                             <div>${playersHTML}</div>
                             ${actionsHTML ? `<div class="live-session-actions">${actionsHTML}</div>` : ''}
                         </div>` };
@@ -1176,6 +1193,29 @@ function getNowPlus10() {
                         btn.style.opacity = '';
                     }
                     renderDashboard();
+                });
+            });
+
+            container.querySelectorAll('.ls-kick-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const sid = btn.dataset.sid, player = btn.dataset.player;
+                    if (!sid || !player) return;
+                    try {
+                        await api('POST', `/live-sessions/${sid}/leave`, { player });
+                        renderDashboard();
+                    } catch (e) { showToast(e.message || t('save_error'), 'error'); }
+                });
+            });
+            container.querySelectorAll('.ls-add-player-select').forEach(sel => {
+                sel.addEventListener('change', async () => {
+                    const player = sel.value, sid = sel.dataset.sid;
+                    if (!player || !sid) return;
+                    sel.value = '';
+                    try {
+                        await api('POST', `/live-sessions/${sid}/join`, { player });
+                        renderDashboard();
+                    } catch (e) { showToast(e.message || t('error_loading'), 'error'); }
                 });
             });
 
@@ -2362,12 +2402,12 @@ function getNowPlus10() {
         }
 
         let adminAddPlayerHTML = '';
-        if (admin && ['pending', 'approved'].includes(p.status)) {
+        if ((admin || isLeader) && ['pending', 'approved'].includes(p.status)) {
             const notInSession = state.players.filter(pl => !p.players.map(pp => pp.name || pp).includes(pl));
             if (notInSession.length > 0) {
                 adminAddPlayerHTML = `
                     <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;">
-                        <select class="admin-add-player-select" data-id="${p.id}" style="flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.82rem;">
+                        <select class="manage-add-player-select" data-id="${p.id}" style="flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.82rem;">
                             <option value="">+ Spieler hinzufügen</option>
                             ${notInSession.map(pl => `<option value="${pl}">${pl}</option>`).join('')}
                         </select>
@@ -2430,11 +2470,12 @@ function getNowPlus10() {
                         const slotItems = [];
                         for (let i = 1; i <= p.max_slots; i++) {
                             const name = slotMap[i] || null;
-                            slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${name === p.leader ? leaderBadge : ''}${name}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
+                            const kickBtn = name && name !== p.leader && (admin || isLeader) && ['pending', 'approved'].includes(p.status) ? `<button class="player-kick-btn" data-pid="${p.id}" data-player="${name}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : '';
+                            slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${name === p.leader ? leaderBadge : ''}${name}${kickBtn}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
                         }
                         return `<div class="session-slots">${slotItems.join('')}</div>`;
                     }
-                    return `<div>${[p.leader, ...p.players.filter(pp => pp.player !== p.leader).sort((a, b) => a.player.localeCompare(b.player))].map(pp => { const n = pp.player || pp; return `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? leaderBadge : ''}${n}</span>`; }).join('')}</div>`;
+                    return `<div>${[p.leader, ...p.players.filter(pp => pp.player !== p.leader).sort((a, b) => a.player.localeCompare(b.player))].map(pp => { const n = pp.player || pp; const kickBtn = (admin || isLeader) && ['pending', 'approved'].includes(p.status) && n !== p.leader ? `<button class="player-kick-btn" data-pid="${p.id}" data-player="${n}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : ''; return `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? leaderBadge : ''}${n}${kickBtn}</span>`; }).join('')}</div>`;
                 })()}
                 ${actionsHTML}
             </div>`;
@@ -2570,7 +2611,7 @@ function getNowPlus10() {
             });
         });
 
-        container.querySelectorAll('.admin-add-player-select').forEach(sel => {
+        container.querySelectorAll('.manage-add-player-select').forEach(sel => {
             sel.addEventListener('change', async () => {
                 const player = sel.value;
                 const pid = sel.dataset.id;
@@ -2581,6 +2622,18 @@ function getNowPlus10() {
                 } catch (e) {
                     showToast(e.message || t('error_loading'), 'error');
                 }
+            });
+        });
+        container.querySelectorAll('.player-kick-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const pid = btn.dataset.pid;
+                const player = btn.dataset.player;
+                if (!pid || !player) return;
+                try {
+                    await api('POST', `/proposals/${pid}/leave`, { player });
+                    renderProposals();
+                } catch (e) { showToast(e.message || t('error_loading'), 'error'); }
             });
         });
     }
