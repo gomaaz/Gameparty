@@ -683,8 +683,8 @@ function getNowPlus10() {
             leaderboard.forEach((p, i) => {
                 const isCurrent = p.name === state.currentPlayer;
                 const cpBlock = p.controllerpoints > 0
-                    ? `<span class="lb-stat lb-stat-stars">${fmt(p.controllerpoints)} <img src="svg/console-controller.svg" class="lb-icon"></span>`
-                    : `<span class="lb-stat lb-stat-stars" style="visibility:hidden">0 <img src="svg/console-controller.svg" class="lb-icon"></span>`;
+                    ? `<span class="lb-stat lb-stat-controllerpoints">${fmt(p.controllerpoints)} <img src="svg/console-controller.svg" class="lb-icon"></span>`
+                    : `<span class="lb-stat lb-stat-controllerpoints" style="visibility:hidden">0 <img src="svg/console-controller.svg" class="lb-icon"></span>`;
                 leaderboardHTML += `
                     <div class="leaderboard-item ${isCurrent ? 'current-player' : ''}">
                         <div class="leaderboard-rank">#${i + 1}</div>
@@ -4984,11 +4984,11 @@ function getNowPlus10() {
 
                 const tcStakeRows = [];
                 if (tc.stakeCoinsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-gold);font-weight:600;">${fmt(tc.stakeCoinsPerPerson)} 🪙</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
-                if (tc.stakeControllerpointsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(tc.stakeControllerpointsPerPerson)} ⭐</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
+                if (tc.stakeControllerpointsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(tc.stakeControllerpointsPerPerson)} ${controllerSvgIcon()}</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
 
                 const tcPotParts = [];
                 if (tc.stakeCoinsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-gold);font-weight:600;">${fmt(totalPot)} 🪙</span>`);
-                if (tc.stakeControllerpointsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(totalStarPot)} ⭐</span>`);
+                if (tc.stakeControllerpointsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(totalStarPot)} ${controllerSvgIcon()}</span>`);
 
                 let tcPayoutDetailsHTML = '';
                 if (showPayoutDetails && tc.winnerTeam && tc.stakeCoinsPerPerson > 0) {
