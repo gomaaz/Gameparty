@@ -2223,8 +2223,14 @@ body.timeline-active .main-content {
 .admin-add-player-select,
 .manage-add-player-select,
 .ls-add-player-select {
-    width: 50% !important;
-    flex: none !important;
+    width: 50%;
+    flex: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.82rem;
 }
 
 /* ---- Player Management List ---- */

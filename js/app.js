@@ -802,7 +802,7 @@ function getNowPlus10() {
                         const notInSession = (state.players || []).filter(pl => !s.players.some(p => p.player === pl));
                         if (notInSession.length > 0) {
                             lsAddPlayerHTML = `<div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;">
-                                <select class="ls-add-player-select" data-sid="${s.id}" style="flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.82rem;">
+                                <select class="ls-add-player-select" data-sid="${s.id}">
                                     <option value="">+ Spieler hinzufügen</option>
                                     ${notInSession.map(pl => `<option value="${pl}">${pl}</option>`).join('')}
                                 </select>
@@ -2410,7 +2410,7 @@ function getNowPlus10() {
             if (notInSession.length > 0) {
                 adminAddPlayerHTML = `
                     <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;margin-bottom:0.6rem;">
-                        <select class="manage-add-player-select" data-id="${p.id}" style="flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.82rem;">
+                        <select class="manage-add-player-select" data-id="${p.id}">
                             <option value="">+ Spieler hinzufügen</option>
                             ${notInSession.map(pl => `<option value="${pl}">${pl}</option>`).join('')}
                         </select>
