@@ -1441,6 +1441,14 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     const duelStartNow = Date.now();
     db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(c.challenger, 'duel_start', '', duelStartPayload, duelStartNow, 'active');
     db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(c.opponent, 'duel_start', '', duelStartPayload, duelStartNow, 'active');
+    // Announce to all non-participants
+    const allUsers1v1 = db.prepare('SELECT name FROM users').all().map(r => r.name);
+    const announcedPayload1v1 = JSON.stringify({ type: '1v1', game: c.game, challenger: c.challenger, opponent: c.opponent, stakeCoins: c.stakeCoins, stakeControllerpoints: c.stakeControllerpoints, sessionId: sid });
+    for (const u of allUsers1v1) {
+        if (u !== c.challenger && u !== c.opponent) {
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(u, 'challenge_announced', '', announcedPayload1v1, duelStartNow, 'active');
+        }
+    }
     broadcast({ type: 'update' });
     res.json({ success: true, sessionId: sid });
 });
@@ -1661,6 +1669,14 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
         const tcStartNow = Date.now();
         for (const p of allPlayers) {
             db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'duel_start', '', tcStartPayload, tcStartNow, 'active');
+        }
+        // Announce to all non-participants
+        const allUsersTC = db.prepare('SELECT name FROM users').all().map(r => r.name);
+        const tcAnnouncedPayload = JSON.stringify({ type: 'team', game: tc.game, teamA, teamB, stakeCoinsPerPerson: tc.stakeCoinsPerPerson, stakeControllerpointsPerPerson: tc.stakeControllerpointsPerPerson, sessionId: sid });
+        for (const u of allUsersTC) {
+            if (!allPlayers.includes(u)) {
+                db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(u, 'challenge_announced', '', tcAnnouncedPayload, tcStartNow, 'active');
+            }
         }
         broadcast({ type: 'update' });
         res.json({ success: true, allAccepted: true, sessionId: sid });
@@ -1906,6 +1922,20 @@ app.put('/api/ffa-challenges/:id/accept', (req, res) => {
             }
         });
         _ffaTx();
+        // Notify participants
+        const ffaStartPayload = JSON.stringify({ type: 'ffa', game: ffa.game, players, stakeCoinsPerPerson: ffa.stakeCoinsPerPerson, stakeControllerpointsPerPerson: ffa.stakeControllerpointsPerPerson, sessionId: sid });
+        const ffaNow = Date.now();
+        for (const p of players) {
+            db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'duel_start', '', ffaStartPayload, ffaNow, 'active');
+        }
+        // Announce to all non-participants
+        const allUsersFFA = db.prepare('SELECT name FROM users').all().map(r => r.name);
+        const ffaAnnouncedPayload = JSON.stringify({ type: 'ffa', game: ffa.game, players, stakeCoinsPerPerson: ffa.stakeCoinsPerPerson, stakeControllerpointsPerPerson: ffa.stakeControllerpointsPerPerson, sessionId: sid });
+        for (const u of allUsersFFA) {
+            if (!players.includes(u)) {
+                db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(u, 'challenge_announced', '', ffaAnnouncedPayload, ffaNow, 'active');
+            }
+        }
         broadcast({ type: 'update' });
         res.json({ success: true, allAccepted: true, sessionId: sid });
     } else {
@@ -2566,6 +2596,15 @@ app.put('/api/live-sessions/:id/start', (req, res) => {
         if (proposalConflict) return res.status(400).json({ error: `${player} ist bereits in einer laufenden Session: ${proposalConflict.game}` });
     }
     db.prepare("UPDATE live_sessions SET status = 'running', startedAt = ? WHERE id = ?").run(Date.now(), req.params.id);
+    // Notify participants
+    const startedSession = db.prepare('SELECT game, challenge_type FROM live_sessions WHERE id = ?').get(req.params.id);
+    const startedNow = Date.now();
+    const startedPayload = JSON.stringify({ sessionId: req.params.id, game: startedSession ? startedSession.game : '', type: startedSession ? startedSession.challenge_type : '' });
+    const sessionPlayers = db.prepare('SELECT player FROM live_session_players WHERE session_id = ?').all(req.params.id);
+    for (const { player } of sessionPlayers) {
+        db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(player, 'challenge_started', '', startedPayload, startedNow, 'active');
+    }
+    broadcast({ type: 'update' });
     res.json({ success: true });
 });
 

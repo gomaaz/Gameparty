@@ -217,11 +217,13 @@
 
     // ---- Sound ----
     const SOUNDS = {
-        coin:      'sounds/coin_popup_positive.mp3',
-        spend:     'sounds/loosecoins.mp3',
-        error:     'sounds/error.ogg',
-        challenge: 'sounds/notify.mp3',
-        buy:       'sounds/buyitem.mp3',
+        coin:               'sounds/coin_popup_positive.mp3',
+        spend:              'sounds/loosecoins.mp3',
+        error:              'sounds/error.ogg',
+        challenge:          'sounds/notify.mp3',
+        buy:                'sounds/buyitem.mp3',
+        challenge_created:  'sounds/challenge_created.mp3',
+        challenge_starts:   'sounds/challenge_starts.mp3',
     };
 
     async function _initAudio() {
@@ -2591,6 +2593,7 @@ function getNowPlus10() {
                 }
                 try {
                     await api('PUT', `/proposals/${sel.dataset.id}`, { scheduledDay: day });
+                    renderProposals();
                 } catch (e) { console.error(e); }
             });
         });
@@ -2607,6 +2610,7 @@ function getNowPlus10() {
                 }
                 try {
                     await api('PUT', `/proposals/${inp.dataset.id}`, { scheduledTime: time });
+                    renderProposals();
                 } catch (e) { console.error(e); }
             });
         });
@@ -2619,6 +2623,7 @@ function getNowPlus10() {
                 sel.value = '';
                 try {
                     await api('POST', `/proposals/${pid}/join`, { player });
+                    renderProposals();
                 } catch (e) {
                     showToast(e.message || t('error_loading'), 'error');
                 }
@@ -4460,7 +4465,7 @@ function getNowPlus10() {
         });
 
         document.body.appendChild(overlay);
-        if (getNotifPref('sound')) playSound('challenge');
+        if (getNotifPref('sound')) playSound(data.isLobby ? 'challenge_created' : 'challenge');
     }
 
     function showDuelPayoutModal(data) {
@@ -6518,24 +6523,25 @@ function getNowPlus10() {
         const sorted = [...pendingNotifications].sort((a, b) => (b.ts || 0) - (a.ts || 0));
         const itemsHtml = [
             ...sorted.map(n => {
-                const isRob       = n.type === 'rob';
-                const isReview    = n.type === 'review';
-                const isTeam      = n.isTeam;
-                const isFFA       = n.isFFA;
-                const isGameEvent = n.type === 'game_approved' || n.type === 'game_rejected';
+                const isRob          = n.type === 'rob';
+                const isReview       = n.type === 'review';
+                const isTeam         = n.isTeam;
+                const isFFA          = n.isFFA;
+                const isGameEvent    = n.type === 'game_approved' || n.type === 'game_rejected';
+                const isAnnouncement = n.type === 'challenge_announced';
                 const icon   = isGameEvent ? (n.type === 'game_approved' ? '✅' : '❌')
-                             : isRob ? '🥷' : isReview ? '🏆' : isTeam ? '👥' : isFFA ? '🎯' : '⚔️';
+                             : isRob ? '🥷' : isReview ? '🏆' : isAnnouncement ? '⚔️' : isTeam ? '👥' : isFFA ? '🎯' : '⚔️';
                 const accent = isGameEvent ? (n.type === 'game_approved' ? 'gold' : 'red')
                              : isRob ? 'red' : isReview ? 'gold' : null;
-                const title  = (isRob || isReview || isGameEvent) ? n.title
+                const title  = (isRob || isReview || isGameEvent || isAnnouncement) ? n.title
                              : isTeam ? (n.title || t('notif_team_challenge', n.challenger))
                              : isFFA ? (n.title || t('new_ffa_challenge'))
                              : t('notif_challenge_from', n.challenger);
                 const sub    = (!isRob && !isReview && !isGameEvent)
                              ? (n.sub || ((n.game || n.stakeStr) ? `${n.game}${n.game && n.stakeStr ? ' · ' : ''}${n.stakeStr}` : '')) : '';
-                const navigate = (!isRob && !isGameEvent) ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : isFFA ? 'ffa' : 'duel') : null;
+                const navigate = (!isRob && !isGameEvent && !isAnnouncement) ? (n.id.startsWith('tc_') || n.id.startsWith('tcw_') || isReview ? 'team' : isFFA ? 'ffa' : 'duel') : null;
                 let actions = '';
-                if (isRob || isGameEvent) actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
+                if (isRob || isGameEvent || isAnnouncement) actions = btnOk('notif-dismiss', `data-id="${n.id}" data-ev-id="${n.evId}"`);
                 else if (!isReview)        actions = btnOk('notif-accept', `data-id="${n.id}"`) + btnNo('notif-reject', `data-id="${n.id}"`);
                 return itemHtml({ id: n.id, icon, title, sub, actions, accent, navigate, ts: n.ts });
             }),
@@ -6826,12 +6832,84 @@ function getNowPlus10() {
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
                 }
+                if (ev.type === 'challenge_announced') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        const notifId = 'chann_' + ev.id;
+                        if (!pendingNotifications.find(n => n.id === notifId)) {
+                            // Build pot string
+                            const potParts = [];
+                            if (data.type === 'team' || data.type === 'ffa') {
+                                if (data.stakeCoinsPerPerson > 0) potParts.push(`${fmt(data.stakeCoinsPerPerson)} ${coinSvgIcon()} / ${t('per_person') || 'Person'}`);
+                                if (data.stakeControllerpointsPerPerson > 0) potParts.push(`${fmt(data.stakeControllerpointsPerPerson)} ${controllerSvgIcon()} / ${t('per_person') || 'Person'}`);
+                            } else {
+                                if (data.stakeCoins > 0) potParts.push(`${fmt(data.stakeCoins * 2)} ${coinSvgIcon()}`);
+                                if (data.stakeControllerpoints > 0) potParts.push(`${fmt(data.stakeControllerpoints * 2)} ${controllerSvgIcon()}`);
+                            }
+                            const potStr = potParts.length ? potParts.join(' + ') : '';
+                            // Build title
+                            let title;
+                            if (data.type === 'ffa') {
+                                const players = Array.isArray(data.players) ? data.players : JSON.parse(data.players || '[]');
+                                title = `🎯 FFA: ${players.join(', ')} – ${data.game}`;
+                            } else if (data.type === 'team') {
+                                const teamA = Array.isArray(data.teamA) ? data.teamA : JSON.parse(data.teamA || '[]');
+                                const teamB = Array.isArray(data.teamB) ? data.teamB : JSON.parse(data.teamB || '[]');
+                                title = `👥 ${teamA.join(', ')} vs ${teamB.join(', ')} – ${data.game}`;
+                            } else {
+                                title = `⚔️ ${data.challenger} vs ${data.opponent} – ${data.game}`;
+                            }
+                            pendingNotifications.push({
+                                id: notifId,
+                                evId: ev.id,
+                                type: 'challenge_announced',
+                                title,
+                                sub: potStr,
+                                ts: ev.createdAt
+                            });
+                            showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
+                            updateBadge();
+                            if (getNotifPref('sound')) playSound('challenge');
+                        }
+                    } catch {}
+                    continue; // do NOT delete — stays until user dismisses
+                }
                 if (ev.type === 'duel_start') {
                     try {
                         const data = JSON.parse(ev.message);
                         if (data.sessionId && !shownDuelStartSessions.has(data.sessionId)) {
                             shownDuelStartSessions.add(data.sessionId);
-                            showDuelStartModal(data);
+                            showDuelStartModal({ ...data, isLobby: true });
+                        }
+                    } catch {}
+                    try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
+                    continue;
+                }
+                if (ev.type === 'challenge_started') {
+                    try {
+                        const data = JSON.parse(ev.message);
+                        const notifKey = 'chs_' + data.sessionId;
+                        if (!shownDuelStartSessions.has(notifKey)) {
+                            shownDuelStartSessions.add(notifKey);
+                            // Show "Herausforderung gestartet" modal
+                            const overlay = document.createElement('div');
+                            overlay.className = 'modal-overlay active';
+                            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;';
+                            overlay.innerHTML = `
+                                <div style="background:var(--bg-card);border:1px solid var(--accent-green);border-radius:var(--radius);padding:2rem 1.5rem;max-width:340px;width:90%;text-align:center;box-shadow:0 0 40px rgba(0,230,118,0.25);">
+                                    <div style="font-size:2rem;margin-bottom:0.5rem;">⚔️</div>
+                                    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-green);margin-bottom:0.5rem;">${t('challenge_started_title') || 'Herausforderung gestartet!'}</div>
+                                    <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.5rem;">${data.game || ''}</div>
+                                    <div style="font-size:2rem;font-weight:900;letter-spacing:0.1em;color:var(--accent-green);text-shadow:0 0 20px rgba(0,230,118,0.6);margin-bottom:1.5rem;">FIGHT!</div>
+                                    <button class="challenge-started-ok" style="background:var(--accent-green);color:#000;border:none;border-radius:var(--radius-sm);padding:0.6rem 1.5rem;font-weight:700;font-size:0.95rem;cursor:pointer;">OK</button>
+                                </div>`;
+                            overlay.querySelector('.challenge-started-ok').addEventListener('click', () => {
+                                overlay.remove();
+                                playSound('challenge_starts');
+                                const homeTab = document.querySelector('[data-tab="home"]') || document.querySelector('.nav-tab');
+                                if (homeTab) homeTab.click();
+                            });
+                            document.body.appendChild(overlay);
                         }
                     } catch {}
                     try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
