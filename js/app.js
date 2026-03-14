@@ -3183,6 +3183,101 @@ function getNowPlus10() {
 
     let adminPanelOpen = false;
 
+    // ---- LAN Timeline ----
+    let lanTimelineInterval = null;
+
+    function renderLanTimeline() {
+        const el = document.getElementById('lan-timeline');
+        if (!el) return;
+
+        const enabled = (state.settings && state.settings.timeline_enabled === '1');
+        if (!enabled) {
+            el.style.display = 'none';
+            document.body.classList.remove('timeline-active');
+            return;
+        }
+
+        const lanStart = state.settings && state.settings.lan_start ? state.settings.lan_start : null;
+        const lanEnd   = state.settings && state.settings.lan_end   ? state.settings.lan_end   : null;
+
+        el.style.display = '';
+        el.classList.add('has-nav');
+        document.body.classList.add('timeline-active');
+
+        if (!lanStart || !lanEnd) {
+            el.innerHTML = `<div class="lan-timeline-track"></div><div class="lan-timeline-status upcoming">${t('timeline_not_configured')}</div>`;
+            return;
+        }
+
+        const now   = Date.now();
+        const start = new Date(lanStart).getTime();
+        const end   = new Date(lanEnd).getTime();
+        const total = end - start;
+
+        const fmtTime = (isoStr) => {
+            const d = new Date(isoStr);
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        };
+
+        if (now < start) {
+            // Upcoming
+            el.innerHTML = `
+                <div class="lan-timeline-track"></div>
+                <div class="lan-timeline-fill" style="width:0%"></div>
+                <div class="lan-timeline-markers">
+                    <div class="lan-timeline-marker start">
+                        <span class="lan-timeline-marker-label">${t('timeline_label_start')}</span>
+                        <span class="lan-timeline-marker-time">${fmtTime(lanStart)}</span>
+                    </div>
+                    <div class="lan-timeline-marker end">
+                        <span class="lan-timeline-marker-label">${t('timeline_label_end')}</span>
+                        <span class="lan-timeline-marker-time">${fmtTime(lanEnd)}</span>
+                    </div>
+                </div>
+                <div class="lan-timeline-status upcoming">${t('timeline_upcoming', fmtTime(lanStart))}</div>`;
+        } else if (now > end) {
+            // Done
+            el.innerHTML = `
+                <div class="lan-timeline-track"></div>
+                <div class="lan-timeline-fill" style="width:100%"></div>
+                <div class="lan-timeline-markers">
+                    <div class="lan-timeline-marker start">
+                        <span class="lan-timeline-marker-label">${t('timeline_label_start')}</span>
+                        <span class="lan-timeline-marker-time">${fmtTime(lanStart)}</span>
+                    </div>
+                    <div class="lan-timeline-marker end">
+                        <span class="lan-timeline-marker-label">${t('timeline_label_end')}</span>
+                        <span class="lan-timeline-marker-time">${fmtTime(lanEnd)}</span>
+                    </div>
+                </div>
+                <div class="lan-timeline-status done">${t('timeline_done')}</div>`;
+        } else {
+            // Running
+            const pct = Math.min(100, Math.max(0, ((now - start) / total) * 100));
+            el.innerHTML = `
+                <div class="lan-timeline-track"></div>
+                <div class="lan-timeline-fill" style="width:${pct.toFixed(2)}%"></div>
+                <div class="lan-timeline-beam" style="left:${pct.toFixed(2)}%"></div>
+                <div class="lan-timeline-markers">
+                    <div class="lan-timeline-marker start">
+                        <span class="lan-timeline-marker-label">${t('timeline_label_start')}</span>
+                        <span class="lan-timeline-marker-time">${fmtTime(lanStart)}</span>
+                    </div>
+                    <div class="lan-timeline-marker end">
+                        <span class="lan-timeline-marker-label">${t('timeline_label_end')}</span>
+                        <span class="lan-timeline-marker-time">${fmtTime(lanEnd)}</span>
+                    </div>
+                </div>
+                <div class="lan-timeline-status">${t('timeline_running')} · ${pct.toFixed(0)}%</div>`;
+        }
+    }
+
+    function startLanTimelineTicker() {
+        if (lanTimelineInterval) clearInterval(lanTimelineInterval);
+        renderLanTimeline();
+        lanTimelineInterval = setInterval(renderLanTimeline, 30000);
+    }
+
     function closeAdminPanel() {
         adminPanelOpen = false;
         $('#admin-panel').classList.remove('open');
@@ -3318,6 +3413,25 @@ function getNowPlus10() {
                     <div class="admin-coins-form">
                         <textarea id="ap-login-message" rows="2" placeholder="${t('placeholder_login_message')}" style="resize:vertical;font-family:inherit;font-size:0.9rem;padding:0.6rem 0.75rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);width:100%;box-sizing:border-box">${settingsData?.login_message || ''}</textarea>
                         <button class="btn-admin-coins" id="ap-btn-login-message">${t('btn_save')}</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">⏱️ ${t('admin_timeline_title')}</div>
+                    <div style="display:flex;flex-direction:column;gap:0.6rem">
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.9rem">
+                            <input type="checkbox" id="ap-timeline-enabled" ${settingsData?.timeline_enabled === '1' ? 'checked' : ''}>
+                            <span>${t('admin_timeline_enabled')}</span>
+                        </label>
+                        <div style="display:flex;flex-direction:column;gap:0.35rem">
+                            <label style="font-size:0.8rem;color:var(--text-secondary)">${t('admin_timeline_start')}</label>
+                            <input type="datetime-local" id="ap-timeline-start" class="datetime-input" value="${settingsData?.lan_start ? new Date(settingsData.lan_start).toISOString().slice(0,16) : ''}" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem;width:100%;box-sizing:border-box">
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:0.35rem">
+                            <label style="font-size:0.8rem;color:var(--text-secondary)">${t('admin_timeline_end')}</label>
+                            <input type="datetime-local" id="ap-timeline-end" class="datetime-input" value="${settingsData?.lan_end ? new Date(settingsData.lan_end).toISOString().slice(0,16) : ''}" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.85rem;width:100%;box-sizing:border-box">
+                        </div>
+                        <button class="btn-admin-coins" id="ap-btn-timeline-save">${t('btn_save')}</button>
                     </div>
                 </div>
 
@@ -3502,6 +3616,35 @@ function getNowPlus10() {
                 state.settings.login_message = val;
                 showToast(t('login_message_saved'), 'success');
             } catch { showToast('Fehler', 'error'); }
+        });
+
+        // LAN Timeline events
+        panel.querySelector('#ap-btn-timeline-save')?.addEventListener('click', async () => {
+            const enabled = panel.querySelector('#ap-timeline-enabled')?.checked ? '1' : '0';
+            const startVal = panel.querySelector('#ap-timeline-start')?.value;
+            const endVal   = panel.querySelector('#ap-timeline-end')?.value;
+            try {
+                await api('PUT', '/settings/timeline_enabled', { value: enabled });
+                state.settings.timeline_enabled = enabled;
+                if (startVal) {
+                    const isoStart = new Date(startVal).toISOString();
+                    await api('PUT', '/settings/lan_start', { value: isoStart });
+                    state.settings.lan_start = isoStart;
+                } else {
+                    await api('PUT', '/settings/lan_start', { value: '' });
+                    state.settings.lan_start = '';
+                }
+                if (endVal) {
+                    const isoEnd = new Date(endVal).toISOString();
+                    await api('PUT', '/settings/lan_end', { value: isoEnd });
+                    state.settings.lan_end = isoEnd;
+                } else {
+                    await api('PUT', '/settings/lan_end', { value: '' });
+                    state.settings.lan_end = '';
+                }
+                showToast(t('admin_timeline_saved'), 'success');
+                renderLanTimeline();
+            } catch { showToast(t('error_generic'), 'error'); }
         });
 
         // Attendees Toggle Events
@@ -6701,6 +6844,8 @@ function getNowPlus10() {
                     if (sseDropViewInterval) { clearInterval(sseDropViewInterval); sseDropViewInterval = null; }
                     refreshActiveView();
                     pollChallenges();
+                    // Re-fetch settings to pick up timeline changes, then re-render
+                    api('GET', '/settings').then(s => { if (s && typeof s === 'object') { state.settings = { ...state.settings, ...s }; } renderLanTimeline(); }).catch(() => {});
                 });
                 sseSource.onerror = () => {
                     // SSE unterbrochen: View alle 30s refreshen bis SSE zurückkommt
@@ -7609,6 +7754,8 @@ function getNowPlus10() {
         } else {
             showLoginScreen();
         }
+
+        startLanTimelineTicker();
     }
 
     // Export for i18n.js

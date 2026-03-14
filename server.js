@@ -1030,11 +1030,11 @@ app.post('/api/proposals/:id/leave', (req, res) => {
 
 // POST /api/proposals/:id/approve — Coins auszahlen und Proposal abschliessen
 app.post('/api/proposals/:id/approve', (req, res) => {
-    const { coins, approvedBy } = req.body;
+    const { approvedBy } = req.body;
     if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins können freigeben' });
-    const coinsPerPlayer = parseInt(coins) || 0;
     const proposal = db.prepare('SELECT * FROM proposals WHERE id = ?').get(req.params.id);
     if (!proposal) return res.status(404).json({ error: 'Proposal nicht gefunden' });
+    const coinsPerPlayer = proposal.pendingCoins || 0;
     if (proposal.coinsApproved) return res.status(400).json({ error: 'Bereits freigegeben' });
 
     const players = db.prepare('SELECT player FROM proposal_players WHERE proposal_id = ?').all(req.params.id).map(r => r.player);

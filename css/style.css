@@ -170,12 +170,133 @@ button, a, input, select, textarea, label, [role="button"] {
     background: var(--bg-card);
 }
 
+/* ---- LAN Timeline ---- */
+.lan-timeline {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    height: 28px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    overflow: hidden;
+    transform: translateY(0);
+    transition: transform 0.3s ease, height 0.3s ease;
+}
+
+.lan-timeline.has-nav {
+    bottom: calc(56px + max(0px, env(safe-area-inset-bottom)));
+}
+
+.lan-timeline-track {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 215, 0, 0.06);
+}
+
+.lan-timeline-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 215, 0, 0.45) 100%);
+    transition: width 1s linear;
+    min-width: 0;
+}
+
+.lan-timeline-beam {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-gold);
+    box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.7), 0 0 20px 4px rgba(255, 215, 0, 0.3);
+    transition: left 1s linear;
+    border-radius: 2px;
+}
+
+.lan-timeline-markers {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.lan-timeline-marker {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.lan-timeline-marker.start {
+    left: 2%;
+    transform: translateX(0);
+    align-items: flex-start;
+}
+
+.lan-timeline-marker.end {
+    right: 2%;
+    left: auto;
+    transform: translateX(0);
+    align-items: flex-end;
+}
+
+.lan-timeline-marker-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.lan-timeline-marker-time {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    line-height: 1;
+    margin-top: 1px;
+}
+
+.lan-timeline-status {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    pointer-events: none;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.lan-timeline-status.done {
+    color: var(--text-muted);
+    text-shadow: none;
+}
+
+.lan-timeline-status.upcoming {
+    color: var(--accent-blue);
+    text-shadow: 0 0 8px rgba(68, 138, 255, 0.4);
+}
+
 /* ---- Main Content ---- */
 .main-content {
     padding: 1rem;
     padding-bottom: 5rem;
     max-width: 800px;
     margin: 0 auto;
+}
+
+body.timeline-active .main-content {
+    padding-bottom: calc(5rem + 28px);
 }
 
 .view {

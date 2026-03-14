@@ -660,6 +660,19 @@ const TRANSLATIONS = {
 
         // --- Session Runtime ---
         min_abbr: 'Min.',
+
+        // --- LAN Timeline ---
+        admin_timeline_title: 'LAN Timeline',
+        admin_timeline_enabled: 'Show timeline',
+        admin_timeline_start: 'LAN Start',
+        admin_timeline_end: 'LAN End',
+        admin_timeline_saved: 'Timeline settings saved',
+        timeline_label_start: 'Start',
+        timeline_label_end: 'End',
+        timeline_not_configured: 'Timeline not configured yet',
+        timeline_running: 'LAN is running',
+        timeline_done: 'LAN has ended',
+        timeline_upcoming: 'LAN starts at {0}',
     },
 
     de: {
@@ -1319,6 +1332,19 @@ const TRANSLATIONS = {
 
         // --- Session Runtime ---
         min_abbr: 'Min.',
+
+        // --- LAN Timeline ---
+        admin_timeline_title: 'LAN-Zeitleiste',
+        admin_timeline_enabled: 'Zeitleiste anzeigen',
+        admin_timeline_start: 'LAN-Start',
+        admin_timeline_end: 'LAN-Ende',
+        admin_timeline_saved: 'Zeitleisten-Einstellungen gespeichert',
+        timeline_label_start: 'Start',
+        timeline_label_end: 'Ende',
+        timeline_not_configured: 'Zeitleiste noch nicht konfiguriert',
+        timeline_running: 'LAN läuft',
+        timeline_done: 'LAN ist vorbei',
+        timeline_upcoming: 'LAN startet um {0}',
     }
 };
 
