@@ -4003,7 +4003,7 @@ function getNowPlus10() {
                 const result = await api('POST', '/shop/buy-controllerpoint', { player, cost });
                 state.coins[player] = (state.coins[player] || 0) - cost;
                 state.controllerpoints[player] = result.newControllerpoints;
-                showToast(t('star_bought', fmt(state.controllerpoints[player])), 'success');
+                showToast(t('controllerpoint_bought', fmt(state.controllerpoints[player])), 'success');
                 updateHeader();
                 renderShop();
             } catch (e) { showToast(e.message || t('not_enough_coins'), 'error'); playSound('error'); }
@@ -4744,8 +4744,8 @@ function getNowPlus10() {
     function updateHeader() {
         const playerBtn = $('#header-player-btn');
         const coinsDisplay = $('#header-coins');
-        const cpDisplay = $('#header-stars');
-        const cpContainer = $('#header-stars-display');
+        const cpDisplay = $('#header-controllerpoints');
+        const cpContainer = $('#header-controllerpoints-display');
 
         if (state.currentPlayer) {
             playerBtn.textContent = state.currentPlayer;
@@ -6876,8 +6876,8 @@ function getNowPlus10() {
         if (state.currentPlayer) {
             const coinsDisplay = $('#header-coins');
             coinsDisplay.textContent = fmt(getPlayerCoins(state.currentPlayer));
-            const cpDisplay = $('#header-stars');
-            const cpContainer = $('#header-stars-display');
+            const cpDisplay = $('#header-controllerpoints');
+            const cpContainer = $('#header-controllerpoints-display');
             const playerCp = getPlayerControllerpoints(state.currentPlayer);
             if (cpDisplay) cpDisplay.textContent = fmt(playerCp);
             if (cpContainer) cpContainer.style.display = playerCp > 0 ? 'flex' : 'none';
