@@ -628,6 +628,7 @@ const TRANSLATIONS = {
         admin_logs_cleared: 'Logs cleared (view only)',
         admin_logs_refresh: '↻ Refresh',
         admin_logs_clear: '✕ Clear',
+        admin_logs_auto_refresh: 'Auto-Refresh',
 
         // --- Admin: Settings Toasts ---
         admin_limit_saved: 'Limit saved',
@@ -1301,6 +1302,7 @@ const TRANSLATIONS = {
         admin_logs_cleared: 'Logs geleert (nur Anzeige)',
         admin_logs_refresh: '↻ Refresh',
         admin_logs_clear: '✕ Clear',
+        admin_logs_auto_refresh: 'Auto-Refresh',
 
         // --- Admin: Settings Toasts ---
         admin_limit_saved: 'Limit gespeichert',

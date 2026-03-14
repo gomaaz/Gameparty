@@ -3511,6 +3511,10 @@ function getNowPlus10() {
                         <button class="ls-btn-secondary" id="btn-refresh-logs" style="margin-left:auto">${t('admin_logs_refresh')}</button>
                         <button class="ls-btn-secondary" id="btn-clear-logs">${t('admin_logs_clear')}</button>
                     </div>
+                    <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.4rem;user-select:none">
+                        <input type="checkbox" id="log-auto-refresh-toggle">
+                        <span>${t('admin_logs_auto_refresh')}</span>
+                    </label>
                     <div id="log-output" style="background:#0d0d1a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;max-height:280px;overflow-y:auto;font-family:monospace;font-size:0.68rem;line-height:1.5"></div>
                 </div>
 
@@ -3555,10 +3559,18 @@ function getNowPlus10() {
 
         loadLogs('ALL');
 
-        const logInterval = setInterval(() => {
-            if (document.getElementById('log-output')) loadLogs();
-            else clearInterval(logInterval);
-        }, 4000);
+        let logInterval = null;
+        const autoRefreshToggle = panel.querySelector('#log-auto-refresh-toggle');
+        autoRefreshToggle?.addEventListener('change', () => {
+            if (autoRefreshToggle.checked) {
+                logInterval = setInterval(() => {
+                    if (document.getElementById('log-output')) loadLogs();
+                    else { clearInterval(logInterval); logInterval = null; }
+                }, 4000);
+            } else {
+                if (logInterval) { clearInterval(logInterval); logInterval = null; }
+            }
+        });
 
         // Freigabe Events
         // Live-save: Max-Spieler-Limit + Tabelle neu aufbauen
