@@ -4066,7 +4066,6 @@ function getNowPlus10() {
             playSound('buy');
             try {
                 const result = await api('POST', '/shop/buy-controllerpoint', { player, cost });
-                state.coins[player] = (state.coins[player] || 0) - cost;
                 state.controllerpoints[player] = result.newControllerpoints;
                 showToast(t('controllerpoint_bought', fmt(state.controllerpoints[player])), 'success');
                 updateHeader();
