@@ -218,8 +218,8 @@
     // ---- Sound ----
     const SOUNDS = {
         coin:      'sounds/coin_popup_positive.mp3',
-        spend:     'sounds/Coin_popup_negative.mp3',
-        error:     'sounds/Coin_popup_negative.mp3',
+        spend:     'sounds/loosecoins.mp3',
+        error:     'sounds/loosecoins.mp3',
         challenge: 'sounds/notify.mp3',
         buy:       'sounds/buyitem.mp3',
     };
