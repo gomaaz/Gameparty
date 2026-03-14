@@ -781,7 +781,7 @@ function getNowPlus10() {
                     ];
                     const canManageLobby = (isLeader || isAdmin()) && s.status === 'lobby';
                     let playersHTML = sortedPlayerObjs.map(p =>
-                        `<span class="player-chip player-name-clickable" data-player-info="${p.player}">${p.player === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p.player}${canManageLobby && p.player !== s.leader ? `<button class="ls-kick-btn" data-sid="${s.id}" data-player="${p.player}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : ''}</span>`
+                        `<span class="player-chip player-name-clickable" data-player-info="${p.player}">${p.player === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : ''}${p.player}${canManageLobby && p.player !== s.leader ? `<button class="ls-kick-btn" data-sid="${s.id}" data-player="${p.player}" style="margin-left:8px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.8rem;padding:2px 6px;line-height:1;border-radius:4px;">✕</button>` : ''}</span>`
                     ).join('');
                     if (s.max_slots > 0) {
                         const slotMap = {};
@@ -790,7 +790,7 @@ function getNowPlus10() {
                         for (let i = 1; i <= s.max_slots; i++) {
                             const name = slotMap[i] || null;
                             const leaderBadge = name === s.leader ? `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>` : '';
-                            const lsKickBtn = name && name !== s.leader && canManageLobby ? `<button class="ls-kick-btn" data-sid="${s.id}" data-player="${name}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : '';
+                            const lsKickBtn = name && name !== s.leader && canManageLobby ? `<button class="ls-kick-btn" data-sid="${s.id}" data-player="${name}" style="margin-left:8px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.8rem;padding:2px 6px;line-height:1;border-radius:4px;">✕</button>` : '';
                             slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${leaderBadge}${name}${lsKickBtn}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
                         }
                         playersHTML = `<div class="session-slots">${slotItems.join('')}</div>`;
@@ -2472,12 +2472,12 @@ function getNowPlus10() {
                         const slotItems = [];
                         for (let i = 1; i <= p.max_slots; i++) {
                             const name = slotMap[i] || null;
-                            const kickBtn = name && name !== p.leader && (admin || isLeader) && ['pending', 'approved'].includes(p.status) ? `<button class="player-kick-btn" data-pid="${p.id}" data-player="${name}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : '';
+                            const kickBtn = name && name !== p.leader && (admin || isLeader) && ['pending', 'approved'].includes(p.status) ? `<button class="player-kick-btn" data-pid="${p.id}" data-player="${name}" style="margin-left:8px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.8rem;padding:2px 6px;line-height:1;border-radius:4px;">✕</button>` : '';
                             slotItems.push(`<div class="session-slot"><span class="slot-number">${i}</span>${name ? `<span class="player-chip player-name-clickable" data-player-info="${name}">${name === p.leader ? leaderBadge : ''}${name}${kickBtn}</span>` : '<span class="slot-empty">─────</span>'}</div>`);
                         }
                         return `<div class="session-slots">${slotItems.join('')}</div>`;
                     }
-                    return `<div>${[p.leader, ...p.players.filter(pp => pp.player !== p.leader).sort((a, b) => a.player.localeCompare(b.player))].map(pp => { const n = pp.player || pp; const kickBtn = (admin || isLeader) && ['pending', 'approved'].includes(p.status) && n !== p.leader ? `<button class="player-kick-btn" data-pid="${p.id}" data-player="${n}" style="margin-left:4px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.75rem;padding:0 2px;line-height:1">✕</button>` : ''; return `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? leaderBadge : ''}${n}${kickBtn}</span>`; }).join('')}</div>`;
+                    return `<div>${[p.leader, ...p.players.filter(pp => pp.player !== p.leader).sort((a, b) => a.player.localeCompare(b.player))].map(pp => { const n = pp.player || pp; const kickBtn = (admin || isLeader) && ['pending', 'approved'].includes(p.status) && n !== p.leader ? `<button class="player-kick-btn" data-pid="${p.id}" data-player="${n}" style="margin-left:8px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:0.8rem;padding:2px 6px;line-height:1;border-radius:4px;">✕</button>` : ''; return `<span class="player-chip player-name-clickable" data-player-info="${n}">${n === p.leader ? leaderBadge : ''}${n}${kickBtn}</span>`; }).join('')}</div>`;
                 })()}
                 ${actionsHTML}
             </div>`;
