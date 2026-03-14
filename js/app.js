@@ -3542,41 +3542,27 @@ function getNowPlus10() {
 
                 <div class="card">
                     <div class="card-title">🛒 ${t('shop_prices_title')}</div>
-                    <div style="display:flex;flex-direction:column;gap:0.75rem">
+                    <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:0.3rem 0.6rem;align-items:center">
+                        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;padding-bottom:0.2rem;border-bottom:1px solid var(--border)">${t('shop_col_item')}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-align:center;padding-bottom:0.2rem;border-bottom:1px solid var(--border)">${t('shop_col_active')}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-align:right;padding-bottom:0.2rem;border-bottom:1px solid var(--border)">${t('shop_col_price')}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;padding-bottom:0.2rem;border-bottom:1px solid var(--border)">${t('shop_col_cooldown')}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;text-align:right;padding-bottom:0.2rem;border-bottom:1px solid var(--border)">${t('shop_col_min')}</div>
                         ${CONFIG.SHOP_ITEMS.map(item => {
                             const cdType = settingsData[`shop_cooldown_type_${item.id}`] || 'none';
                             const cdMs = parseInt(settingsData[`shop_cooldown_ms_${item.id}`] || '0') || 0;
                             const cdMin = cdMs > 0 ? Math.round(cdMs / 60000) : 0;
                             const enabled = settingsData[`shop_enabled_${item.id}`] !== undefined ? settingsData[`shop_enabled_${item.id}`] === '1' : true;
                             return `
-                            <div style="border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;flex-direction:column;gap:0.4rem">
-                                <div style="display:flex;align-items:center;gap:0.5rem">
-                                    <span style="font-size:0.88rem;font-weight:600;color:var(--text-primary);flex:1">${t('item_' + item.id + '_name')}</span>
-                                    <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.78rem;color:var(--text-muted);cursor:pointer">
-                                        <input type="checkbox" class="shop-enabled-toggle" data-item-id="${item.id}" ${enabled ? 'checked' : ''}>
-                                        ${t('shop_item_enabled')}
-                                    </label>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
-                                    <span style="font-size:0.78rem;color:var(--text-muted)">Preis:</span>
-                                    <input type="number" class="shop-price-input" data-item-id="${item.id}"
-                                        value="${parseInt(settingsData['shop_price_' + item.id]) || item.cost}"
-                                        min="0" max="9999" step="1"
-                                        style="width:4.5rem;padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.82rem">
-                                    <span style="font-size:0.78rem;color:var(--text-muted)">Coins</span>
-                                    <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.5rem">${t('shop_cooldown_type')}:</span>
-                                    <select class="shop-cooldown-type-select" data-item-id="${item.id}"
-                                        style="padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.78rem">
-                                        <option value="none" ${cdType === 'none' ? 'selected' : ''}>${t('shop_cooldown_type_none')}</option>
-                                        <option value="local" ${cdType === 'local' ? 'selected' : ''}>${t('shop_cooldown_type_local')}</option>
-                                        <option value="global" ${cdType === 'global' ? 'selected' : ''}>${t('shop_cooldown_type_global')}</option>
-                                    </select>
-                                    <input type="number" class="shop-cooldown-min-input" data-item-id="${item.id}"
-                                        value="${cdMin}" min="0" max="9999" step="1" placeholder="0"
-                                        style="width:3.5rem;padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.82rem">
-                                    <span style="font-size:0.78rem;color:var(--text-muted)">${t('shop_cooldown_duration')}</span>
-                                </div>
-                            </div>`;
+                        <div style="font-size:0.83rem;font-weight:500">${item.icon} ${t('item_' + item.id + '_name')}</div>
+                        <div style="text-align:center"><input type="checkbox" class="shop-enabled-toggle" data-item-id="${item.id}" ${enabled ? 'checked' : ''}></div>
+                        <input type="number" class="shop-price-input" data-item-id="${item.id}" value="${parseInt(settingsData['shop_price_' + item.id]) || item.cost}" min="0" max="9999" step="1" style="width:4rem;padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.82rem">
+                        <select class="shop-cooldown-type-select" data-item-id="${item.id}" style="padding:2px 4px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.78rem;width:100%">
+                            <option value="none" ${cdType === 'none' ? 'selected' : ''}>${t('shop_cooldown_type_none')}</option>
+                            <option value="local" ${cdType === 'local' ? 'selected' : ''}>${t('shop_cooldown_type_local')}</option>
+                            <option value="global" ${cdType === 'global' ? 'selected' : ''}>${t('shop_cooldown_type_global')}</option>
+                        </select>
+                        <input type="number" class="shop-cooldown-min-input" data-item-id="${item.id}" value="${cdMin}" min="0" max="9999" step="1" placeholder="0" style="width:3.5rem;padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.82rem">`;
                         }).join('')}
                     </div>
                 </div>
