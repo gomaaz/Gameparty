@@ -3554,7 +3554,7 @@ function getNowPlus10() {
                             const cdMin = cdMs > 0 ? Math.round(cdMs / 60000) : 0;
                             const enabled = settingsData[`shop_enabled_${item.id}`] !== undefined ? settingsData[`shop_enabled_${item.id}`] === '1' : true;
                             return `
-                        <div style="font-size:0.83rem;font-weight:500">${item.icon} ${t('item_' + item.id + '_name')}</div>
+                        <div style="font-size:0.83rem;font-weight:500">${t('item_' + item.id + '_name')}</div>
                         <div style="text-align:center"><input type="checkbox" class="shop-enabled-toggle" data-item-id="${item.id}" ${enabled ? 'checked' : ''}></div>
                         <input type="number" class="shop-price-input" data-item-id="${item.id}" value="${parseInt(settingsData['shop_price_' + item.id]) || item.cost}" min="0" max="9999" step="1" style="width:4rem;padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.82rem">
                         <select class="shop-cooldown-type-select" data-item-id="${item.id}" style="padding:2px 4px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.78rem;width:100%">
