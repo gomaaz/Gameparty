@@ -798,7 +798,7 @@ function getNowPlus10() {
                     }
 
                     let lsAddPlayerHTML = '';
-                    if (canManageLobby) {
+                    if (canManageLobby && !s.challenge_id) {
                         const notInSession = (state.players || []).filter(pl => !s.players.some(p => p.player === pl));
                         if (notInSession.length > 0) {
                             lsAddPlayerHTML = `<div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;">
