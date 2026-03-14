@@ -6761,12 +6761,19 @@ function getNowPlus10() {
                             okBtn.addEventListener('click', async () => {
                                 overlay.classList.remove('show');
                                 try {
-                                    let collectFailed = false;
-                                    try {
-                                        await api('PUT', `/live-sessions/${data.sessionId}/collect`, { player: state.currentPlayer });
-                                    } catch { collectFailed = true; }
-                                    if (!collectFailed && coins > 0) showCoinAnimation(coins, 0);
-                                    else if (!collectFailed) playSound('coin');
+                                    if (data.sessionId) {
+                                        let collectFailed = false;
+                                        try {
+                                            await api('PUT', `/live-sessions/${data.sessionId}/collect`, { player: state.currentPlayer });
+                                        } catch { collectFailed = true; }
+                                        if (!collectFailed && coins > 0) showCoinAnimation(coins, 0);
+                                        else if (!collectFailed) playSound('coin');
+                                    }
+                                    // Proposal payout (no sessionId) or always: play sound
+                                    if (!data.sessionId) {
+                                        playSound('coin');
+                                        if (coins > 0) showCoinAnimation(coins, 0);
+                                    }
                                 } catch {}
                                 try { await api('DELETE', `/player-events/${ev.id}`); } catch {}
                                 renderDashboard();
