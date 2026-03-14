@@ -2409,7 +2409,7 @@ function getNowPlus10() {
             const notInSession = state.players.filter(pl => !p.players.map(pp => pp.name || pp).includes(pl));
             if (notInSession.length > 0) {
                 adminAddPlayerHTML = `
-                    <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;">
+                    <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;margin-bottom:0.6rem;">
                         <select class="manage-add-player-select" data-id="${p.id}" style="flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.82rem;">
                             <option value="">+ Spieler hinzufügen</option>
                             ${notInSession.map(pl => `<option value="${pl}">${pl}</option>`).join('')}
@@ -4107,7 +4107,7 @@ function getNowPlus10() {
                     <div style="font-size:2rem;font-weight:800;color:var(--accent-gold)">${fmt(coins)} <img src="svg/coins.svg" class="coin-svg-icon" alt="coins" style="width:2.1rem;height:2.1rem;vertical-align:middle;margin-bottom:0.00em"></div>
                 </div>
                 <div class="shop-grid">
-                    ${CONFIG.SHOP_ITEMS.map(item => {
+                    ${CONFIG.SHOP_ITEMS.filter(item => item.enabled !== false || isAdmin()).map(item => {
                         const cdRem = getCooldownRemaining(item.id);
                         const onCooldown = cdRem > 0;
                         const isDisabled = item.enabled === false;
@@ -4164,6 +4164,7 @@ function getNowPlus10() {
             try {
                 const result = await api('POST', '/shop/buy-controllerpoint', { player, cost });
                 state.controllerpoints[player] = result.newControllerpoints;
+                startItemCooldown(itemId);
                 showToast(t('controllerpoint_bought', fmt(state.controllerpoints[player])), 'success');
                 updateHeader();
                 renderShop();
@@ -4185,6 +4186,7 @@ function getNowPlus10() {
                 try {
                     await api('POST', '/coins/spend', { player, amount: cost, reason: `Shop: ${item.name}` });
                     await api('POST', '/tokens', { player, type: itemId });
+                    startItemCooldown(itemId);
                     showToast(t('item_bought', item.name), 'gold');
                     renderShop();
                 } catch (e) {
@@ -4222,6 +4224,7 @@ function getNowPlus10() {
                 try {
                     await api('POST', '/coins/spend', { player: state.currentPlayer, amount: cost, reason: `Shop: ${item.name} (Ziel: ${target})` });
                     await api('POST', '/tokens', { player: state.currentPlayer, type: itemId });
+                    startItemCooldown(itemId);
                     const msg = toastFn ? toastFn(target) : `${item.name} - ${target} muss mitspielen!`;
                     showToast(msg, 'gold');
                     // Ziel: Task mit Bestätigungspflicht

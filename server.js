@@ -1285,6 +1285,7 @@ app.get('/api/tokens/:player', (req, res) => {
 app.post('/api/tokens', (req, res) => {
     const { player, type } = req.body;
     const result = db.prepare('INSERT INTO tokens (player, type, timestamp) VALUES (?, ?, ?)').run(player, type, Date.now());
+    setShopCooldown(type, player);
     res.json({ success: true, id: result.lastInsertRowid });
 });
 
