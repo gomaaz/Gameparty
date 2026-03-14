@@ -2220,8 +2220,11 @@ body.timeline-active .main-content {
     transform: none;
 }
 
-.admin-add-player-select {
-    width: 50%;
+.admin-add-player-select,
+.manage-add-player-select,
+.ls-add-player-select {
+    width: 50% !important;
+    flex: none !important;
 }
 
 /* ---- Player Management List ---- */
