@@ -224,6 +224,7 @@
         buy:                'sounds/buyitem.mp3',
         challenge_created:  'sounds/challenge_created.mp3',
         challenge_starts:   'sounds/challenge_starts.mp3',
+        notify:             'sounds/notify.mp3',
     };
 
     async function _initAudio() {
@@ -4278,7 +4279,6 @@ function getNowPlus10() {
                             });
                         } else {
                             showToast(t('rob_controller_fail', target), 'error');
-                            playSound('spend');
                             await api('POST', '/player-events', {
                                 target, type: 'rob_controller_victim', from_player: state.currentPlayer,
                                 message: JSON.stringify({ thief: state.currentPlayer, success: false })
@@ -4295,7 +4295,6 @@ function getNowPlus10() {
                             });
                         } else {
                             showToast(t('rob_coins_fail', target), 'error');
-                            playSound('spend');
                         }
                     }
                     updateHeader();
@@ -6799,7 +6798,7 @@ function getNowPlus10() {
                             pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title: t('rob_coins_victim_notif', data.thief, fmt(data.stolen)), ts: ev.createdAt });
                             showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                             updateBadge();
-                            if (getNotifPref('sound')) playSound('error');
+                            if (getNotifPref('sound')) playSound('spend');
                         }
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
@@ -6813,7 +6812,7 @@ function getNowPlus10() {
                             pendingNotifications.push({ id: notifId, evId: ev.id, type: 'rob', title, ts: ev.createdAt });
                             showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
                             updateBadge();
-                            if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
+                            if (getNotifPref('sound')) playSound(data.success ? 'spend' : 'notify');
                         }
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
