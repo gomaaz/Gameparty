@@ -2471,7 +2471,7 @@ function getNowPlus10() {
                         pendingCoins: coinsAmount,
                         coinsApproved: 0
                     });
-                    showToast(t('session_ended', fmt(coinsAmount)), 'gold');
+                    showToast(t('session_ended_neutral'), 'gold');
                     refreshActiveView();
                 } catch (e) { console.error(e); }
             });
