@@ -2656,7 +2656,7 @@ app.post('/api/live-sessions/:id/duel-cancel', (req, res) => {
                 const allPlayers = [...teamA, ...teamB];
                 for (const p of allPlayers) {
                     if (tc.stakeCoinsPerPerson > 0) db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
-                    if (tc.stakeStarsPerPerson > 0) db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+                    if (tc.stakeControllerpointsPerPerson > 0) db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(tc.stakeControllerpointsPerPerson, p);
                 }
                 db.prepare("UPDATE team_challenges SET status = 'cancelled' WHERE id = ?").run(tc.id);
             }

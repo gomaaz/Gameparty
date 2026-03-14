@@ -467,7 +467,7 @@ body.timeline-active .main-content {
     justify-content: flex-end;
 }
 
-.lb-stat-stars {
+.lb-stat-controllerpoints {
     color: var(--text-secondary);
     min-width: 3.5rem;
 }
@@ -2794,10 +2794,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     background: rgba(179, 136, 255, 0.1);
 }
 
-/* ---- Stars System (Controller-Punkte) ---- */
+/* ---- Controllerpoints System (Controller-Punkte) ---- */
 
-/* Header Sterne */
-.header-stars-display {
+/* Header Controllerpoints */
+.header-controllerpoints-display {
     display: flex;
     align-items: center;
     gap: 0.3rem;
@@ -2807,16 +2807,16 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     color: var(--accent-gold);
 }
 
-/* Leaderboard Sterne unter Name */
-.leaderboard-stars {
+/* Leaderboard Controllerpoints unter Name */
+.leaderboard-controllerpoints {
     display: inline-flex;
     align-items: center;
     gap: 0.1rem;
     font-size: 0.85rem;
 }
 
-/* Profil Sterne */
-.profile-stars {
+/* Profil Controllerpoints */
+.profile-controllerpoints {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2826,7 +2826,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     margin: 0.4rem 0;
     color: var(--accent-gold);
 }
-.profile-stars .controller-svg-icon {
+.profile-controllerpoints .controller-svg-icon {
     width: 1.5rem;
     height: 1.5rem;
 }
@@ -2842,8 +2842,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     }
 }
 
-/* Shop: Stern-Item Hervorhebung */
-.shop-item.star-item {
+/* Shop: Controllerpoint-Item Hervorhebung */
+.shop-item.controllerpoint-item {
     border-color: var(--accent-gold-dim);
     background: linear-gradient(135deg, rgba(255,215,0,0.05), var(--bg-card));
 }
@@ -3684,15 +3684,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 #login-screen:empty { display: none; }
 
-/* Shooting Stars Background */
-.ls-stars {
+/* Shooting Controllerpoints Background */
+.ls-controllerpoints {
     position: absolute;
     inset: 0;
     overflow: hidden;
     pointer-events: none;
 }
 
-.shooting_star {
+.shooting_controllerpoint {
     position: absolute;
     left: 50%;
     top: 50%;
@@ -3707,8 +3707,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     transform: rotate(215deg);
 }
 
-.shooting_star::before,
-.shooting_star::after {
+.shooting_controllerpoint::before,
+.shooting_controllerpoint::after {
     content: '';
     position: absolute;
     top: calc(50% - 1px);
@@ -3716,7 +3716,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     border-radius: 100%;
 }
 
-.shooting_star::before {
+.shooting_controllerpoint::before {
     width: 300px;
     height: 1px;
     transform: translateX(50%);
@@ -3726,7 +3726,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     animation-delay: var(--delay, 0s);
 }
 
-.shooting_star::after {
+.shooting_controllerpoint::after {
     width: 30px;
     height: 30px;
     transform: translateX(50%) translateY(-50%);
