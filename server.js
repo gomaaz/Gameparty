@@ -32,8 +32,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Global shop cooldowns (in-memory, reset on server restart)
-const shopCooldownTs = {}; // { rob_controller: timestamp }
-const SHOP_COOLDOWN_MS = { rob_controller: 5 * 60 * 1000 };
+const shopGlobalCooldownTs = {}; // { itemId: timestamp }
+const shopLocalCooldownTs = {};  // { player: { itemId: timestamp } }
 
 app.use(cors());
 app.use(compression());
@@ -452,6 +452,47 @@ function getShopPrice(itemId, defaultPrice) {
     return row ? (parseInt(row.value) || defaultPrice) : defaultPrice;
 }
 
+// ---- Helper: Check if shop item is enabled ----
+function isShopItemEnabled(itemId) {
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(`shop_enabled_${itemId}`);
+    return row ? row.value === '1' : true; // default enabled
+}
+
+// ---- Helper: Get shop cooldown config (type + ms) from settings ----
+function getShopCooldownConfig(itemId) {
+    const typeRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`shop_cooldown_type_${itemId}`);
+    const msRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`shop_cooldown_ms_${itemId}`);
+    return {
+        type: typeRow?.value || 'none',
+        ms: parseInt(msRow?.value || '0') || 0
+    };
+}
+
+// ---- Helper: Check remaining cooldown (returns ms remaining, 0 if none) ----
+function checkShopCooldown(itemId, player) {
+    const { type, ms } = getShopCooldownConfig(itemId);
+    if (!ms || type === 'none') return 0;
+    const now = Date.now();
+    if (type === 'global') {
+        return Math.max(0, ms - (now - (shopGlobalCooldownTs[itemId] || 0)));
+    } else {
+        return Math.max(0, ms - (now - ((shopLocalCooldownTs[player] || {})[itemId] || 0)));
+    }
+}
+
+// ---- Helper: Set cooldown after shop action ----
+function setShopCooldown(itemId, player) {
+    const { type, ms } = getShopCooldownConfig(itemId);
+    if (!ms || type === 'none') return;
+    const now = Date.now();
+    if (type === 'global') {
+        shopGlobalCooldownTs[itemId] = now;
+    } else {
+        if (!shopLocalCooldownTs[player]) shopLocalCooldownTs[player] = {};
+        shopLocalCooldownTs[player][itemId] = now;
+    }
+}
+
 // ---- Helper: Get game with players ----
 function getGameWithPlayers(game) {
     const players = db.prepare('SELECT player FROM game_players WHERE game_id = ?').all(game.id);
@@ -806,6 +847,9 @@ app.post('/api/shop/rob-coins', (req, res) => {
     const { thief, target } = req.body;
     const expectedCost = getShopPrice('rob_coins', 10);
     if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
+    if (!isShopItemEnabled('rob_coins')) return res.status(403).json({ error: 'Item deaktiviert' });
+    const remainingCd = checkShopCooldown('rob_coins', thief);
+    if (remainingCd > 0) return res.status(429).json({ error: 'cooldown', remainingMs: remainingCd });
 
     const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
     if (!thiefRow || thiefRow.amount < expectedCost) return res.status(400).json({ error: 'Nicht genug Coins' });
@@ -833,12 +877,32 @@ app.post('/api/shop/rob-coins', (req, res) => {
     });
 
     const actualStolen = tx();
+    setShopCooldown('rob_coins', thief);
     broadcast({ type: 'update' });
     res.json({ stolen: actualStolen });
 });
 
 // GET /api/shop/cooldowns
-app.get('/api/shop/cooldowns', (req, res) => res.json(shopCooldownTs));
+app.get('/api/shop/cooldowns', (req, res) => {
+    const player = req.query.player || '';
+    const now = Date.now();
+    const result = {};
+    // Global cooldowns
+    for (const [itemId, ts] of Object.entries(shopGlobalCooldownTs)) {
+        const { ms } = getShopCooldownConfig(itemId);
+        const remaining = Math.max(0, ms - (now - ts));
+        if (remaining > 0) result[itemId] = { ts, ms, remaining };
+    }
+    // Local cooldowns for this player
+    if (player && shopLocalCooldownTs[player]) {
+        for (const [itemId, ts] of Object.entries(shopLocalCooldownTs[player])) {
+            const { ms } = getShopCooldownConfig(itemId);
+            const remaining = Math.max(0, ms - (now - ts));
+            if (remaining > 0) result[itemId] = { ts, ms, remaining };
+        }
+    }
+    res.json(result);
+});
 
 // POST /api/shop/rob-controller
 app.post('/api/shop/rob-controller', (req, res) => {
@@ -846,9 +910,8 @@ app.post('/api/shop/rob-controller', (req, res) => {
     const expectedCost = getShopPrice('rob_controller', 50);
     if (!thief || !target) return res.status(400).json({ error: 'thief und target erforderlich' });
 
-    // Global cooldown check
-    const lastPurchase = shopCooldownTs.rob_controller || 0;
-    const remainingMs = SHOP_COOLDOWN_MS.rob_controller - (Date.now() - lastPurchase);
+    if (!isShopItemEnabled('rob_controller')) return res.status(403).json({ error: 'Item deaktiviert' });
+    const remainingMs = checkShopCooldown('rob_controller', thief);
     if (remainingMs > 0) return res.status(429).json({ error: 'cooldown', remainingMs });
 
     const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
@@ -870,7 +933,7 @@ app.post('/api/shop/rob-controller', (req, res) => {
     });
 
     tx();
-    shopCooldownTs.rob_controller = Date.now();
+    setShopCooldown('rob_controller', thief);
     broadcast({ type: 'update' });
     res.json({ success });
 });
@@ -887,6 +950,9 @@ app.post('/api/shop/buy-controllerpoint', (req, res) => {
     const { player } = req.body;
     const expectedCost = getShopPrice('buy_star', 20);
     if (!player) return res.status(400).json({ error: 'player erforderlich' });
+    if (!isShopItemEnabled('buy_controllerpoint')) return res.status(403).json({ error: 'Item deaktiviert' });
+    const cdRemaining = checkShopCooldown('buy_controllerpoint', player);
+    if (cdRemaining > 0) return res.status(429).json({ error: 'cooldown', remainingMs: cdRemaining });
     const coinRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(player);
     if (!coinRow || coinRow.amount < expectedCost) return res.status(400).json({ error: 'Nicht genug Coins' });
     const tx = db.transaction(() => {
@@ -895,6 +961,7 @@ app.post('/api/shop/buy-controllerpoint', (req, res) => {
         db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
     });
     tx();
+    setShopCooldown('buy_controllerpoint', player);
     const row = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(player);
     res.json({ newControllerpoints: row ? row.amount : 1 });
 });

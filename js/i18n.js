@@ -547,7 +547,7 @@ const TRANSLATIONS = {
         help_sessions_title: '🎮 Sessions',
         help_sessions_body: 'Go to <b>Games</b> and select a game. Start a session — other players can join. When the session ends, an admin closes it and distributes coins to all participants.',
         help_shop_title: '🛒 Shop',
-        help_shop_body: 'Spend your Coins on special actions against other players — for example steal coins or Controller Points from others. Note: some items share a common cooldown, meaning after one player buys such an item, it becomes unavailable for everyone for a certain period. First come, first served.',
+        help_shop_body: 'Spend your coins here on special items and actions.\n\n🔒 Local Cooldown: Only the buyer must wait — other players can still purchase the item.\n\n🌐 Global Cooldown: After a purchase, ALL players must wait until the cooldown expires.\n\n⛔ Disabled items are not available for purchase.',
         help_accounts_title: '👤 Accounts',
         help_accounts_body: 'Enter your gaming usernames (Steam, Discord, Battle.net, etc.) in your <b>Profile</b>. Other players can copy your account names to add you in games.<br><br>Your account names and connection details are also displayed in active sessions so everyone can see at a glance how to connect to you.',
         help_import_export_title: '📋 Game Import &amp; Export',
@@ -659,6 +659,15 @@ const TRANSLATIONS = {
         // --- Shop: Buy Button ---
         shop_buy_cost: '{0} Coins',
         shop_cooldown_active: 'Not available yet – cooldown active!',
+
+        // --- Shop Admin ---
+        shop_cooldown_type: 'Cooldown Type',
+        shop_cooldown_type_none: 'None',
+        shop_cooldown_type_local: 'Local (buyer only)',
+        shop_cooldown_type_global: 'Global (all players)',
+        shop_cooldown_duration: 'Duration (min)',
+        shop_item_enabled: 'Active',
+        shop_item_disabled_badge: 'Disabled',
 
         // --- Session Runtime ---
         min_abbr: 'Min.',
@@ -1221,7 +1230,7 @@ const TRANSLATIONS = {
         help_sessions_title: '🎮 Sitzungen',
         help_sessions_body: 'Gehe zu <b>Spiele</b> und wähle ein Spiel aus. Starte eine Sitzung – andere Spieler können beitreten. Wenn die Sitzung endet, schließt ein Admin sie und verteilt Coins an alle Teilnehmer.',
         help_shop_title: '🛒 Shop',
-        help_shop_body: 'Gib deine Coins für besondere Aktionen gegenüber anderen Spielern aus. Du kannst z.&nbsp;B. Münzen oder Controller-Punkte von anderen klauen. Beachte: Manche Items teilen einen gemeinsamen Cooldown – nach dem Kauf steht das Item für eine bestimmte Zeit niemandem zur Verfügung. Es gilt: Wer zuerst kommt, malt zuerst.',
+        help_shop_body: 'Gib hier deine Coins für besondere Items und Aktionen aus.\n\n🔒 Lokaler Cooldown: Nur der Käufer muss warten — andere Spieler können das Item weiterhin kaufen.\n\n🌐 Globaler Cooldown: Nach einem Kauf müssen ALLE Spieler warten, bis der Cooldown abläuft.\n\n⛔ Deaktivierte Items stehen nicht zum Kauf zur Verfügung.',
         help_accounts_title: '👤 Accounts',
         help_accounts_body: 'Trage deine Gaming-Nutzernamen (Steam, Discord, Battle.net usw.) in deinem <b>Profil</b> ein. Andere Spieler können deine Account-Namen dann kopieren, um dich in Spielen hinzuzufügen.<br><br>Deine Account-Namen und Connect-Informationen werden außerdem in laufenden Sitzungen angezeigt, damit alle direkt sehen, wie sie sich mit dir verbinden können.',
         help_import_export_title: '📋 Spiele Import &amp; Export',
@@ -1333,6 +1342,15 @@ const TRANSLATIONS = {
         // --- Shop: Buy Button ---
         shop_buy_cost: '{0} Coins',
         shop_cooldown_active: 'Noch nicht verfügbar – Cooldown läuft!',
+
+        // --- Shop Admin ---
+        shop_cooldown_type: 'Cooldown-Typ',
+        shop_cooldown_type_none: 'Kein',
+        shop_cooldown_type_local: 'Lokal (nur Käufer)',
+        shop_cooldown_type_global: 'Global (alle Spieler)',
+        shop_cooldown_duration: 'Dauer (Min.)',
+        shop_item_enabled: 'Aktiv',
+        shop_item_disabled_badge: 'Deaktiviert',
 
         // --- Session Runtime ---
         min_abbr: 'Min.',

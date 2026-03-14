@@ -45,7 +45,6 @@
     let activeTaskTimer = null; // Globaler Timer fuer showTaskModal – verhindert doppelte Timer
     let coinAccumulatorInterval = null; // Interval fuer Live-Coin-Accumulator in laufenden Sessions
     let cooldownTickInterval = null;
-    const COOLDOWN_MS = { rob_controller: 5 * 60 * 1000 };
     const GAME_GENRES = ['2D Plattformer', '3D Plattformer', 'Action', 'Adventure', 'Battle Royale', 'Beat em Up', 'Crafting', 'Egoshooter', 'Horror', 'Indie', 'Openworld', 'Racing', 'Rollenspiel', 'Simulation', 'Sport', 'Strategie', 'Survival', 'Taktik', 'Topdown'];
     const notifiedChallengeIds = new Set(JSON.parse(localStorage.getItem('gameparty_notified_challenge_ids') || '[]'));
     const shownPenaltyIds = new Set(); // Penalties die bereits als Modal gezeigt wurden
@@ -263,36 +262,37 @@
 
     // ---- Cooldown ----
     function getCooldownRemaining(itemId) {
-        if (!COOLDOWN_MS[itemId]) return 0;
-        const stored = state.shopCooldowns[itemId] || 0;
+        const stored = state.shopCooldowns[itemId];
         if (!stored) return 0;
-        return Math.max(0, COOLDOWN_MS[itemId] - (Date.now() - stored));
+        return Math.max(0, stored.remaining - (Date.now() - stored.fetchedAt));
     }
 
     function startItemCooldown(itemId) {
-        if (!COOLDOWN_MS[itemId]) return;
-        state.shopCooldowns[itemId] = Date.now();
+        const item = CONFIG.SHOP_ITEMS.find(i => i.id === itemId);
+        if (!item || !item.cooldownMs) return;
+        state.shopCooldowns[itemId] = { ts: Date.now(), ms: item.cooldownMs, remaining: item.cooldownMs, fetchedAt: Date.now() };
     }
 
     function startCooldownTick() {
         if (cooldownTickInterval) clearInterval(cooldownTickInterval);
         cooldownTickInterval = setInterval(() => {
             let anyActive = false;
-            for (const [itemId, totalMs] of Object.entries(COOLDOWN_MS)) {
-                const rem = getCooldownRemaining(itemId);
+            for (const item of CONFIG.SHOP_ITEMS) {
+                const rem = getCooldownRemaining(item.id);
                 if (rem <= 0) {
                     const view = $('#view-shop');
-                    if (view && view.offsetParent !== null) renderShop();
+                    if (document.querySelector(`[data-cd-item="${item.id}"]`) && view && view.offsetParent !== null) renderShop();
                     continue;
                 }
                 anyActive = true;
-                const timerEl = document.querySelector(`[data-cd-item="${itemId}"]`);
+                const timerEl = document.querySelector(`[data-cd-item="${item.id}"]`);
                 if (timerEl) {
                     const m = Math.floor(rem / 60000);
                     const s = String(Math.ceil((rem % 60000) / 1000)).padStart(2, '0');
                     timerEl.textContent = `⏳ ${m}:${s}`;
                 }
-                const itemEl = document.querySelector(`.shop-item[data-item-id="${itemId}"]`);
+                const totalMs = item.cooldownMs || 1;
+                const itemEl = document.querySelector(`.shop-item[data-item-id="${item.id}"]`);
                 if (itemEl) {
                     const pct = Math.round(((totalMs - rem) / totalMs) * 100);
                     itemEl.style.background = `linear-gradient(to right, rgba(140,100,255,0.18) ${pct}%, var(--bg-input) ${pct}%)`;
@@ -3445,19 +3445,42 @@ function getNowPlus10() {
 
                 <div class="card">
                     <div class="card-title">🛒 ${t('shop_prices_title')}</div>
-                    <div style="display:flex;flex-direction:column;gap:0.5rem">
-                        ${CONFIG.SHOP_ITEMS.map(item => `
-                            <div style="display:flex;align-items:center;gap:0.75rem">
-                                <span style="font-size:0.85rem;color:var(--text-secondary);flex:1">${t('item_' + item.id + '_name')}</span>
-                                <input type="number"
-                                    class="shop-price-input"
-                                    data-item-id="${item.id}"
-                                    value="${parseInt(settingsData['shop_price_' + item.id]) || item.cost}"
-                                    min="0" max="9999" step="1"
-                                    style="width:5rem;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.85rem">
-                                <span style="font-size:0.8rem;color:var(--text-muted)">Coins</span>
-                            </div>
-                        `).join('')}
+                    <div style="display:flex;flex-direction:column;gap:0.75rem">
+                        ${CONFIG.SHOP_ITEMS.map(item => {
+                            const cdType = settingsData[`shop_cooldown_type_${item.id}`] || 'none';
+                            const cdMs = parseInt(settingsData[`shop_cooldown_ms_${item.id}`] || '0') || 0;
+                            const cdMin = cdMs > 0 ? Math.round(cdMs / 60000) : 0;
+                            const enabled = settingsData[`shop_enabled_${item.id}`] !== undefined ? settingsData[`shop_enabled_${item.id}`] === '1' : true;
+                            return `
+                            <div style="border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.75rem;display:flex;flex-direction:column;gap:0.4rem">
+                                <div style="display:flex;align-items:center;gap:0.5rem">
+                                    <span style="font-size:0.88rem;font-weight:600;color:var(--text-primary);flex:1">${t('item_' + item.id + '_name')}</span>
+                                    <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.78rem;color:var(--text-muted);cursor:pointer">
+                                        <input type="checkbox" class="shop-enabled-toggle" data-item-id="${item.id}" ${enabled ? 'checked' : ''}>
+                                        ${t('shop_item_enabled')}
+                                    </label>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                                    <span style="font-size:0.78rem;color:var(--text-muted)">Preis:</span>
+                                    <input type="number" class="shop-price-input" data-item-id="${item.id}"
+                                        value="${parseInt(settingsData['shop_price_' + item.id]) || item.cost}"
+                                        min="0" max="9999" step="1"
+                                        style="width:4.5rem;padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.82rem">
+                                    <span style="font-size:0.78rem;color:var(--text-muted)">Coins</span>
+                                    <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.5rem">${t('shop_cooldown_type')}:</span>
+                                    <select class="shop-cooldown-type-select" data-item-id="${item.id}"
+                                        style="padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.78rem">
+                                        <option value="none" ${cdType === 'none' ? 'selected' : ''}>${t('shop_cooldown_type_none')}</option>
+                                        <option value="local" ${cdType === 'local' ? 'selected' : ''}>${t('shop_cooldown_type_local')}</option>
+                                        <option value="global" ${cdType === 'global' ? 'selected' : ''}>${t('shop_cooldown_type_global')}</option>
+                                    </select>
+                                    <input type="number" class="shop-cooldown-min-input" data-item-id="${item.id}"
+                                        value="${cdMin}" min="0" max="9999" step="1" placeholder="0"
+                                        style="width:3.5rem;padding:2px 5px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);text-align:right;font-size:0.82rem">
+                                    <span style="font-size:0.78rem;color:var(--text-muted)">${t('shop_cooldown_duration')}</span>
+                                </div>
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>
 
@@ -3612,6 +3635,41 @@ function getNowPlus10() {
                         item.cost = val;
                         if (itemId === 'buy_controllerpoint') CONFIG.CONTROLLERPOINT_PRICE = val;
                     }
+                } catch { showToast(t('error_generic'), 'error'); }
+            });
+        });
+
+        panel.querySelectorAll('.shop-enabled-toggle').forEach(chk => {
+            chk.addEventListener('change', async () => {
+                const itemId = chk.dataset.itemId;
+                try {
+                    await api('PUT', `/settings/shop_enabled_${itemId}`, { value: chk.checked ? '1' : '0' });
+                    const item = CONFIG.SHOP_ITEMS.find(i => i.id === itemId);
+                    if (item) item.enabled = chk.checked;
+                } catch { showToast(t('error_generic'), 'error'); }
+            });
+        });
+
+        panel.querySelectorAll('.shop-cooldown-type-select').forEach(sel => {
+            sel.addEventListener('change', async () => {
+                const itemId = sel.dataset.itemId;
+                try {
+                    await api('PUT', `/settings/shop_cooldown_type_${itemId}`, { value: sel.value });
+                    const item = CONFIG.SHOP_ITEMS.find(i => i.id === itemId);
+                    if (item) item.cooldownType = sel.value;
+                } catch { showToast(t('error_generic'), 'error'); }
+            });
+        });
+
+        panel.querySelectorAll('.shop-cooldown-min-input').forEach(inp => {
+            inp.addEventListener('change', async () => {
+                const itemId = inp.dataset.itemId;
+                const mins = parseInt(inp.value) || 0;
+                const ms = mins * 60000;
+                try {
+                    await api('PUT', `/settings/shop_cooldown_ms_${itemId}`, { value: String(ms) });
+                    const item = CONFIG.SHOP_ITEMS.find(i => i.id === itemId);
+                    if (item) item.cooldownMs = ms;
                 } catch { showToast(t('error_generic'), 'error'); }
             });
         });
@@ -3932,10 +3990,16 @@ function getNowPlus10() {
         try {
             const [coinsData, cooldownData] = await Promise.all([
                 api('GET', '/coins'),
-                api('GET', '/shop/cooldowns')
+                api('GET', `/shop/cooldowns?player=${encodeURIComponent(state.currentPlayer || '')}`)
             ]);
             state.coins = coinsData;
-            state.shopCooldowns = cooldownData || {};
+            const now = Date.now();
+            state.shopCooldowns = {};
+            if (cooldownData) {
+                for (const [itemId, data] of Object.entries(cooldownData)) {
+                    state.shopCooldowns[itemId] = { ...data, fetchedAt: now };
+                }
+            }
             const player = state.currentPlayer;
             const coins = coinsData[player] || 0;
 
@@ -3949,7 +4013,8 @@ function getNowPlus10() {
                     ${CONFIG.SHOP_ITEMS.map(item => {
                         const cdRem = getCooldownRemaining(item.id);
                         const onCooldown = cdRem > 0;
-                        const totalMs = COOLDOWN_MS[item.id] || 1;
+                        const isDisabled = item.enabled === false;
+                        const totalMs = item.cooldownMs || 1;
                         const cdPct = onCooldown ? Math.round(((totalMs - cdRem) / totalMs) * 100) : 0;
                         const cdM = Math.floor(cdRem / 60000);
                         const cdS = String(Math.ceil((cdRem % 60000) / 1000)).padStart(2, '0');
@@ -3957,15 +4022,15 @@ function getNowPlus10() {
                             ? `style="background:linear-gradient(to right,rgba(140,100,255,0.18) ${cdPct}%,var(--bg-input) ${cdPct}%)"`
                             : '';
                         return `
-                        <div class="shop-item ${item.id === 'buy_controllerpoint' ? 'star-item' : ''}${item.isPenalty ? ' penalty-item' : ''}" ${bgStyle} data-item-id="${item.id}">
+                        <div class="shop-item ${item.id === 'buy_controllerpoint' ? 'star-item' : ''}${item.isPenalty ? ' penalty-item' : ''}${isDisabled ? ' item-disabled' : ''}" ${bgStyle} data-item-id="${item.id}">
                             <div class="shop-icon">${item.icon}</div>
                             <div class="shop-info">
-                                <div class="shop-name">${t('item_' + item.id + '_name')}${item.isPenalty ? `<span class="penalty-badge">${t('penalty_badge')}</span>` : ''}</div>
+                                <div class="shop-name">${t('item_' + item.id + '_name')}${item.isPenalty ? `<span class="penalty-badge">${t('penalty_badge')}</span>` : ''}${isDisabled ? `<span class="penalty-badge" style="background:var(--text-muted)">${t('shop_item_disabled_badge')}</span>` : ''}</div>
                                 <div class="shop-desc">${t('item_' + item.id + '_desc', CONFIG.CONTROLLERPOINT_PRICE)}${item.isPenalty ? ` • ${t('penalty_timer')}` : ''}</div>
                             </div>
                             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem">
                                 <button class="shop-buy-btn${onCooldown ? ' on-cooldown' : ''}" data-item="${item.id}" data-cost="${item.cost}"
-                                    ${(coins < item.cost || onCooldown) ? 'disabled' : ''}>
+                                    ${(coins < item.cost || onCooldown || isDisabled) ? 'disabled' : ''}>
                                     ${t('shop_buy_cost', fmt(item.cost))}
                                 </button>
                                 ${onCooldown ? `<span class="shop-cooldown-timer" data-cd-item="${item.id}">⏳ ${cdM}:${cdS}</span>` : ''}
@@ -4126,6 +4191,7 @@ function getNowPlus10() {
                         }
                     } else {
                         const result = await api('POST', '/shop/rob-coins', { thief: state.currentPlayer, target, cost });
+                        startItemCooldown('rob_coins');
                         if (result.stolen > 0) {
                             showToast(t('rob_coins_success', fmt(result.stolen), target), 'gold');
                             await api('POST', '/player-events', {

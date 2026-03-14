@@ -80,10 +80,16 @@ async function loadShopPrices() {
         const res = await fetch('/api/settings', { cache: 'no-store' });
         const settings = await res.json();
         CONFIG.SHOP_ITEMS.forEach(item => {
-            const key = `shop_price_${item.id}`;
-            if (settings[key] !== undefined) {
-                item.cost = parseInt(settings[key]) || item.cost;
+            const priceKey = `shop_price_${item.id}`;
+            if (settings[priceKey] !== undefined) {
+                item.cost = parseInt(settings[priceKey]) || item.cost;
             }
+            const enabledKey = `shop_enabled_${item.id}`;
+            item.enabled = settings[enabledKey] !== undefined ? settings[enabledKey] === '1' : true;
+            const cdTypeKey = `shop_cooldown_type_${item.id}`;
+            item.cooldownType = settings[cdTypeKey] || 'none';
+            const cdMsKey = `shop_cooldown_ms_${item.id}`;
+            item.cooldownMs = parseInt(settings[cdMsKey] || '0') || 0;
         });
         const cpItem = CONFIG.SHOP_ITEMS.find(i => i.id === 'buy_controllerpoint');
         if (cpItem) CONFIG.CONTROLLERPOINT_PRICE = cpItem.cost;
