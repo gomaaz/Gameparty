@@ -4354,7 +4354,10 @@ function getNowPlus10() {
                     <div style="flex:1;text-align:left;font-weight:700;font-size:1rem;color:var(--accent-blue);">${rightLabel}</div>
                 </div>
                 ${potStr ? `<div style="font-size:0.85rem;color:var(--accent-gold);margin-bottom:1rem;">${t('pot_label')} ${potStr}</div>` : ''}
-                <div style="font-size:2rem;font-weight:900;letter-spacing:0.1em;color:var(--accent-green);text-shadow:0 0 20px rgba(0,230,118,0.6);margin-bottom:1.5rem;">${t('duel_fight')}</div>
+                ${data.isLobby
+                    ? `<div style="font-size:1rem;font-weight:700;letter-spacing:0.05em;color:#6699ff;margin-bottom:1.5rem;">⏳ ${t('duel_lobby_wait')}</div>`
+                    : `<div style="font-size:2rem;font-weight:900;letter-spacing:0.1em;color:var(--accent-green);text-shadow:0 0 20px rgba(0,230,118,0.6);margin-bottom:1.5rem;">${t('duel_fight')}</div>`
+                }
                 <button class="duel-start-goto-btn" style="background:var(--accent-gold);color:#000;border:none;border-radius:var(--radius-sm);padding:0.6rem 1.5rem;font-weight:700;font-size:0.95rem;cursor:pointer;">${t('btn_to_session')}</button>
             </div>`;
 
@@ -4883,9 +4886,13 @@ function getNowPlus10() {
                 if (c.stakeControllerpoints > 0) pot.push(`${fmt(c.stakeControllerpoints * 2)} ${controllerSvgIcon()}`);
                 const potStr = pot.length ? pot.join(' + ') : t('no_stake');
                 let payoutBadge = '';
-                if (c.payoutMode === 'percentage' && c.payoutConfig) {
-                    const cfg = typeof c.payoutConfig === 'string' ? JSON.parse(c.payoutConfig) : c.payoutConfig;
-                    payoutBadge = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;"><span style="color:var(--accent-gold);">🏆 ${cfg.winner}%</span> / <span style="color:var(--accent-red);">😔 ${cfg.loser}%</span></div>`;
+                if (pot.length > 0) {
+                    if (c.payoutMode === 'percentage' && c.payoutConfig) {
+                        const cfg = typeof c.payoutConfig === 'string' ? JSON.parse(c.payoutConfig) : c.payoutConfig;
+                        payoutBadge = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;"><span style="color:var(--accent-gold);">🏆 ${cfg.winner}%</span> / <span style="color:var(--accent-red);">😔 ${cfg.loser}%</span></div>`;
+                    } else {
+                        payoutBadge = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;">🏆 Winner takes all</div>`;
+                    }
                 }
 
                 let actionsHTML = '';
@@ -5007,6 +5014,16 @@ function getNowPlus10() {
                     tcPayoutDetailsHTML += `</div>`;
                 }
 
+                let tcPayoutModeHTML = '';
+                if (tcStakeRows.length > 0) {
+                    if (tc.payoutMode === 'percentage' && tc.payoutConfig) {
+                        const tcCfg = typeof tc.payoutConfig === 'string' ? JSON.parse(tc.payoutConfig) : tc.payoutConfig;
+                        tcPayoutModeHTML = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;">🏆 ${tcCfg.winner}% / 😔 ${tcCfg.loser}%</div>`;
+                    } else {
+                        tcPayoutModeHTML = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;">🏆 Winner takes all</div>`;
+                    }
+                }
+
                 const tcStakeInfoBlock = tcStakeRows.length > 0 ? `
                     <div class="tc-stake-info">
                         <div>
@@ -5093,6 +5110,7 @@ function getNowPlus10() {
                         </div>
                         <div class="game-meta">${tc.game}</div>
                         ${tcStakeInfoBlock}
+                        ${tcPayoutModeHTML}
                         ${acceptanceHTML}
                         ${winnerLabel ? `<div style="display:flex;justify-content:flex-end;margin-top:0.3rem;"><span style="font-size:1.1rem;color:var(--accent-gold,#ffd700);font-weight:700;">🏆 ${winnerLabel}</span></div>` : ''}
                         ${actionsHTML}
@@ -5199,6 +5217,12 @@ function getNowPlus10() {
                 if (ffa.stakeControllerpointsPerPerson > 0) potParts.push(`${controllerSvgIcon()} ${fmt(ffa.stakeControllerpointsPerPerson)}/Person · Pott: ${fmt(totalStarPot)}`);
                 const potStr = potParts.length ? potParts.join('<br>') : t('no_stake');
 
+                // Payout mode badge (only when no payoutConfig / payoutTable would be shown)
+                let ffaPayoutModeHTML = '';
+                if (potParts.length > 0 && payoutConfig.length === 0) {
+                    ffaPayoutModeHTML = `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;">🏆 Winner takes all</div>`;
+                }
+
                 // Payout table
                 const payoutTable = payoutConfig.length ? `<div style="margin-top:0.3rem;font-size:0.78rem;color:var(--text-secondary);">` + payoutConfig.map(e => {
                     const coinAmt = ffa.stakeCoinsPerPerson > 0 ? Math.floor(totalPot * e.pct / 100) : null;
@@ -5288,6 +5312,7 @@ function getNowPlus10() {
                         </div>
                         <div style="font-size:0.85rem;color:var(--text-secondary);margin:0.2rem 0;">${players.length} Spieler: ${players.join(', ')}</div>
                         <div class="game-meta" style="line-height:1.6">${potStr}</div>
+                        ${ffaPayoutModeHTML}
                         ${payoutTable}
                         ${ffa.status === 'pending' ? `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin:0.4rem 0;">${acceptanceBadges}</div>` : ''}
                         ${placementsHTML}
@@ -5574,7 +5599,8 @@ function getNowPlus10() {
                                         challenger: btn.dataset.challenger, opponent: btn.dataset.opponent,
                                         stakeCoins: parseInt(btn.dataset.stakeCoins) || 0,
                                         stakeControllerpoints: parseInt(btn.dataset.stakeControllerpoints) || 0,
-                                        sessionId: result.sessionId
+                                        sessionId: result.sessionId,
+                                        isLobby: true
                                     });
                                 } catch(e) { console.error('DuelStart modal error:', e); }
                             }

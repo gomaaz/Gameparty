@@ -1421,7 +1421,7 @@ app.put('/api/challenges/:id/accept', (req, res) => {
         if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.opponent);
         if (c.stakeControllerpoints > 0) db.prepare('UPDATE controllerpoints SET amount = amount - ? WHERE player = ?').run(c.stakeControllerpoints, c.opponent);
         db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
-        db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, '1v1')").run(sid, c.game, c.challenger, now, c.id);
+        db.prepare("INSERT INTO live_sessions (id, game, leader, status, challenge_id, challenge_type) VALUES (?, ?, ?, 'lobby', ?, '1v1')").run(sid, c.game, c.challenger, c.id);
         db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.challenger, now);
         db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.opponent, now);
     });
@@ -1647,7 +1647,7 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
             }
             db.prepare('UPDATE team_challenges SET status = ?, acceptances = ? WHERE id = ?').run('accepted', JSON.stringify(newAcceptances), req.params.id);
             // Create a live session for all participants
-            db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, 'team')").run(sid, tc.game, tc.createdBy, now, tc.id);
+            db.prepare("INSERT INTO live_sessions (id, game, leader, status, challenge_id, challenge_type) VALUES (?, ?, ?, 'lobby', ?, 'team')").run(sid, tc.game, tc.createdBy, tc.id);
             for (const p of allPlayers) {
                 db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, p, now);
             }
@@ -1897,7 +1897,7 @@ app.put('/api/ffa-challenges/:id/accept', (req, res) => {
                 if (ffa.stakeControllerpointsPerPerson > 0) db.prepare('UPDATE controllerpoints SET amount = amount - ? WHERE player = ?').run(ffa.stakeControllerpointsPerPerson, p);
             }
             db.prepare('UPDATE ffa_challenges SET status = ?, acceptances = ? WHERE id = ?').run('accepted', JSON.stringify(newAcceptances), req.params.id);
-            db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, 'ffa')").run(sid, ffa.game, ffa.createdBy, now, ffa.id);
+            db.prepare("INSERT INTO live_sessions (id, game, leader, status, challenge_id, challenge_type) VALUES (?, ?, ?, 'lobby', ?, 'ffa')").run(sid, ffa.game, ffa.createdBy, ffa.id);
             for (const p of players) {
                 db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, p, now);
             }
