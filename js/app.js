@@ -2361,6 +2361,20 @@ function getNowPlus10() {
                 </div>`;
         }
 
+        let adminAddPlayerHTML = '';
+        if (admin && ['pending', 'approved'].includes(p.status)) {
+            const notInSession = state.players.filter(pl => !p.players.map(pp => pp.name || pp).includes(pl));
+            if (notInSession.length > 0) {
+                adminAddPlayerHTML = `
+                    <div style="display:flex;gap:0.4rem;align-items:center;margin-top:0.3rem;">
+                        <select class="admin-add-player-select" data-id="${p.id}" style="flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);font-size:0.82rem;">
+                            <option value="">+ Spieler hinzufügen</option>
+                            ${notInSession.map(pl => `<option value="${pl}">${pl}</option>`).join('')}
+                        </select>
+                    </div>`;
+            }
+        }
+
         const actions = [];
 
         if (!isJoined && ['pending', 'approved'].includes(p.status) && (p.max_slots === 0 || p.players.length < p.max_slots)) {
@@ -2407,6 +2421,7 @@ function getNowPlus10() {
                 ${coinStatusHTML}
                 ${coinRateHTML}
                 ${leaderEditHTML}
+                ${adminAddPlayerHTML}
                 ${(() => {
                     const leaderBadge = `<span class="session-leader-badge" data-tooltip="${t('session_group_leader').replace(':','')}">GL</span>`;
                     if (p.max_slots > 0) {
@@ -2552,6 +2567,20 @@ function getNowPlus10() {
                 try {
                     await api('PUT', `/proposals/${inp.dataset.id}`, { scheduledTime: time });
                 } catch (e) { console.error(e); }
+            });
+        });
+
+        container.querySelectorAll('.admin-add-player-select').forEach(sel => {
+            sel.addEventListener('change', async () => {
+                const player = sel.value;
+                const pid = sel.dataset.id;
+                if (!player || !pid) return;
+                sel.value = '';
+                try {
+                    await api('POST', `/proposals/${pid}/join`, { player });
+                } catch (e) {
+                    showToast(e.message || t('error_loading'), 'error');
+                }
             });
         });
     }
@@ -4393,6 +4422,14 @@ function getNowPlus10() {
         }
         const resultStr = resultParts.join(' + ') || '–';
 
+        let payoutInfoHTML = '';
+        if (data.payoutMode === 'percentage' && data.payoutConfig) {
+            const cfg = typeof data.payoutConfig === 'string' ? JSON.parse(data.payoutConfig) : data.payoutConfig;
+            payoutInfoHTML = `<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.25rem;">🏆 ${cfg.winner}% / 😔 ${cfg.loser}%</div>`;
+        } else if (stakeCoins > 0 || stakeControllerpoints > 0) {
+            payoutInfoHTML = `<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.25rem;">🏆 Winner takes all</div>`;
+        }
+
         modal.innerHTML = `
             <div class="modal-title" style="color:${isWinner ? 'var(--accent-green, #00e676)' : 'var(--danger)'};">
                 ${isWinner ? t('duel_payout_title_won') : t('duel_payout_title_lost')}
@@ -4400,6 +4437,7 @@ function getNowPlus10() {
             <div style="text-align:center;font-size:1.1rem;font-weight:700;margin:0.75rem 0;color:${isWinner ? 'var(--accent-green)' : 'var(--danger)'};">
                 ${resultStr}
             </div>
+            ${payoutInfoHTML}
             <div style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.5rem;">
                 🎮 ${data.game}
             </div>
@@ -4465,6 +4503,14 @@ function getNowPlus10() {
         if (data.stakeControllerpointsPerPerson > 0) stakeParts.push(`${fmt(data.stakeControllerpointsPerPerson)} ${controllerSvgIcon()}`);
         const stakeStr = stakeParts.join(' + ') || '–';
 
+        let tcPayoutInfoHTML = '';
+        if (data.payoutMode === 'percentage' && data.payoutConfig) {
+            const cfg = typeof data.payoutConfig === 'string' ? JSON.parse(data.payoutConfig) : data.payoutConfig;
+            tcPayoutInfoHTML = `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.4rem;">🏆 ${cfg.winner}% / 😔 ${cfg.loser}%</div>`;
+        } else {
+            tcPayoutInfoHTML = `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.4rem;">🏆 Winner takes all</div>`;
+        }
+
         modal.innerHTML = `
             <div class="modal-title" style="color:${isWinner ? 'var(--accent-green, #00e676)' : 'var(--danger)'};">
                 ${isWinner ? t('tc_payout_won', winnerTeamLabel) : t('tc_payout_lost', loserTeamLabel)}
@@ -4478,6 +4524,7 @@ function getNowPlus10() {
             <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.25rem;">
                 ${t('tc_payout_stake')}: <strong>${stakeStr}</strong> &nbsp;·&nbsp; ${t('total_pot_preview', potStr)}
             </div>
+            ${tcPayoutInfoHTML}
             <div style="font-weight:700;margin:0.75rem 0 0.4rem;">📋 ${t('tc_payout_breakdown')}</div>
             <div style="font-size:0.9rem;">${rowsHTML}</div>
             <button class="btn-propose" id="tc-payout-close" style="margin-top:1.25rem;">OK</button>
@@ -4521,6 +4568,10 @@ function getNowPlus10() {
                 </div>`;
             }).join('');
 
+        const ffaPayoutInfoHTML = data.payoutConfig && data.payoutConfig.length > 0
+            ? `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.5rem;">${data.payoutConfig.map((e, i) => `🥇🥈🥉`[i] + ` ${e.pct}%`).slice(0, 3).join(' / ')}</div>`
+            : '';
+
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
         modal.innerHTML = `<div class="modal-box" style="max-width:340px;">
@@ -4531,6 +4582,7 @@ function getNowPlus10() {
             <div style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">
                 ${t('tc_payout_stake')}: ${stake} 🪙
             </div>
+            ${ffaPayoutInfoHTML}
             <button class="btn btn-primary" id="ffa-payout-collect" style="width:100%">${t('btn_collect')}</button>
         </div>`;
         document.body.appendChild(modal);
@@ -6695,7 +6747,6 @@ function getNowPlus10() {
                             updateBadge();
                             if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                         }
-                        if (getNotifPref('sound')) playSound(data.success ? 'error' : 'coin');
                     } catch {}
                     continue; // Event bleibt bis Nutzer bestätigt
                 }

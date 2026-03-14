@@ -2887,8 +2887,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.20) 100%);
-    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.20) 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 100%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 100%);
     pointer-events: none;
     z-index: 0;
 }
@@ -2902,7 +2902,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .live-session-card.running {
     border-color: var(--accent-green-dim);
-    background: linear-gradient(135deg, rgba(0,230,118,0.05), var(--bg-card));
+    background: linear-gradient(135deg, rgba(0,230,118,0.00), var(--bg-card));
 }
 .live-session-card.ended {
     border-color: #aa6600;

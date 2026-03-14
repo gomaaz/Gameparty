@@ -2167,7 +2167,9 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
             winner,
             loser,
             stakeCoins: c.stakeCoins,
-            stakeControllerpoints: c.stakeControllerpoints
+            stakeControllerpoints: c.stakeControllerpoints,
+            payoutMode: c.payoutMode,
+            payoutConfig: c.payoutConfig
         };
         const notifyNow = Date.now();
         db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
