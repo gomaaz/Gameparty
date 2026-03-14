@@ -951,8 +951,8 @@ app.put('/api/proposals/:id', (req, res) => {
         for (let c = cappedCount; c >= 2; c--) {
             if (playerMultipliersMap[String(c)] !== undefined) { playerRate = parseFloat(playerMultipliersMap[String(c)]); break; }
         }
-        const durationMin = proposal.startedAt ? Math.ceil((completedAt - proposal.startedAt) / 60000) : 0;
-        req.body.pendingCoins = Math.round(durationMin * playerRate);
+        const durationMinRaw = proposal.startedAt ? (completedAt - proposal.startedAt) / 60000 : 0;
+        req.body.pendingCoins = Math.round(durationMinRaw * playerRate);
     }
     if (req.body.status === 'active') {
         req.body.pendingCoins = 0;
