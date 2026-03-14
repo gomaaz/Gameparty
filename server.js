@@ -164,7 +164,12 @@ logger.info('Database initialized');
   const hasStarsTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='stars'").get();
   const hasControllerpoints = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='controllerpoints'").get();
   if (hasStarsTable && !hasControllerpoints) {
+    // Simple rename — controllerpoints doesn't exist yet
     db.prepare('ALTER TABLE stars RENAME TO controllerpoints').run();
+  } else if (hasStarsTable && hasControllerpoints) {
+    // Both tables exist: copy data from old stars table, then drop it
+    db.prepare('INSERT OR REPLACE INTO controllerpoints (player, amount) SELECT player, amount FROM stars').run();
+    db.prepare('DROP TABLE stars').run();
   }
 }
 

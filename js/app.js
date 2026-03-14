@@ -829,13 +829,13 @@ function getNowPlus10() {
                             if (s.challenge_type === '1v1') {
                                 let potRunStr = '';
                                 if (chRun?.stakeCoins > 0) potRunStr += `${fmt(chRun.stakeCoins * 2)} ${coinSvgIcon()}`;
-                                if (chRun?.stakeStars > 0) potRunStr += (potRunStr ? ' + ' : '') + `${fmt(chRun.stakeStars * 2)} ${controllerSvgIcon()}`;
+                                if (chRun?.stakeControllerpoints > 0) potRunStr += (potRunStr ? ' + ' : '') + `${fmt(chRun.stakeControllerpoints * 2)} ${controllerSvgIcon()}`;
                                 if (potRunStr) coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem">${t('pot_label')} ${potRunStr}</div>`;
                             } else {
                                 const tp = s.players?.length || 0;
                                 const potLines = [];
                                 if (chRun?.stakeCoinsPerPerson > 0) potLines.push(`${coinSvgIcon()} ${fmt(chRun.stakeCoinsPerPerson)} Coins/Person · Gesamtpott: ${fmt(chRun.stakeCoinsPerPerson * tp)} Coins`);
-                                if (chRun?.stakeStarsPerPerson > 0) potLines.push(`${controllerSvgIcon()} ${fmt(chRun.stakeStarsPerPerson)} Controller/Person · Gesamtpott: ${fmt(chRun.stakeStarsPerPerson * tp)} Controller`);
+                                if (chRun?.stakeControllerpointsPerPerson > 0) potLines.push(`${controllerSvgIcon()} ${fmt(chRun.stakeControllerpointsPerPerson)} Controller/Person · Gesamtpott: ${fmt(chRun.stakeControllerpointsPerPerson * tp)} Controller`);
                                 if (potLines.length) coinInfoHTML += `<div class="vote-pot-display" style="text-align:right;margin-top:0.25rem;line-height:1.6">${potLines.join('<br>')}</div>`;
                             }
                         }
@@ -906,11 +906,11 @@ function getNowPlus10() {
                         let potStr = '';
                         if (s.challenge_type === '1v1') {
                             if (ch?.stakeCoins > 0) potStr += `${fmt(ch.stakeCoins * 2)} ${coinSvgIcon()}`;
-                            if (ch?.stakeStars > 0) potStr += (potStr ? ' + ' : '') + `${fmt(ch.stakeStars * 2)} ${controllerSvgIcon()}`;
+                            if (ch?.stakeControllerpoints > 0) potStr += (potStr ? ' + ' : '') + `${fmt(ch.stakeControllerpoints * 2)} ${controllerSvgIcon()}`;
                         } else {
                             const tp = s.players?.length || 0;
                             if (ch?.stakeCoinsPerPerson > 0) potStr += `${fmt(ch.stakeCoinsPerPerson * tp)} ${coinSvgIcon()}`;
-                            if (ch?.stakeStarsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${fmt(ch.stakeStarsPerPerson * tp)} ${controllerSvgIcon()}`;
+                            if (ch?.stakeControllerpointsPerPerson > 0) potStr += (potStr ? ' + ' : '') + `${fmt(ch.stakeControllerpointsPerPerson * tp)} ${controllerSvgIcon()}`;
                         }
                         const potDisplay = potStr ? `<div class="vote-pot-display">${t('pot_label')} ${potStr}</div>` : '';
 
@@ -920,7 +920,7 @@ function getNowPlus10() {
                             const ffaPayCfg = Array.isArray(ch.payoutConfig) ? ch.payoutConfig : JSON.parse(ch.payoutConfig || '[]');
                             const tp = s.players?.length || 0;
                             const totalCoinPot = (ch.stakeCoinsPerPerson || 0) * tp;
-                            const totalStarPot = (ch.stakeStarsPerPerson || 0) * tp;
+                            const totalStarPot = (ch.stakeControllerpointsPerPerson || 0) * tp;
                             if (ffaPayCfg.length > 0) {
                                 const rows = ffaPayCfg.map(e => {
                                     const coinAmt = totalCoinPot > 0 ? Math.floor(totalCoinPot * e.pct / 100) : null;
@@ -1098,12 +1098,12 @@ function getNowPlus10() {
                     type: 'team', game: s.game,
                     teamA: ch.teamA, teamB: ch.teamB, createdBy: ch.createdBy,
                     stakeCoinsPerPerson: ch.stakeCoinsPerPerson,
-                    stakeStarsPerPerson: ch.stakeStarsPerPerson,
+                    stakeControllerpointsPerPerson: ch.stakeControllerpointsPerPerson,
                     sessionId: s.id
                 } : {
                     type: '1v1', game: s.game,
                     challenger: ch.challenger, opponent: ch.opponent,
-                    stakeCoins: ch.stakeCoins, stakeStars: ch.stakeStars,
+                    stakeCoins: ch.stakeCoins, stakeControllerpoints: ch.stakeControllerpoints,
                     sessionId: s.id
                 };
                 try { showDuelStartModal(payload); } catch(e) { console.error('DuelStart modal error:', e); }
@@ -3391,15 +3391,15 @@ function getNowPlus10() {
                 </div>
 
                 <div class="card">
-                    <div class="card-title">${t('manual_stars')}</div>
+                    <div class="card-title">${t('manual_controllerpoints')}</div>
                     <div class="admin-coins-form">
                         <select id="ap-cp-player">
                             <option value="">${t('placeholder_select_player')}</option>
                             <option value="alle">alle</option>
                             ${state.players.map(p => `<option value="${p}">${p}</option>`).join('')}
                         </select>
-                        <input type="number" id="ap-cp-amount" placeholder="${t('placeholder_star_amount')}" inputmode="numeric">
-                        <button class="btn-admin-coins" id="ap-btn-controllerpoints" disabled>${t('btn_assign_stars')}</button>
+                        <input type="number" id="ap-cp-amount" placeholder="${t('placeholder_controllerpoint_amount')}" inputmode="numeric">
+                        <button class="btn-admin-coins" id="ap-btn-controllerpoints" disabled>${t('btn_assign_controllerpoints')}</button>
                     </div>
                 </div>
 
@@ -3495,7 +3495,7 @@ function getNowPlus10() {
                 <div class="danger-zone">
                     <div class="card-title">${t('danger_zone')}</div>
                     <button class="btn-danger" id="ap-btn-reset-coins">${t('btn_reset_coins')}</button>
-                    <button class="btn-danger" id="ap-btn-reset-controllerpoints">${t('btn_reset_stars')}</button>
+                    <button class="btn-danger" id="ap-btn-reset-controllerpoints">${t('btn_reset_controllerpoints')}</button>
                     <button class="btn-danger" id="ap-btn-reset-challenges">${t('btn_reset_challenges')}</button>
                     <button class="btn-danger" id="ap-btn-clear-shop-links">${t('admin_shop_links_delete_btn')}</button>
                     <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
@@ -3753,10 +3753,10 @@ function getNowPlus10() {
             try {
                 await api('POST', '/controllerpoints/add', { player, amount, requestedBy: state.currentPlayer });
                 if (player === 'alle') {
-                    showToast(amount > 0 ? t('stars_given_alle', fmt(amount)) : t('stars_deducted_alle', fmt(Math.abs(amount))), amount > 0 ? 'success' : 'error');
+                    showToast(amount > 0 ? t('controllerpoints_given_alle', fmt(amount)) : t('controllerpoints_deducted_alle', fmt(Math.abs(amount))), amount > 0 ? 'success' : 'error');
                 } else {
-                    if (amount > 0) { showToast(t('stars_given', fmt(amount), player), 'success'); }
-                    else { showToast(t('stars_deducted', fmt(Math.abs(amount)), player), 'error'); }
+                    if (amount > 0) { showToast(t('controllerpoints_given', fmt(amount), player), 'success'); }
+                    else { showToast(t('controllerpoints_deducted', fmt(Math.abs(amount)), player), 'error'); }
                 }
                 cpAmount.value = '';
                 cpBtn.disabled = true;
@@ -4272,10 +4272,10 @@ function getNowPlus10() {
         const potParts = [];
         if (isTeam) {
             if (data.stakeCoinsPerPerson > 0) potParts.push(`${fmt(data.stakeCoinsPerPerson)} ${coinSvgIcon()} ${t('per_person')}`);
-            if (data.stakeStarsPerPerson > 0) potParts.push(`${fmt(data.stakeStarsPerPerson)} ${controllerSvgIcon()} ${t('per_person')}`);
+            if (data.stakeControllerpointsPerPerson > 0) potParts.push(`${fmt(data.stakeControllerpointsPerPerson)} ${controllerSvgIcon()} ${t('per_person')}`);
         } else {
             if (data.stakeCoins > 0) potParts.push(`${fmt(data.stakeCoins * 2)} ${coinSvgIcon()}`);
-            if (data.stakeStars > 0) potParts.push(`${fmt(data.stakeStars * 2)} ${controllerSvgIcon()}`);
+            if (data.stakeControllerpoints > 0) potParts.push(`${fmt(data.stakeControllerpoints * 2)} ${controllerSvgIcon()}`);
         }
         const potStr = potParts.length ? potParts.join(' + ') : '';
 
@@ -4311,17 +4311,17 @@ function getNowPlus10() {
         const opponent = isWinner ? data.loser : data.winner;
 
         const stakeCoins = data.stakeCoins || 0;
-        const stakeStars = data.stakeStars || 0;
+        const stakeControllerpoints = data.stakeControllerpoints || 0;
         const wonCoins = stakeCoins * 2;
-        const wonStars = stakeStars * 2;
+        const wonControllerpoints = stakeControllerpoints * 2;
 
         const resultParts = [];
         if (isWinner) {
             if (wonCoins > 0) resultParts.push(`+${fmt(wonCoins)} ${coinSvgIcon()}`);
-            if (wonStars > 0) resultParts.push(`+${fmt(wonStars)} ${controllerSvgIcon()}`);
+            if (wonControllerpoints > 0) resultParts.push(`+${fmt(wonControllerpoints)} ${controllerSvgIcon()}`);
         } else {
             if (stakeCoins > 0) resultParts.push(`-${fmt(stakeCoins)} ${coinSvgIcon()}`);
-            if (stakeStars > 0) resultParts.push(`-${fmt(stakeStars)} ${controllerSvgIcon()}`);
+            if (stakeControllerpoints > 0) resultParts.push(`-${fmt(stakeControllerpoints)} ${controllerSvgIcon()}`);
         }
         const resultStr = resultParts.join(' + ') || '–';
 
@@ -4346,9 +4346,9 @@ function getNowPlus10() {
             closeBtn.addEventListener('click', () => {
                 overlay.classList.remove('show');
                 if (isWinner) {
-                    if (wonCoins > 0 || wonStars > 0) showCoinAnimation(wonCoins, wonStars);
+                    if (wonCoins > 0 || wonControllerpoints > 0) showCoinAnimation(wonCoins, wonControllerpoints);
                 } else {
-                    if (stakeCoins > 0 || stakeStars > 0) showNegativeCoinAnimation(stakeCoins, stakeStars);
+                    if (stakeCoins > 0 || stakeControllerpoints > 0) showNegativeCoinAnimation(stakeCoins, stakeControllerpoints);
                 }
             });
         }
@@ -4375,7 +4375,7 @@ function getNowPlus10() {
         losers.forEach(p => {
             const parts = [];
             if (data.stakeCoinsPerPerson > 0) parts.push(`-${fmt(data.stakeCoinsPerPerson)} Coins`);
-            if (data.stakeStarsPerPerson > 0) parts.push(`-${fmt(data.stakeStarsPerPerson)} ${controllerSvgIcon()}`);
+            if (data.stakeControllerpointsPerPerson > 0) parts.push(`-${fmt(data.stakeControllerpointsPerPerson)} ${controllerSvgIcon()}`);
             rows.push({ player: p, text: parts.join(' + ') || '–', winner: false });
         });
 
@@ -4392,7 +4392,7 @@ function getNowPlus10() {
 
         const stakeParts = [];
         if (data.stakeCoinsPerPerson > 0) stakeParts.push(`${fmt(data.stakeCoinsPerPerson)} Coins`);
-        if (data.stakeStarsPerPerson > 0) stakeParts.push(`${fmt(data.stakeStarsPerPerson)} ${controllerSvgIcon()}`);
+        if (data.stakeControllerpointsPerPerson > 0) stakeParts.push(`${fmt(data.stakeControllerpointsPerPerson)} ${controllerSvgIcon()}`);
         const stakeStr = stakeParts.join(' + ') || '–';
 
         modal.innerHTML = `
@@ -4421,8 +4421,8 @@ function getNowPlus10() {
                 const myStars = (data.baseStars || 0) + (myIdx === 0 ? (data.starRemainder || 0) : 0);
                 if (myCoins > 0 || myStars > 0) showCoinAnimation(myCoins, myStars);
             } else {
-                if ((data.stakeCoinsPerPerson || 0) > 0 || (data.stakeStarsPerPerson || 0) > 0) {
-                    showNegativeCoinAnimation(data.stakeCoinsPerPerson || 0, data.stakeStarsPerPerson || 0);
+                if ((data.stakeCoinsPerPerson || 0) > 0 || (data.stakeControllerpointsPerPerson || 0) > 0) {
+                    showNegativeCoinAnimation(data.stakeCoinsPerPerson || 0, data.stakeControllerpointsPerPerson || 0);
                 }
             }
         });
@@ -4799,7 +4799,7 @@ function getNowPlus10() {
             });
 
             const myCoins = getPlayerCoins(state.currentPlayer);
-            const myStars = getPlayerControllerpoints(state.currentPlayer);
+            const myControllerpoints = getPlayerControllerpoints(state.currentPlayer);
             const attendeesOrAll = state.attendees.length ? state.attendees : state.players;
             const opponents = attendeesOrAll.filter(p => p !== state.currentPlayer);
 
@@ -4810,7 +4810,7 @@ function getNowPlus10() {
                 const admin = isAdmin();
                 const pot = [];
                 if (c.stakeCoins > 0) pot.push(`${fmt(c.stakeCoins * 2)} ${coinSvgIcon()}`);
-                if (c.stakeStars > 0) pot.push(`${fmt(c.stakeStars * 2)} ${controllerSvgIcon()}`);
+                if (c.stakeControllerpoints > 0) pot.push(`${fmt(c.stakeControllerpoints * 2)} ${controllerSvgIcon()}`);
                 const potStr = pot.length ? pot.join(' + ') : t('no_stake');
                 let payoutBadge = '';
                 if (c.payoutMode === 'percentage' && c.payoutConfig) {
@@ -4823,7 +4823,7 @@ function getNowPlus10() {
                 if (c.status === 'pending' && isOpponent) {
                     actionsHTML = `
                         <div class="proposal-actions">
-                            <button class="btn-join ch-accept" data-id="${c.id}" data-game="${c.game}" data-challenger="${c.challenger}" data-opponent="${c.opponent}" data-stake-coins="${c.stakeCoins || 0}" data-stake-stars="${c.stakeStars || 0}">${t('notif_accept')}</button>
+                            <button class="btn-join ch-accept" data-id="${c.id}" data-game="${c.game}" data-challenger="${c.challenger}" data-opponent="${c.opponent}" data-stake-coins="${c.stakeCoins || 0}" data-stake-controllerpoints="${c.stakeControllerpoints || 0}">${t('notif_accept')}</button>
                             <button class="btn-leave ch-reject" data-id="${c.id}">${t('notif_reject')}</button>
                         </div>`;
                 }
@@ -4846,8 +4846,8 @@ function getNowPlus10() {
                     const starAmounts = JSON.parse(c.payoutStarAmounts || '{}');
                     const myCoins = amounts[state.currentPlayer] || 0;
                     const myStars = starAmounts[state.currentPlayer] || 0;
-                    const label = myStars > 0 ? t('btn_collect_amount_stars', myCoins, myStars) : t('btn_collect_amount', myCoins);
-                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary ch-collect" data-id="${c.id}" data-coins="${myCoins}" data-stars="${myStars}" style="width:100%;font-weight:700">${label}</button></div>`;
+                    const label = myStars > 0 ? t('btn_collect_amount_controllerpoints', myCoins, myStars) : t('btn_collect_amount', myCoins);
+                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary ch-collect" data-id="${c.id}" data-coins="${myCoins}" data-controllerpoints="${myStars}" style="width:100%;font-weight:700">${label}</button></div>`;
                 }
 
                 const winnerInfo = c.winner ? `<div style="display:flex;justify-content:flex-end;margin-top:0.3rem;"><span style="font-size:1.1rem;color:var(--accent-gold,#ffd700);font-weight:700;">🏆 ${c.winner}</span></div>` : '';
@@ -4884,7 +4884,7 @@ function getNowPlus10() {
                 const inChallenge = inTeamA || inTeamB;
                 const totalPlayers = teamA.length + teamB.length;
                 const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
-                const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
+                const totalStarPot = tc.stakeControllerpointsPerPerson * totalPlayers;
                 const acceptances = JSON.parse(tc.acceptances || '[]');
                 const allPlayers = [...teamA, ...teamB];
                 const hasAccepted = acceptances.includes(state.currentPlayer);
@@ -4919,11 +4919,11 @@ function getNowPlus10() {
 
                 const tcStakeRows = [];
                 if (tc.stakeCoinsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-gold);font-weight:600;">${fmt(tc.stakeCoinsPerPerson)} 🪙</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
-                if (tc.stakeStarsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(tc.stakeStarsPerPerson)} ⭐</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
+                if (tc.stakeControllerpointsPerPerson > 0) tcStakeRows.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(tc.stakeControllerpointsPerPerson)} ⭐</span><span style="color:var(--text-secondary);font-size:0.72rem;"> / Person</span>`);
 
                 const tcPotParts = [];
                 if (tc.stakeCoinsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-gold);font-weight:600;">${fmt(totalPot)} 🪙</span>`);
-                if (tc.stakeStarsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(totalStarPot)} ⭐</span>`);
+                if (tc.stakeControllerpointsPerPerson > 0) tcPotParts.push(`<span style="color:var(--accent-purple);font-weight:600;">${fmt(totalStarPot)} ⭐</span>`);
 
                 let tcPayoutDetailsHTML = '';
                 if (showPayoutDetails && tc.winnerTeam && tc.stakeCoinsPerPerson > 0) {
@@ -4991,8 +4991,8 @@ function getNowPlus10() {
                     const tcStarAmounts = JSON.parse(tc.payoutStarAmounts || '{}');
                     const tcMyCoins = tcAmounts[state.currentPlayer] || 0;
                     const tcMyStars = tcStarAmounts[state.currentPlayer] || 0;
-                    const tcLabel = tcMyStars > 0 ? t('btn_collect_amount_stars', tcMyCoins, tcMyStars) : t('btn_collect_amount', tcMyCoins);
-                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary tc-collect" data-id="${tc.id}" data-coins="${tcMyCoins}" data-stars="${tcMyStars}" style="width:100%;font-weight:700">${tcLabel}</button></div>`;
+                    const tcLabel = tcMyStars > 0 ? t('btn_collect_amount_controllerpoints', tcMyCoins, tcMyStars) : t('btn_collect_amount', tcMyCoins);
+                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary tc-collect" data-id="${tc.id}" data-coins="${tcMyCoins}" data-controllerpoints="${tcMyStars}" style="width:100%;font-weight:700">${tcLabel}</button></div>`;
                 }
 
                 // Sort creator first in their team; render GL badge for creator
@@ -5070,7 +5070,7 @@ function getNowPlus10() {
                         </div>
                         <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
                             ${controllerSvgIcon()}
-                            <input id="tc-controllerpoints" type="number" min="0" max="${myStars}" placeholder="max ${myStars}"
+                            <input id="tc-controllerpoints" type="number" min="0" max="${myControllerpoints}" placeholder="max ${myControllerpoints}"
                                 style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
                         </div>
                     </div>
@@ -5113,7 +5113,7 @@ function getNowPlus10() {
                 const hasAccepted = acceptances.includes(state.currentPlayer);
                 const isCreator = ffa.createdBy === state.currentPlayer;
                 const totalPot = ffa.stakeCoinsPerPerson * players.length;
-                const totalStarPot = ffa.stakeStarsPerPerson * players.length;
+                const totalStarPot = ffa.stakeControllerpointsPerPerson * players.length;
 
                 const statusLabels = { pending: t('duel_status_pending'), accepted: t('duel_status_accepted'), completed: t('duel_status_completed'), paid: t('duel_status_paid'), rejected: t('duel_status_rejected'), conflict: t('duel_status_conflict') || 'Konflikt', voted: t('duel_status_voted'), released: t('duel_status_released') };
 
@@ -5126,7 +5126,7 @@ function getNowPlus10() {
                 // Pot display
                 const potParts = [];
                 if (ffa.stakeCoinsPerPerson > 0) potParts.push(`${coinSvgIcon()} ${fmt(ffa.stakeCoinsPerPerson)}/Person · Pott: ${fmt(totalPot)}`);
-                if (ffa.stakeStarsPerPerson > 0) potParts.push(`${controllerSvgIcon()} ${fmt(ffa.stakeStarsPerPerson)}/Person · Pott: ${fmt(totalStarPot)}`);
+                if (ffa.stakeControllerpointsPerPerson > 0) potParts.push(`${controllerSvgIcon()} ${fmt(ffa.stakeControllerpointsPerPerson)}/Person · Pott: ${fmt(totalStarPot)}`);
                 const potStr = potParts.length ? potParts.join('<br>') : t('no_stake');
 
                 // Payout table
@@ -5167,8 +5167,8 @@ function getNowPlus10() {
                     const ffaStarAmounts = JSON.parse(ffa.payoutStarAmounts || '{}');
                     const ffaMyCoins = ffaAmounts[state.currentPlayer] || 0;
                     const ffaMyStars = ffaStarAmounts[state.currentPlayer] || 0;
-                    const ffaLabel = ffaMyStars > 0 ? t('btn_collect_amount_stars', ffaMyCoins, ffaMyStars) : t('btn_collect_amount', ffaMyCoins);
-                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary ffa-collect" data-id="${ffa.id}" data-coins="${ffaMyCoins}" data-stars="${ffaMyStars}" style="width:100%;font-weight:700">${ffaLabel}</button></div>`;
+                    const ffaLabel = ffaMyStars > 0 ? t('btn_collect_amount_controllerpoints', ffaMyCoins, ffaMyStars) : t('btn_collect_amount', ffaMyCoins);
+                    actionsHTML += `<div class="proposal-actions" style="margin-top:0.4rem"><button class="btn-primary ffa-collect" data-id="${ffa.id}" data-coins="${ffaMyCoins}" data-controllerpoints="${ffaMyStars}" style="width:100%;font-weight:700">${ffaLabel}</button></div>`;
                 }
 
                 // Placements display (for completed/paid)
@@ -5314,7 +5314,7 @@ function getNowPlus10() {
                         </div>
                         <div style="display:flex;align-items:center;gap:0.4rem;flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.5rem;">
                             ${controllerSvgIcon()}
-                            <input id="ch-controllerpoints" type="number" min="0" max="${myStars}" placeholder="max ${myStars}"
+                            <input id="ch-controllerpoints" type="number" min="0" max="${myControllerpoints}" placeholder="max ${myControllerpoints}"
                                 style="flex:1;background:transparent;color:var(--text-primary);border:none;outline:none;padding:0.25rem 0;font-size:0.9rem;width:0;">
                         </div>
                     </div>
@@ -5402,7 +5402,7 @@ function getNowPlus10() {
                         const coins = parseInt(chCoins.value) || 0;
                         const stars = parseInt(chStars.value) || 0;
                         const maxCoins = opp ? Math.min(myCoins, getPlayerCoins(opp)) : myCoins;
-                        const maxStars = opp ? Math.min(myStars, getPlayerControllerpoints(opp)) : myStars;
+                        const maxStars = opp ? Math.min(myControllerpoints, getPlayerControllerpoints(opp)) : myControllerpoints;
                         if (coins > maxCoins) {
                             chStakeError.textContent = t('stake_coins_too_high');
                             return false;
@@ -5420,11 +5420,11 @@ function getNowPlus10() {
                         if (!opp) {
                             chCoins.max = myCoins;
                             chCoins.placeholder = `max ${myCoins}`;
-                            chStars.max = myStars;
-                            chStars.placeholder = `max ${myStars}`;
+                            chStars.max = myControllerpoints;
+                            chStars.placeholder = `max ${myControllerpoints}`;
                         } else {
                             const effCoins = Math.min(myCoins, getPlayerCoins(opp));
-                            const effStars = Math.min(myStars, getPlayerControllerpoints(opp));
+                            const effStars = Math.min(myControllerpoints, getPlayerControllerpoints(opp));
                             chCoins.max = effCoins;
                             chCoins.placeholder = `max ${effCoins}`;
                             chStars.max = effStars;
@@ -5464,13 +5464,13 @@ function getNowPlus10() {
                     const opponent = $('#ch-opponent').value;
                     const game = $('#ch-game').value;
                     const stakeCoins = parseInt($('#ch-coins').value) || 0;
-                    const stakeStars = parseInt($('#ch-controllerpoints').value) || 0;
+                    const stakeControllerpoints = parseInt($('#ch-controllerpoints').value) || 0;
                     if (!opponent) { showToast(t('select_opponent_error'), 'error'); playSound('error'); return; }
                     if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
-                    if (stakeCoins === 0 && stakeStars === 0) { showToast(t('select_stake_error'), 'error'); playSound('error'); return; }
+                    if (stakeCoins === 0 && stakeControllerpoints === 0) { showToast(t('select_stake_error'), 'error'); playSound('error'); return; }
                     if (opponent) {
                         if (stakeCoins > 0 && (stakeCoins > myCoins || stakeCoins > getPlayerCoins(opponent))) { showToast(t('stake_coins_too_high'), 'error'); playSound('error'); return; }
-                        if (stakeStars > 0 && (stakeStars > myStars || stakeStars > getPlayerControllerpoints(opponent))) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
+                        if (stakeControllerpoints > 0 && (stakeControllerpoints > myControllerpoints || stakeControllerpoints > getPlayerControllerpoints(opponent))) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
                     }
                     const payoutMode = container.querySelector('#ch-payout-mode')?.value || 'winner_takes_all';
                     let payoutConfig = null;
@@ -5480,7 +5480,7 @@ function getNowPlus10() {
                         payoutConfig = { winner: w, loser: 100 - w };
                     }
                     try {
-                        await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeStars, payoutMode, payoutConfig });
+                        await api('POST', '/challenges', { challenger: state.currentPlayer, opponent, game, stakeCoins, stakeControllerpoints, payoutMode, payoutConfig });
                         showToast(t('duel_created', opponent), 'success');
                         v1FormState = { opponent: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
                         renderChallenges();
@@ -5503,7 +5503,7 @@ function getNowPlus10() {
                                         type: '1v1', game: btn.dataset.game,
                                         challenger: btn.dataset.challenger, opponent: btn.dataset.opponent,
                                         stakeCoins: parseInt(btn.dataset.stakeCoins) || 0,
-                                        stakeStars: parseInt(btn.dataset.stakeStars) || 0,
+                                        stakeControllerpoints: parseInt(btn.dataset.stakeControllerpoints) || 0,
                                         sessionId: result.sessionId
                                     });
                                 } catch(e) { console.error('DuelStart modal error:', e); }
@@ -5601,7 +5601,7 @@ function getNowPlus10() {
                         try {
                             const res = await api('PUT', `/challenges/${btn.dataset.id}/collect`, { player: state.currentPlayer });
                             const coins = Number(btn.dataset.coins);
-                            const stars = Number(btn.dataset.stars) || 0;
+                            const stars = Number(btn.dataset.controllerpoints) || 0;
                             if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
                             playSound('coin');
                             const coinsData = await api('GET', '/coins');
@@ -5630,14 +5630,14 @@ function getNowPlus10() {
 
                     if (allChecked.length > 0) {
                         const minCoins = Math.min(...allChecked.map(p => getPlayerCoins(p)));
-                        const minStars = Math.min(...allChecked.map(p => getPlayerControllerpoints(p)));
+                        const minControllerpoints = Math.min(...allChecked.map(p => getPlayerControllerpoints(p)));
                         if (tcCoinsInput) {
                             tcCoinsInput.max = minCoins;
                             tcCoinsInput.placeholder = `max ${minCoins}`;
                         }
                         if (tcStarsInput) {
-                            tcStarsInput.max = minStars;
-                            tcStarsInput.placeholder = `max ${minStars}`;
+                            tcStarsInput.max = minControllerpoints;
+                            tcStarsInput.placeholder = `max ${minControllerpoints}`;
                         }
                     } else {
                         if (tcCoinsInput) {
@@ -5645,8 +5645,8 @@ function getNowPlus10() {
                             tcCoinsInput.placeholder = `max ${myCoins}`;
                         }
                         if (tcStarsInput) {
-                            tcStarsInput.max = myStars;
-                            tcStarsInput.placeholder = `max ${myStars}`;
+                            tcStarsInput.max = myControllerpoints;
+                            tcStarsInput.placeholder = `max ${myControllerpoints}`;
                         }
                     }
 
@@ -5657,10 +5657,10 @@ function getNowPlus10() {
                     const tcStakeError = container.querySelector('#tc-stake-error');
                     if (tcStakeError && allChecked.length > 0) {
                         const minCoins = Math.min(...allChecked.map(p => getPlayerCoins(p)));
-                        const minStars  = Math.min(...allChecked.map(p => getPlayerControllerpoints(p)));
+                        const minControllerpoints  = Math.min(...allChecked.map(p => getPlayerControllerpoints(p)));
                         if (coinsVal > minCoins) {
                             tcStakeError.textContent = t('stake_coins_too_high');
-                        } else if (starsVal > minStars) {
+                        } else if (starsVal > minControllerpoints) {
                             tcStakeError.textContent = t('stake_stars_too_high');
                         } else {
                             tcStakeError.textContent = '';
@@ -5735,19 +5735,19 @@ function getNowPlus10() {
                         const teamB = [...container.querySelectorAll('.tc-team-b-btn.active')].map(btn => btn.dataset.player);
                         const game = container.querySelector('#tc-game')?.value;
                         const stakeCoinsPerPerson = parseInt(container.querySelector('#tc-coins')?.value) || 0;
-                        const stakeStarsPerPerson = parseInt(container.querySelector('#tc-controllerpoints')?.value) || 0;
+                        const stakeControllerpointsPerPerson = parseInt(container.querySelector('#tc-controllerpoints')?.value) || 0;
                         if (teamA.length < 2 || teamB.length < 2) { showToast(t('team_select_teams_error'), 'error'); playSound('error'); return; }
                         const overlap = teamA.filter(p => teamB.includes(p));
                         if (overlap.length > 0) { showToast(t('team_overlap_error'), 'error'); playSound('error'); return; }
                         if (!teamA.includes(state.currentPlayer) && !teamB.includes(state.currentPlayer)) { showToast(t('team_creator_not_in_team_error'), 'error'); playSound('error'); return; }
                         if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
-                        if (stakeCoinsPerPerson === 0 && stakeStarsPerPerson === 0) { showToast(t('team_stake_error'), 'error'); playSound('error'); return; }
+                        if (stakeCoinsPerPerson === 0 && stakeControllerpointsPerPerson === 0) { showToast(t('team_stake_error'), 'error'); playSound('error'); return; }
                         const allInTeams = [...new Set([...teamA, ...teamB])];
                         if (allInTeams.length > 0) {
                             const minCoins = Math.min(...allInTeams.map(p => getPlayerCoins(p)));
-                            const minStars  = Math.min(...allInTeams.map(p => getPlayerControllerpoints(p)));
+                            const minControllerpoints  = Math.min(...allInTeams.map(p => getPlayerControllerpoints(p)));
                             if (stakeCoinsPerPerson > minCoins) { showToast(t('stake_coins_too_high'), 'error'); playSound('error'); return; }
-                            if (stakeStarsPerPerson > minStars) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
+                            if (stakeControllerpointsPerPerson > minControllerpoints) { showToast(t('stake_stars_too_high'), 'error'); playSound('error'); return; }
                         }
                         const payoutMode = container.querySelector('#tc-payout-mode')?.value || 'winner_takes_all';
                         let payoutConfig = null;
@@ -5757,7 +5757,7 @@ function getNowPlus10() {
                             payoutConfig = { winner: w, loser: 100 - w };
                         }
                         try {
-                            await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB, payoutMode, payoutConfig });
+                            await api('POST', '/team-challenges', { createdBy: state.currentPlayer, game, stakeCoinsPerPerson, stakeControllerpointsPerPerson, teamA, teamB, payoutMode, payoutConfig });
                             showToast(t('team_duel_created'), 'success');
                             tcFormState = { teamA: [], teamB: [], game: '', coins: '', stars: '', payoutMode: 'winner_takes_all', payoutPctWinner: 70 };
                             renderChallenges();
@@ -5872,7 +5872,7 @@ function getNowPlus10() {
                         try {
                             await api('PUT', `/team-challenges/${btn.dataset.id}/collect`, { player: state.currentPlayer });
                             const coins = Number(btn.dataset.coins);
-                            const stars = Number(btn.dataset.stars) || 0;
+                            const stars = Number(btn.dataset.controllerpoints) || 0;
                             if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
                             playSound('coin');
                             const coinsData = await api('GET', '/coins');
@@ -5998,7 +5998,7 @@ function getNowPlus10() {
                         const game = container.querySelector('#ffa-game')?.value;
                         if (!game) { showToast(t('select_game_error'), 'error'); playSound('error'); return; }
                         const stakeCoinsPerPerson = parseInt(container.querySelector('#ffa-coins')?.value) || 0;
-                        const stakeStarsPerPerson = parseInt(container.querySelector('#ffa-controllerpoints')?.value) || 0;
+                        const stakeControllerpointsPerPerson = parseInt(container.querySelector('#ffa-controllerpoints')?.value) || 0;
                         // Sync pct inputs
                         container.querySelectorAll('.ffa-pct-input').forEach(inp => {
                             const idx = parseInt(inp.dataset.idx);
@@ -6009,7 +6009,7 @@ function getNowPlus10() {
                         try {
                             await api('POST', '/ffa-challenges', {
                                 createdBy: state.currentPlayer, game, players,
-                                stakeCoinsPerPerson, stakeStarsPerPerson,
+                                stakeCoinsPerPerson, stakeControllerpointsPerPerson,
                                 payoutConfig: ffaFormState.payoutConfig
                             });
                             showToast(t('ffa_created'), 'success');
@@ -6151,7 +6151,7 @@ function getNowPlus10() {
                         try {
                             await api('PUT', `/ffa-challenges/${btn.dataset.id}/collect`, { player: state.currentPlayer });
                             const coins = Number(btn.dataset.coins);
-                            const stars = Number(btn.dataset.stars) || 0;
+                            const stars = Number(btn.dataset.controllerpoints) || 0;
                             if (coins > 0 || stars > 0) showCoinAnimation(coins, stars);
                             playSound('coin');
                             const coinsData = await api('GET', '/coins');
@@ -6666,7 +6666,7 @@ function getNowPlus10() {
                 localStorage.setItem('gameparty_notified_challenge_ids', JSON.stringify([...notifiedChallengeIds]));
                 const stakeStr = [
                     c.stakeCoins > 0 ? `${fmt(c.stakeCoins)} ${coinSvgIcon()}` : '',
-                    c.stakeStars > 0 ? `${fmt(c.stakeStars)} ${controllerSvgIcon()}` : ''
+                    c.stakeControllerpoints > 0 ? `${fmt(c.stakeControllerpoints)} ${controllerSvgIcon()}` : ''
                 ].filter(Boolean).join(' + ') || t('no_stake');
                 pendingNotifications.push({ id: c.id, challenger: c.challenger, game: c.game, stakeStr, ts: c.createdAt });
                 showNotifToast(pendingNotifications[pendingNotifications.length - 1]);
