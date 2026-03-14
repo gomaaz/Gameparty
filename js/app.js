@@ -93,23 +93,24 @@
     }
 
     function buildTeamNotifTitle(teamA, teamB, createdBy, currentPlayer) {
-        const fmt = arr => {
+        const fmtList = arr => {
             if (arr.length === 0) return '';
             if (arr.length === 1) return arr[0];
-            return arr.slice(0, -1).join(', ') + ' und ' + arr[arr.length - 1];
+            return arr.slice(0, -1).join(t('notif_list_separator')) + t('notif_list_and') + arr[arr.length - 1];
         };
         const inTeamA = teamA.includes(currentPlayer);
         if (inTeamA) {
-            // Same team as creator → "X (+ others) möchte(n) mit dir gegen [B] spielen"
+            // Same team as creator
             const senders = [createdBy, ...teamA.filter(p => p !== createdBy && p !== currentPlayer)];
-            const verb = senders.length > 1 ? 'möchten' : 'möchte';
-            return `${fmt(senders)} ${verb} mit dir gegen ${fmt(teamB)} spielen`;
+            return t('notif_team_wants_to_play_with', fmtList(senders), fmtList(teamB));
         } else {
-            // Opposing team → "[A] möchte(n) gegen dich (und [other B]) spielen"
-            const verb = teamA.length > 1 ? 'möchten' : 'möchte';
+            // Opposing team
             const otherB = teamB.filter(p => p !== currentPlayer);
-            const suffix = otherB.length > 0 ? ` und ${fmt(otherB)}` : '';
-            return `${fmt(teamA)} ${verb} gegen dich${suffix} spielen`;
+            if (otherB.length > 0) {
+                return t('notif_team_wants_to_play_against_and', fmtList(teamA), fmtList(otherB));
+            } else {
+                return t('notif_team_wants_to_play_against', fmtList(teamA));
+            }
         }
     }
 
@@ -167,7 +168,7 @@
                 const startedAt = parseInt(el.dataset.startedAt || '0');
                 if (!startedAt) return;
                 const mins = Math.floor((serverNow() - startedAt) / 60000);
-                el.textContent = `${mins} Min.`;
+                el.textContent = `${mins} ${t('min_abbr')}`;
             });
         }, 1000);
     }
@@ -811,7 +812,7 @@ function getNowPlus10() {
                         }
                     } else if (s.status === 'running') {
                         const initialMins0 = s.startedAt ? Math.floor((serverNow() - s.startedAt) / 60000) : 0;
-                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ ' + t('duel_label') + ' · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} Min.</span></span>`;
+                        statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">${s.challenge_id ? '⚔️ ' + t('duel_label') + ' · ' : ''}${t('session_running')} · <span class="session-runtime" data-started-at="${s.startedAt || 0}">${initialMins0} ${t('min_abbr')}</span></span>`;
                         if (rate > 0 && s.startedAt) {
                             const initialMinutes = (serverNow() - s.startedAt) / 60000;
                             const initialCoins = Math.ceil(initialMinutes * rate);
@@ -1847,10 +1848,10 @@ function getNowPlus10() {
                 rawgBtn.textContent = '⏳';
                 try {
                     await api('POST', '/games/enrich', { name: gameName });
-                    showToast(`RAWG-Daten für "${gameName}" aktualisiert`, 'success');
+                    showToast(t('admin_rawg_updated', gameName), 'success');
                     renderMatcher();
                 } catch (e2) {
-                    showToast('RAWG-Reload fehlgeschlagen', 'error');
+                    showToast(t('admin_rawg_reload_error'), 'error');
                 } finally {
                     rawgBtn.disabled = false;
                     rawgBtn.innerHTML = '&#x21BA;';
@@ -2151,7 +2152,7 @@ function getNowPlus10() {
                 showToast(t('import_done', result.imported, result.updated), 'success');
                 state.games = await api('GET', '/games');
                 renderMatcher();
-            } catch (e) { showToast('Fehler beim Importieren', 'error'); }
+            } catch (e) { showToast(t('import_error'), 'error'); }
         });
     }
 
@@ -2299,7 +2300,7 @@ function getNowPlus10() {
         let statusBadge = '';
         if (p.status === 'active') {
             const initialMins0 = p.startedAt ? Math.floor((serverNow() - p.startedAt) / 60000) : 0;
-            statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('status_active')} · <span class="session-runtime" data-started-at="${p.startedAt || 0}">${initialMins0} Min.</span></span>`;
+            statusBadge = `<span class="session-runtime-badge" style="color:var(--accent-green);font-size:0.8rem">● ${t('status_active')} · <span class="session-runtime" data-started-at="${p.startedAt || 0}">${initialMins0} ${t('min_abbr')}</span></span>`;
         } else if (p.status === 'completed' && !p.coinsApproved) {
             statusBadge = `<span class="pending-approval-badge">${t('session_awaiting_approval')}</span>`;
         } else if (p.status === 'completed' && p.coinsApproved) {
@@ -3372,13 +3373,13 @@ function getNowPlus10() {
                     <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem">
                         <label class="toggle-label" style="display:flex;align-items:center;gap:0.4rem;cursor:pointer">
                             <input type="checkbox" id="toggle-rawg" ${rawgStatus?.enabled ? 'checked' : ''}>
-                            <span>Abgleich mit RAWG</span>
+                            <span>${t('admin_rawg_toggle')}</span>
                         </label>
                         <span class="info-tooltip" data-tooltip="Legen Sie einen kostenlosen API-Key auf rawg.io an und tragen Sie ihn als Docker-Umgebungsvariable RAWG_API_KEY ein.">(?)</span>
                     </div>
-                    <button class="ls-btn-secondary" id="btn-enrich-games" ${!rawgStatus?.enabled ? 'disabled' : ''} style="margin-top:0.4rem">🎮 Spielinfos von RAWG laden</button>
+                    <button class="ls-btn-secondary" id="btn-enrich-games" ${!rawgStatus?.enabled ? 'disabled' : ''} style="margin-top:0.4rem">${t('admin_rawg_enrich_btn')}</button>
                     <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.3rem">
-                        API-Requests: ${state.settings?.rawg_calls_total || '0'} · Angereichert: ${state.games.filter(g => g.cover_url).length}/${state.games.filter(g => g.status !== 'suggested').length}
+                        ${t('admin_rawg_stats', state.settings?.rawg_calls_total || '0', state.games.filter(g => g.cover_url).length, state.games.filter(g => g.status !== 'suggested').length)}
                     </div>
                 </div>
 
@@ -3387,19 +3388,19 @@ function getNowPlus10() {
                     <button class="btn-danger" id="ap-btn-reset-coins">${t('btn_reset_coins')}</button>
                     <button class="btn-danger" id="ap-btn-reset-stars">${t('btn_reset_stars')}</button>
                     <button class="btn-danger" id="ap-btn-reset-challenges">${t('btn_reset_challenges')}</button>
-                    <button class="btn-danger" id="ap-btn-clear-shop-links">🔗 Alle Shop-Links löschen</button>
+                    <button class="btn-danger" id="ap-btn-clear-shop-links">${t('admin_shop_links_delete_btn')}</button>
                     <button class="btn-danger" id="ap-btn-reset-all">${t('btn_reset_all')}</button>
                 </div>
 
                 <div class="card" id="log-card">
-                    <div class="card-title">📋 Logs</div>
+                    <div class="card-title">📋 ${t('admin_logs_title')}</div>
                     <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem">
                         <button class="log-filter-btn active" data-level="ALL">ALL</button>
                         <button class="log-filter-btn" data-level="INFO">INFO</button>
                         <button class="log-filter-btn" data-level="ERROR">ERROR</button>
                         <button class="log-filter-btn" data-level="DEBUG">DEBUG</button>
-                        <button class="ls-btn-secondary" id="btn-refresh-logs" style="margin-left:auto">↻ Refresh</button>
-                        <button class="ls-btn-secondary" id="btn-clear-logs">✕ Clear</button>
+                        <button class="ls-btn-secondary" id="btn-refresh-logs" style="margin-left:auto">${t('admin_logs_refresh')}</button>
+                        <button class="ls-btn-secondary" id="btn-clear-logs">${t('admin_logs_clear')}</button>
                     </div>
                     <div id="log-output" style="background:#0d0d1a;border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem;max-height:280px;overflow-y:auto;font-family:monospace;font-size:0.68rem;line-height:1.5"></div>
                 </div>
@@ -3420,7 +3421,7 @@ function getNowPlus10() {
                 const entries = await api('GET', url);
                 const output = panel.querySelector('#log-output');
                 if (!output) return;
-                if (!entries || !entries.length) { output.innerHTML = '<span style="color:#666">Keine Logs vorhanden</span>'; return; }
+                if (!entries || !entries.length) { output.innerHTML = `<span style="color:#666">${t('admin_logs_no_entries')}</span>`; return; }
                 output.innerHTML = entries.map(e => {
                     const color = e.level === 'ERROR' ? '#ff5555' : e.level === 'DEBUG' ? '#888' : '#6699ff';
                     const time = e.ts.replace('T', ' ').replace(/\.\d+Z$/, '');
@@ -3440,7 +3441,7 @@ function getNowPlus10() {
         panel.querySelector('#btn-refresh-logs')?.addEventListener('click', () => loadLogs());
         panel.querySelector('#btn-clear-logs')?.addEventListener('click', () => {
             const output = panel.querySelector('#log-output');
-            if (output) output.innerHTML = '<span style="color:#666">Logs geleert (nur Anzeige)</span>';
+            if (output) output.innerHTML = `<span style="color:#666">${t('admin_logs_cleared')}</span>`;
         });
 
         loadLogs('ALL');
@@ -3457,12 +3458,12 @@ function getNowPlus10() {
             if (isNaN(val) || val < 2) return;
             try {
                 await api('PUT', '/settings/max_multiplier', { value: val });
-                showToast('Limit gespeichert', 'success');
+                showToast(t('admin_limit_saved'), 'success');
                 const currentMap = {};
                 panel.querySelectorAll('.player-multiplier-input').forEach(inp => { currentMap[inp.dataset.count] = parseFloat(inp.value) || 0; });
                 const tableEl = panel.querySelector('#player-multipliers-table');
                 if (tableEl) { tableEl.innerHTML = buildMultipliersTable(val, currentMap); bindMultiplierInputs(); }
-            } catch { showToast('Fehler', 'error'); }
+            } catch { showToast(t('error_generic'), 'error'); }
         });
 
         // Live-save: Multiplikator pro Spieleranzahl
@@ -3472,7 +3473,7 @@ function getNowPlus10() {
                     const map = {};
                     panel.querySelectorAll('.player-multiplier-input').forEach(i => { map[i.dataset.count] = parseFloat(i.value) || 0; });
                     try { await api('PUT', '/settings/player_multipliers', { value: JSON.stringify(map) }); }
-                    catch { showToast('Fehler', 'error'); }
+                    catch { showToast(t('error_generic'), 'error'); }
                 });
             });
         }
@@ -3490,7 +3491,7 @@ function getNowPlus10() {
                         item.cost = val;
                         if (itemId === 'buy_star') CONFIG.STAR_PRICE = val;
                     }
-                } catch { showToast('Fehler', 'error'); }
+                } catch { showToast(t('error_generic'), 'error'); }
             });
         });
 
@@ -3634,7 +3635,7 @@ function getNowPlus10() {
                     showToast(t('import_done', result.imported, result.updated), 'success');
                     state.games = await api('GET', '/games');
                     renderMatcher();
-                } catch (e) { showToast('Fehler beim Importieren', 'error'); }
+                } catch (e) { showToast(t('import_error'), 'error'); }
             });
             e.target.value = '';
         });
@@ -3651,9 +3652,9 @@ function getNowPlus10() {
                         showToast(t('import_done', result.imported, result.updated), 'success');
                         state.games = await api('GET', '/games');
                         renderMatcher();
-                    } catch (e) { showToast('Fehler beim Importieren', 'error'); }
+                    } catch (e) { showToast(t('import_error'), 'error'); }
                 });
-            } catch (e) { showToast('Fehler beim Laden der URL', 'error'); }
+            } catch (e) { showToast(t('import_url_error'), 'error'); }
         });
 
         // RAWG toggle
@@ -3666,16 +3667,16 @@ function getNowPlus10() {
         // RAWG enrich button
         panel.querySelector('#btn-enrich-games')?.addEventListener('click', async () => {
             const btn = panel.querySelector('#btn-enrich-games');
-            btn.disabled = true; btn.textContent = '⏳ Lädt...';
+            btn.disabled = true; btn.textContent = t('admin_rawg_loading');
             try {
                 const result = await api('POST', '/games/enrich', {});
-                showToast(`${result.enriched} Spiele mit RAWG-Daten angereichert`, 'success');
+                showToast(t('admin_rawg_enrich_done', result.enriched), 'success');
                 state.games = await api('GET', '/games');
                 renderMatcher();
             } catch (e) {
-                showToast(e.message || 'Fehler beim RAWG-Abgleich', 'error');
+                showToast(e.message || t('admin_rawg_enrich_error'), 'error');
             } finally {
-                btn.disabled = false; btn.textContent = '🎮 Spielinfos von RAWG laden';
+                btn.disabled = false; btn.textContent = t('admin_rawg_enrich_btn');
             }
         });
 
@@ -3699,8 +3700,8 @@ function getNowPlus10() {
             });
         });
         $('#ap-btn-clear-shop-links').addEventListener('click', () => {
-            showConfirm('Wirklich alle Shop-Links löschen?', async () => {
-                try { await api('DELETE', '/games/shop-links'); showToast('Alle Shop-Links gelöscht', 'error'); }
+            showConfirm(t('admin_shop_links_delete_confirm'), async () => {
+                try { await api('DELETE', '/games/shop-links'); showToast(t('admin_shop_links_deleted'), 'error'); }
                 catch (e) { console.error(e); }
             });
         });
@@ -3815,7 +3816,7 @@ function getNowPlus10() {
                             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem">
                                 <button class="shop-buy-btn${onCooldown ? ' on-cooldown' : ''}" data-item="${item.id}" data-cost="${item.cost}"
                                     ${(coins < item.cost || onCooldown) ? 'disabled' : ''}>
-                                    ${fmt(item.cost)} Coins
+                                    ${t('shop_buy_cost', fmt(item.cost))}
                                 </button>
                                 ${onCooldown ? `<span class="shop-cooldown-timer" data-cd-item="${item.id}">⏳ ${cdM}:${cdS}</span>` : ''}
                             </div>
@@ -3990,7 +3991,7 @@ function getNowPlus10() {
                     renderShop();
                 } catch (e) {
                     if (e.message === 'cooldown') {
-                        showToast('Noch nicht verfügbar – Cooldown läuft!', 'error');
+                        showToast(t('shop_cooldown_active'), 'error');
                     } else {
                         showToast(e.message || t('not_enough_coins'), 'error');
                     }
@@ -4055,10 +4056,10 @@ function getNowPlus10() {
             if (activeTaskTimer) { clearInterval(activeTaskTimer); activeTaskTimer = null; }
             overlay.classList.remove('show');
             const ackMessages = {
-                drink_order: `🍺 ${state.currentPlayer} hat getrunken!`,
-                force_play: `🎮 ${state.currentPlayer} spielt mit!`,
+                drink_order: t('task_ack_drink', state.currentPlayer),
+                force_play: t('task_ack_force_play', state.currentPlayer),
             };
-            const ackMsg = ackMessages[ev.type] || `✅ ${state.currentPlayer} hat die Aufgabe erledigt!`;
+            const ackMsg = ackMessages[ev.type] || t('task_ack_generic', state.currentPlayer);
             try {
                 await api('POST', '/player-events', { target: ev.from_player, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
             } catch {}
@@ -4083,7 +4084,7 @@ function getNowPlus10() {
             <div class="modal-title">${t('time_up_title')}</div>
             <div style="text-align:center;padding:1rem;font-size:1.1rem">
                 ${t('time_up_text', penalty).split('\n')[0]}<br>
-                <span style="color:var(--accent-red);font-weight:700">−${fmt(penalty)} Coins</span> wurden abgezogen.
+                <span style="color:var(--accent-red);font-weight:700">−${fmt(penalty)} Coins</span> ${t('penalty_coins_deducted')}
             </div>
             <button class="btn-propose" id="penalty-close-btn">${t('time_up_ok')}</button>
         `;
@@ -4407,7 +4408,7 @@ function getNowPlus10() {
             }).join('');
 
             modal.innerHTML = `
-                <div class="modal-title">Wie wird gespielt?</div>
+                <div class="modal-title">${t('medium_how_to_play')}</div>
                 <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:1rem">${gameName}</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.5rem;margin-bottom:1rem;overflow:hidden" id="medium-grid">
                     ${mediumGrid}
@@ -4523,7 +4524,7 @@ function getNowPlus10() {
         let selectedGame = null;
         modal.innerHTML = `
             <div class="modal-title">${t('modal_plan_session_title')}</div>
-            <input type="text" id="ps-search" class="search-input" placeholder="Spiel suchen..." style="margin-bottom:0.5rem">
+            <input type="text" id="ps-search" class="search-input" placeholder="${t('search_game_placeholder')}" style="margin-bottom:0.5rem">
             <div class="game-select-grid" id="ps-game-grid" style="max-height:35vh;overflow-y:auto">
                 ${sortedGames.map(g => `<div class="game-select-item" data-game="${g.name}">${g.name}</div>`).join('')}
             </div>
@@ -4561,7 +4562,7 @@ function getNowPlus10() {
             if (!selectedGame) return;
             const day = $('#ps-day').value;
             const time = $('#ps-time').value;
-            if (!day) { showToast('Datum ist ein Pflichtfeld', 'error'); return; }
+            if (!day) { showToast(t('date_required'), 'error'); return; }
             const selectedDT = new Date(`${day}T${time || '00:00'}`);
             if (selectedDT < new Date(Date.now() + 9 * 60 * 1000)) {
                 showToast(t('start_time_future_error'), 'error');
@@ -6287,12 +6288,12 @@ function getNowPlus10() {
                 e.stopPropagation();
                 const fromPlayer = btn.dataset.from;
                 const type = btn.dataset.type;
-                const ackMsg = { drink_order: `🍺 ${state.currentPlayer} hat getrunken!`, force_play: `🎮 ${state.currentPlayer} spielt mit!` }[type]
-                              || `✅ ${state.currentPlayer} hat die Aufgabe erledigt!`;
+                const ackMsg = ({ drink_order: t('task_ack_drink', state.currentPlayer), force_play: t('task_ack_force_play', state.currentPlayer) })[type]
+                              || t('task_ack_generic', state.currentPlayer);
                 try {
                     if (fromPlayer) await api('POST', '/player-events', { target: fromPlayer, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
                     await api('DELETE', `/player-events/${btn.dataset.id}`);
-                    showToast('Aufgabe erledigt!', 'success');
+                    showToast(t('task_ack_done_toast'), 'success');
                     renderNotifPanel();
                 } catch {}
             });
@@ -6671,10 +6672,10 @@ function getNowPlus10() {
                 btn.disabled = true;
                 const { id, from: fromPlayer, type } = btn.dataset;
                 const ackMessages = {
-                    drink_order: `🍺 ${state.currentPlayer} hat getrunken!`,
-                    force_play: `🎮 ${state.currentPlayer} spielt mit!`,
+                    drink_order: t('task_ack_drink', state.currentPlayer),
+                    force_play: t('task_ack_force_play', state.currentPlayer),
                 };
-                const ackMsg = ackMessages[type] || `✅ ${state.currentPlayer} hat die Aufgabe erledigt!`;
+                const ackMsg = ackMessages[type] || t('task_ack_generic', state.currentPlayer);
                 try {
                     if (fromPlayer) await api('POST', '/player-events', { target: fromPlayer, type: 'task_ack', from_player: state.currentPlayer, message: ackMsg });
                 } catch {}
@@ -7630,7 +7631,7 @@ function getNowPlus10() {
             if (!modal || modal.querySelector('.modal-x-btn')) return;
             const x = document.createElement('button');
             x.className = 'modal-x-btn';
-            x.setAttribute('aria-label', 'Schließen');
+            x.setAttribute('aria-label', t('btn_close'));
             x.textContent = '✕';
             x.addEventListener('click', () => overlay.classList.remove('show'));
             modal.insertBefore(x, modal.firstChild);
@@ -7692,12 +7693,12 @@ function getNowPlus10() {
                 </div>`)
             .join('');
 
-        const empty = rows ? '' : `<p style="color:var(--text-secondary);text-align:center;font-size:0.85rem;padding:1rem 0">Keine Account-Daten hinterlegt.</p>`;
+        const empty = rows ? '' : `<p style="color:var(--text-secondary);text-align:center;font-size:0.85rem;padding:1rem 0">${t('no_account_data')}</p>`;
 
         modal.innerHTML = `
             <div class="modal-title">${playerName}</div>
             <div class="player-info-modal-rows">${rows}${empty}</div>
-            <button class="modal-close-btn" id="player-info-close">Schließen</button>
+            <button class="modal-close-btn" id="player-info-close">${t('btn_close')}</button>
         `;
 
         overlay.classList.add('show');
@@ -7720,7 +7721,7 @@ function getNowPlus10() {
         if (copyIcon && copyIcon.getAttribute('data-copy-value')) {
             const value = copyIcon.getAttribute('data-copy-value');
             navigator.clipboard.writeText(value).then(() => {
-                showToast('✓ In Zwischenablage kopiert!');
+                showToast(t('copied_to_clipboard'));
             });
             return;
         }

@@ -598,6 +598,68 @@ const TRANSLATIONS = {
         pw_error_retry: 'Try again',
         credit_idea: 'Idea by',
         credit_vibed: '· Built vibe-coded with Claude Sonnet',
+
+        // --- Team Notification Titles ---
+        notif_team_wants_to_play_with: '{0} want(s) to play with you against {1}',
+        notif_team_wants_to_play_against: '{0} want(s) to play against you',
+        notif_team_wants_to_play_against_and: '{0} want(s) to play against you and {1}',
+        notif_list_separator: ', ',
+        notif_list_and: ' and ',
+
+        // --- Admin: RAWG ---
+        admin_rawg_toggle: 'Sync with RAWG',
+        admin_rawg_enrich_btn: '🎮 Load Game Info from RAWG',
+        admin_rawg_loading: '⏳ Loading...',
+        admin_rawg_stats: 'API Requests: {0} · Enriched: {1}/{2}',
+        admin_rawg_enrich_done: '{0} games enriched with RAWG data',
+        admin_rawg_enrich_error: 'RAWG sync error',
+        admin_rawg_reload_error: 'RAWG reload failed',
+        admin_rawg_updated: 'RAWG data for "{0}" updated',
+
+        // --- Admin: Shop Links ---
+        admin_shop_links_delete_btn: '🔗 Delete All Shop Links',
+        admin_shop_links_delete_confirm: 'Really delete all shop links?',
+        admin_shop_links_deleted: 'All shop links deleted',
+
+        // --- Admin: Logs ---
+        admin_logs_title: 'Logs',
+        admin_logs_no_entries: 'No log entries',
+        admin_logs_cleared: 'Logs cleared (view only)',
+        admin_logs_refresh: '↻ Refresh',
+        admin_logs_clear: '✕ Clear',
+
+        // --- Admin: Settings Toasts ---
+        admin_limit_saved: 'Limit saved',
+        error_generic: 'Error',
+        import_error: 'Error importing',
+        import_url_error: 'Error loading URL',
+
+        // --- Task Acknowledgement Messages ---
+        task_ack_drink: '🍺 {0} has drunk!',
+        task_ack_force_play: '🎮 {0} is playing along!',
+        task_ack_generic: '✅ {0} has completed the task!',
+        task_ack_done_toast: 'Task done!',
+
+        // --- Penalty Modal ---
+        penalty_coins_deducted: 'were deducted.',
+
+        // --- Medium Selection ---
+        medium_how_to_play: 'How are you playing?',
+
+        // --- Plan Session ---
+        date_required: 'Date is a required field',
+
+        // --- Player Info Modal ---
+        btn_close: 'Close',
+        no_account_data: 'No account data saved.',
+        copied_to_clipboard: '✓ Copied to clipboard!',
+
+        // --- Shop: Buy Button ---
+        shop_buy_cost: '{0} Coins',
+        shop_cooldown_active: 'Not available yet – cooldown active!',
+
+        // --- Session Runtime ---
+        min_abbr: 'Min.',
     },
 
     de: {
@@ -1195,6 +1257,68 @@ const TRANSLATIONS = {
         pw_error_retry: 'Erneut versuchen',
         credit_idea: 'Idee von',
         credit_vibed: '· Umsetzung vibe-coded mit Claude Sonnet',
+
+        // --- Team Notification Titles ---
+        notif_team_wants_to_play_with: '{0} möchte(n) mit dir gegen {1} spielen',
+        notif_team_wants_to_play_against: '{0} möchte(n) gegen dich spielen',
+        notif_team_wants_to_play_against_and: '{0} möchte(n) gegen dich und {1} spielen',
+        notif_list_separator: ', ',
+        notif_list_and: ' und ',
+
+        // --- Admin: RAWG ---
+        admin_rawg_toggle: 'Abgleich mit RAWG',
+        admin_rawg_enrich_btn: '🎮 Spielinfos von RAWG laden',
+        admin_rawg_loading: '⏳ Lädt...',
+        admin_rawg_stats: 'API-Requests: {0} · Angereichert: {1}/{2}',
+        admin_rawg_enrich_done: '{0} Spiele mit RAWG-Daten angereichert',
+        admin_rawg_enrich_error: 'Fehler beim RAWG-Abgleich',
+        admin_rawg_reload_error: 'RAWG-Reload fehlgeschlagen',
+        admin_rawg_updated: 'RAWG-Daten für "{0}" aktualisiert',
+
+        // --- Admin: Shop Links ---
+        admin_shop_links_delete_btn: '🔗 Alle Shop-Links löschen',
+        admin_shop_links_delete_confirm: 'Wirklich alle Shop-Links löschen?',
+        admin_shop_links_deleted: 'Alle Shop-Links gelöscht',
+
+        // --- Admin: Logs ---
+        admin_logs_title: 'Logs',
+        admin_logs_no_entries: 'Keine Logs vorhanden',
+        admin_logs_cleared: 'Logs geleert (nur Anzeige)',
+        admin_logs_refresh: '↻ Refresh',
+        admin_logs_clear: '✕ Clear',
+
+        // --- Admin: Settings Toasts ---
+        admin_limit_saved: 'Limit gespeichert',
+        error_generic: 'Fehler',
+        import_error: 'Fehler beim Importieren',
+        import_url_error: 'Fehler beim Laden der URL',
+
+        // --- Task Acknowledgement Messages ---
+        task_ack_drink: '🍺 {0} hat getrunken!',
+        task_ack_force_play: '🎮 {0} spielt mit!',
+        task_ack_generic: '✅ {0} hat die Aufgabe erledigt!',
+        task_ack_done_toast: 'Aufgabe erledigt!',
+
+        // --- Penalty Modal ---
+        penalty_coins_deducted: 'wurden abgezogen.',
+
+        // --- Medium Selection ---
+        medium_how_to_play: 'Wie wird gespielt?',
+
+        // --- Plan Session ---
+        date_required: 'Datum ist ein Pflichtfeld',
+
+        // --- Player Info Modal ---
+        btn_close: 'Schließen',
+        no_account_data: 'Keine Account-Daten hinterlegt.',
+        copied_to_clipboard: '✓ In Zwischenablage kopiert!',
+
+        // --- Shop: Buy Button ---
+        shop_buy_cost: '{0} Coins',
+        shop_cooldown_active: 'Noch nicht verfügbar – Cooldown läuft!',
+
+        // --- Session Runtime ---
+        min_abbr: 'Min.',
     }
 };
 
