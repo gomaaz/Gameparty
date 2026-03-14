@@ -159,6 +159,15 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 logger.info('Database initialized');
 
+// Migration: rename stars table BEFORE CREATE TABLE runs (must happen first)
+{
+  const hasStarsTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='stars'").get();
+  const hasControllerpoints = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='controllerpoints'").get();
+  if (hasStarsTable && !hasControllerpoints) {
+    db.prepare('ALTER TABLE stars RENAME TO controllerpoints').run();
+  }
+}
+
 db.exec(`
     CREATE TABLE IF NOT EXISTS users (name TEXT PRIMARY KEY, pin TEXT, role TEXT DEFAULT 'player');
     CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, maxPlayers INT, genre TEXT, lanRating INT DEFAULT 0, previewUrl TEXT, ready INT DEFAULT 0, status TEXT DEFAULT 'approved', suggestedBy TEXT, sessionCoins INT DEFAULT 0, shop_links TEXT DEFAULT '[]');
@@ -236,14 +245,6 @@ db.exec(`
         PRIMARY KEY (session_id, player)
     );
 `);
-
-// Migration: stars → controllerpoints
-const hasStarsTable = db.prepare(
-  "SELECT name FROM sqlite_master WHERE type='table' AND name='stars'"
-).get();
-if (hasStarsTable) {
-  db.prepare('ALTER TABLE stars RENAME TO controllerpoints').run();
-}
 
 // Migration: stakeStars columns in challenge tables
 const challengeCols = db.prepare("PRAGMA table_info(challenges)").all().map(c => c.name);
