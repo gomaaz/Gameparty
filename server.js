@@ -15,7 +15,7 @@ const logBuffer = [];
 const LOG_MAX = 500;
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'INFO').toUpperCase(); // OFF | INFO | DEBUG
 function log(level, message) {
-    const entry = { ts: new Date().toISOString(), level, message };
+    const entry = { ts: new Date().toLocaleString('sv-SE', { timeZone: process.env.TZ || 'Europe/Berlin' }), level, message };
     logBuffer.push(entry);
     if (logBuffer.length > LOG_MAX) logBuffer.shift();
     if (LOG_LEVEL === 'OFF') return;
@@ -172,14 +172,14 @@ db.exec(`
     CREATE TABLE IF NOT EXISTS proposal_players (proposal_id TEXT, player TEXT, PRIMARY KEY(proposal_id, player));
     CREATE TABLE IF NOT EXISTS attendees (player TEXT PRIMARY KEY);
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
-    CREATE TABLE IF NOT EXISTS stars (player TEXT PRIMARY KEY, amount INT DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS controllerpoints (player TEXT PRIMARY KEY, amount INT DEFAULT 0);
     CREATE TABLE IF NOT EXISTS challenges (
         id TEXT PRIMARY KEY,
         challenger TEXT,
         opponent TEXT,
         game TEXT,
         stakeCoins INT DEFAULT 0,
-        stakeStars INT DEFAULT 0,
+        stakeControllerpoints INT DEFAULT 0,
         status TEXT DEFAULT 'pending',
         winner TEXT,
         createdAt INT,
@@ -189,7 +189,7 @@ db.exec(`
         id TEXT PRIMARY KEY,
         game TEXT,
         stakeCoinsPerPerson INT DEFAULT 0,
-        stakeStarsPerPerson INT DEFAULT 0,
+        stakeControllerpointsPerPerson INT DEFAULT 0,
         teamA TEXT,
         teamB TEXT,
         status TEXT DEFAULT 'pending',
@@ -202,7 +202,7 @@ db.exec(`
         id TEXT PRIMARY KEY,
         game TEXT,
         stakeCoinsPerPerson INT DEFAULT 0,
-        stakeStarsPerPerson INT DEFAULT 0,
+        stakeControllerpointsPerPerson INT DEFAULT 0,
         players TEXT,
         status TEXT DEFAULT 'pending',
         placements TEXT DEFAULT NULL,
@@ -236,6 +236,24 @@ db.exec(`
         PRIMARY KEY (session_id, player)
     );
 `);
+
+// Migration: stars → controllerpoints
+const hasStarsTable = db.prepare(
+  "SELECT name FROM sqlite_master WHERE type='table' AND name='stars'"
+).get();
+if (hasStarsTable) {
+  db.prepare('ALTER TABLE stars RENAME TO controllerpoints').run();
+}
+
+// Migration: stakeStars columns in challenge tables
+const challengeCols = db.prepare("PRAGMA table_info(challenges)").all().map(c => c.name);
+if (challengeCols.includes('stakeStars')) {
+  db.prepare('ALTER TABLE challenges RENAME COLUMN stakeStars TO stakeControllerpoints').run();
+  db.prepare('ALTER TABLE team_challenges RENAME COLUMN stakeStars TO stakeControllerpoints').run();
+  db.prepare('ALTER TABLE team_challenges RENAME COLUMN stakeStarsPerPerson TO stakeControllerpointsPerPerson').run();
+  db.prepare('ALTER TABLE ffa_challenges RENAME COLUMN stakeStars TO stakeControllerpoints').run();
+  db.prepare('ALTER TABLE ffa_challenges RENAME COLUMN stakeStarsPerPerson TO stakeControllerpointsPerPerson').run();
+}
 
 // ---- Migration: deadline Feld in player_events ----
 try { db.prepare('ALTER TABLE player_events ADD COLUMN deadline INTEGER').run(); } catch {}
@@ -379,7 +397,7 @@ function seedIfEmpty() {
         const insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role) VALUES (?, ?, ?)');
         const insertAttendee = db.prepare('INSERT OR IGNORE INTO attendees (player) VALUES (?)');
         const insertCoin = db.prepare('INSERT OR IGNORE INTO coins (player, amount) VALUES (?, 0)');
-        const insertStar = db.prepare('INSERT OR IGNORE INTO stars (player, amount) VALUES (?, 0)');
+        const insertControllerpoint = db.prepare('INSERT OR IGNORE INTO controllerpoints (player, amount) VALUES (?, 0)');
 
         const adminName = process.env.SEED_ADMIN_NAME;
         const adminPin  = process.env.SEED_ADMIN_PIN;
@@ -401,7 +419,7 @@ function seedIfEmpty() {
                 insertUser.run(u.name, u.pin, u.role);
                 insertAttendee.run(u.name);
                 insertCoin.run(u.name);
-                insertStar.run(u.name);
+                insertControllerpoint.run(u.name);
             }
         });
         seedMany();
@@ -410,17 +428,17 @@ function seedIfEmpty() {
 
 seedIfEmpty();
 
-// ---- Migration: Ensure existing users have stars ----
-function migrateStars() {
+// ---- Migration: Ensure existing users have controllerpoints ----
+function migrateControllerpoints() {
     const players = db.prepare('SELECT name FROM users').all();
-    const insertStar = db.prepare('INSERT OR IGNORE INTO stars (player, amount) VALUES (?, 0)');
+    const insertControllerpoint = db.prepare('INSERT OR IGNORE INTO controllerpoints (player, amount) VALUES (?, 0)');
     const transaction = db.transaction(() => {
-        for (const u of players) insertStar.run(u.name);
+        for (const u of players) insertControllerpoint.run(u.name);
     });
     transaction();
 }
 
-migrateStars();
+migrateControllerpoints();
 
 // ---- Helper: Get shop price from settings (with fallback) ----
 function getShopPrice(itemId, defaultPrice) {
@@ -468,14 +486,14 @@ app.get('/api/init', (req, res) => {
     const games = getAllGamesWithPlayers();
     const coins = {};
     db.prepare('SELECT player, amount FROM coins').all().forEach(r => { coins[r.player] = r.amount; });
-    const stars = {};
-    db.prepare('SELECT player, amount FROM stars').all().forEach(r => { stars[r.player] = r.amount; });
+    const controllerpoints = {};
+    db.prepare('SELECT player, amount FROM controllerpoints').all().forEach(r => { controllerpoints[r.player] = r.amount; });
     const attendees = db.prepare('SELECT player FROM attendees WHERE player IN (SELECT name FROM users)').all().map(r => r.player);
     const settings = {};
     db.prepare('SELECT key, value FROM settings').all().forEach(r => { settings[r.key] = r.value; });
     const players = users.map(u => u.name);
 
-    res.json({ users, games, coins, stars, attendees, settings, players, version, shopCooldowns: shopCooldownTs });
+    res.json({ users, games, coins, controllerpoints, attendees, settings, players, version, shopCooldowns: shopCooldownTs });
 });
 
 // POST /api/login
@@ -830,8 +848,8 @@ app.post('/api/shop/rob-controller', (req, res) => {
     const thiefRow = db.prepare('SELECT amount FROM coins WHERE player = ?').get(thief);
     if (!thiefRow || thiefRow.amount < expectedCost) return res.status(400).json({ error: 'Nicht genug Coins' });
 
-    const targetStars = db.prepare('SELECT amount FROM stars WHERE player = ?').get(target);
-    const success = Math.random() < 0.5 && targetStars && targetStars.amount > 0;
+    const targetControllerpoints = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(target);
+    const success = Math.random() < 0.5 && targetControllerpoints && targetControllerpoints.amount > 0;
 
     const tx = db.transaction(() => {
         // Kosten vom Täter abziehen
@@ -840,8 +858,8 @@ app.post('/api/shop/rob-controller', (req, res) => {
 
         if (success) {
             // 1 Controller-Punkt vom Opfer stehlen
-            db.prepare('UPDATE stars SET amount = amount - 1 WHERE player = ?').run(target);
-            db.prepare('INSERT INTO stars (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(thief);
+            db.prepare('UPDATE controllerpoints SET amount = amount - 1 WHERE player = ?').run(target);
+            db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(thief);
         }
     });
 
@@ -851,15 +869,15 @@ app.post('/api/shop/rob-controller', (req, res) => {
     res.json({ success });
 });
 
-// GET /api/stars
-app.get('/api/stars', (req, res) => {
-    const stars = {};
-    db.prepare('SELECT player, amount FROM stars').all().forEach(r => { stars[r.player] = r.amount; });
-    res.json(stars);
+// GET /api/controllerpoints
+app.get('/api/controllerpoints', (req, res) => {
+    const controllerpoints = {};
+    db.prepare('SELECT player, amount FROM controllerpoints').all().forEach(r => { controllerpoints[r.player] = r.amount; });
+    res.json(controllerpoints);
 });
 
-// POST /api/shop/buy-star — Spieler kauft 1 Controller-Punkt für Coins (kein Admin nötig)
-app.post('/api/shop/buy-star', (req, res) => {
+// POST /api/shop/buy-controllerpoint — Spieler kauft 1 Controller-Punkt für Coins (kein Admin nötig)
+app.post('/api/shop/buy-controllerpoint', (req, res) => {
     const { player } = req.body;
     const expectedCost = getShopPrice('buy_star', 20);
     if (!player) return res.status(400).json({ error: 'player erforderlich' });
@@ -868,15 +886,15 @@ app.post('/api/shop/buy-star', (req, res) => {
     const tx = db.transaction(() => {
         db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(expectedCost, player);
         db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(player, -expectedCost, 'Shop: Controller-Punkt kaufen', Date.now());
-        db.prepare('INSERT INTO stars (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
+        db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET amount = amount + 1').run(player);
     });
     tx();
-    const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(player);
-    res.json({ newStars: row ? row.amount : 1 });
+    const row = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(player);
+    res.json({ newControllerpoints: row ? row.amount : 1 });
 });
 
-// POST /api/stars/add
-app.post('/api/stars/add', (req, res) => {
+// POST /api/controllerpoints/add
+app.post('/api/controllerpoints/add', (req, res) => {
     const { player, amount } = req.body;
     if (!player || !amount) return res.status(400).json({ error: 'player und amount erforderlich' });
     if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins können Controller-Punkte vergeben' });
@@ -884,17 +902,17 @@ app.post('/api/stars/add', (req, res) => {
         const allPlayers = db.prepare('SELECT name FROM users').all();
         const tx = db.transaction(() => {
             allPlayers.forEach(u => {
-                db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(u.name, amount, amount);
+                db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(u.name, amount, amount);
             });
         });
         tx();
         broadcast({ type: 'update' });
         return res.json({ affectedPlayers: allPlayers.length });
     }
-    db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, amount, amount);
-    const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(player);
+    db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(player, amount, amount);
+    const row = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(player);
     broadcast({ type: 'update' });
-    res.json({ newStars: row ? row.amount : 0 });
+    res.json({ newControllerpoints: row ? row.amount : 0 });
 });
 
 // GET /api/history/:player
@@ -1103,7 +1121,7 @@ app.post('/api/users', (req, res) => {
     if (existing) return res.status(409).json({ error: 'Name existiert bereits' });
     db.prepare('INSERT INTO users (name, pin, role) VALUES (?, ?, ?)').run(name, pin, 'player');
     db.prepare('INSERT OR IGNORE INTO coins (player, amount) VALUES (?, 0)').run(name);
-    db.prepare('INSERT OR IGNORE INTO stars (player, amount) VALUES (?, 0)').run(name);
+    db.prepare('INSERT OR IGNORE INTO controllerpoints (player, amount) VALUES (?, 0)').run(name);
     res.json({ success: true });
 });
 
@@ -1118,7 +1136,7 @@ app.put('/api/users/:name', (req, res) => {
         if (exists) return res.status(409).json({ error: 'Name existiert bereits' });
         db.prepare('UPDATE users SET name = ? WHERE name = ?').run(newName, req.params.name);
         db.prepare('UPDATE coins SET player = ? WHERE player = ?').run(newName, req.params.name);
-        db.prepare('UPDATE stars SET player = ? WHERE player = ?').run(newName, req.params.name);
+        db.prepare('UPDATE controllerpoints SET player = ? WHERE player = ?').run(newName, req.params.name);
         db.prepare('UPDATE history SET player = ? WHERE player = ?').run(newName, req.params.name);
         db.prepare('UPDATE tokens SET player = ? WHERE player = ?').run(newName, req.params.name);
         db.prepare('UPDATE game_players SET player = ? WHERE player = ?').run(newName, req.params.name);
@@ -1222,7 +1240,7 @@ app.delete('/api/reset', (req, res) => {
     if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins duerfen zuruecksetzen' });
     db.exec(`
         DELETE FROM users; DELETE FROM games; DELETE FROM game_players;
-        DELETE FROM coins; DELETE FROM stars; DELETE FROM history; DELETE FROM sessions;
+        DELETE FROM coins; DELETE FROM controllerpoints; DELETE FROM history; DELETE FROM sessions;
         DELETE FROM tokens; DELETE FROM genres_played; DELETE FROM proposals;
         DELETE FROM proposal_players; DELETE FROM attendees; DELETE FROM settings;
         DELETE FROM challenges;
@@ -1240,9 +1258,9 @@ app.delete('/api/reset/coins', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/reset/stars', (req, res) => {
+app.delete('/api/reset/controllerpoints', (req, res) => {
     if (req.authRole !== 'admin') return res.status(403).json({ error: 'Nur Admins duerfen zuruecksetzen' });
-    db.prepare('UPDATE stars SET amount = 0').run();
+    db.prepare('UPDATE controllerpoints SET amount = 0').run();
     broadcast({ type: 'update' });
     res.json({ success: true });
 });
@@ -1270,22 +1288,22 @@ app.get('/api/challenges', (req, res) => {
 
 // POST /api/challenges
 app.post('/api/challenges', (req, res) => {
-    let { challenger, opponent, game, stakeCoins, stakeStars, payoutMode, payoutConfig } = req.body;
+    let { challenger, opponent, game, stakeCoins, stakeControllerpoints, payoutMode, payoutConfig } = req.body;
     if (!challenger || !opponent || !game) return res.status(400).json({ error: 'challenger, opponent und game erforderlich' });
     if (challenger === opponent) return res.status(400).json({ error: 'Du kannst dich nicht selbst herausfordern' });
 
     const coins = stakeCoins || 0;
-    const stars = stakeStars || 0;
-    if (coins < 0 || stars < 0) return res.status(400).json({ error: 'Einsatz darf nicht negativ sein' });
+    const controllerpoints = stakeControllerpoints || 0;
+    if (coins < 0 || controllerpoints < 0) return res.status(400).json({ error: 'Einsatz darf nicht negativ sein' });
 
-    // Check challenger has enough coins/stars
+    // Check challenger has enough coins/controllerpoints
     if (coins > 0) {
         const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(challenger);
         if (!row || row.amount < coins) return res.status(400).json({ error: 'Nicht genug Coins' });
     }
-    if (stars > 0) {
-        const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(challenger);
-        if (!row || row.amount < stars) return res.status(400).json({ error: 'Nicht genug Sterne' });
+    if (controllerpoints > 0) {
+        const row = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(challenger);
+        if (!row || row.amount < controllerpoints) return res.status(400).json({ error: 'Nicht genug Sterne' });
     }
 
     payoutMode = payoutMode || 'winner_takes_all';
@@ -1294,7 +1312,7 @@ app.post('/api/challenges', (req, res) => {
     const payoutConfigStr = (payoutMode === 'percentage' && payoutConfig) ? JSON.stringify(payoutConfig) : null;
 
     const id = 'ch_' + Date.now();
-    db.prepare('INSERT INTO challenges (id, challenger, opponent, game, stakeCoins, stakeStars, status, createdAt, payoutMode, payoutConfig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, challenger, opponent, game, coins, stars, 'pending', Date.now(), payoutMode, payoutConfigStr);
+    db.prepare('INSERT INTO challenges (id, challenger, opponent, game, stakeCoins, stakeControllerpoints, status, createdAt, payoutMode, payoutConfig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, challenger, opponent, game, coins, controllerpoints, 'pending', Date.now(), payoutMode, payoutConfigStr);
     res.json({ success: true, id });
 });
 
@@ -1307,14 +1325,14 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     const { player } = req.body;
     if (player !== c.opponent) return res.status(403).json({ error: 'Nur der Herausgeforderte kann annehmen' });
 
-    // Check opponent has enough coins/stars
+    // Check opponent has enough coins/controllerpoints
     if (c.stakeCoins > 0) {
         const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(c.opponent);
         if (!row || row.amount < c.stakeCoins) return res.status(400).json({ error: 'Nicht genug Coins' });
     }
-    if (c.stakeStars > 0) {
-        const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(c.opponent);
-        if (!row || row.amount < c.stakeStars) return res.status(400).json({ error: 'Nicht genug Sterne' });
+    if (c.stakeControllerpoints > 0) {
+        const row = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(c.opponent);
+        if (!row || row.amount < c.stakeControllerpoints) return res.status(400).json({ error: 'Nicht genug Sterne' });
     }
 
     const challengerBusy = getActiveSessionForPlayer(c.challenger);
@@ -1326,9 +1344,9 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     const now = Date.now();
     const _acceptTx6 = db.transaction(() => {
         if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.challenger);
-        if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.challenger);
+        if (c.stakeControllerpoints > 0) db.prepare('UPDATE controllerpoints SET amount = amount - ? WHERE player = ?').run(c.stakeControllerpoints, c.challenger);
         if (c.stakeCoins > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(c.stakeCoins, c.opponent);
-        if (c.stakeStars > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(c.stakeStars, c.opponent);
+        if (c.stakeControllerpoints > 0) db.prepare('UPDATE controllerpoints SET amount = amount - ? WHERE player = ?').run(c.stakeControllerpoints, c.opponent);
         db.prepare('UPDATE challenges SET status = ? WHERE id = ?').run('accepted', req.params.id);
         db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, '1v1')").run(sid, c.game, c.challenger, now, c.id);
         db.prepare('INSERT OR IGNORE INTO live_session_players (session_id, player, joinedAt) VALUES (?, ?, ?)').run(sid, c.challenger, now);
@@ -1343,7 +1361,7 @@ app.put('/api/challenges/:id/accept', (req, res) => {
     }
 
     // Notify both players that the duel has started
-    const duelStartPayload = JSON.stringify({ game: c.game, challenger: c.challenger, opponent: c.opponent, stakeCoins: c.stakeCoins, stakeStars: c.stakeStars, sessionId: sid, type: '1v1' });
+    const duelStartPayload = JSON.stringify({ game: c.game, challenger: c.challenger, opponent: c.opponent, stakeCoins: c.stakeCoins, stakeControllerpoints: c.stakeControllerpoints, sessionId: sid, type: '1v1' });
     const duelStartNow = Date.now();
     db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(c.challenger, 'duel_start', '', duelStartPayload, duelStartNow, 'active');
     db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(c.opponent, 'duel_start', '', duelStartPayload, duelStartNow, 'active');
@@ -1389,7 +1407,7 @@ app.put('/api/challenges/:id/payout', (req, res) => {
     const loser = winner === c.challenger ? c.opponent : c.challenger;
 
     const { winnerCoins, loserCoins } = calcPayout(c.stakeCoins * 2, c.payoutMode, c.payoutConfig);
-    const { winnerCoins: winnerStars, loserCoins: loserStars } = calcPayout(c.stakeStars * 2, c.payoutMode, c.payoutConfig);
+    const { winnerCoins: winnerStars, loserCoins: loserStars } = calcPayout(c.stakeControllerpoints * 2, c.payoutMode, c.payoutConfig);
 
     const payoutAmounts = { [winner]: winnerCoins, [loser]: loserCoins };
     const payoutStarAmounts = { [winner]: winnerStars, [loser]: loserStars };
@@ -1417,15 +1435,15 @@ app.put('/api/challenges/:id/collect', (req, res) => {
     const payoutAmounts = JSON.parse(c.payoutAmounts || '{}');
     const payoutStarAmounts = JSON.parse(c.payoutStarAmounts || '{}');
     const coins = payoutAmounts[player] || 0;
-    const stars = payoutStarAmounts[player] || 0;
+    const controllerpointsPayout = payoutStarAmounts[player] || 0;
     const now = Date.now();
 
     const collectTx = db.transaction(() => {
         if (coins > 0) {
             db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(coins, player);
         }
-        if (stars > 0) {
-            db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(stars, player);
+        if (controllerpointsPayout > 0) {
+            db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(controllerpointsPayout, player);
         }
         db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)')
             .run(player, coins, `Duell Auszahlung (${c.game})`, now);
@@ -1441,7 +1459,7 @@ app.put('/api/challenges/:id/collect', (req, res) => {
     }
 
     broadcast({ type: 'update' });
-    res.json({ success: true, coins, stars });
+    res.json({ success: true, coins, controllerpoints: controllerpointsPayout });
 });
 
 // DELETE /api/challenges/:id
@@ -1460,7 +1478,7 @@ app.get('/api/team-challenges', (req, res) => {
 
 // POST /api/team-challenges
 app.post('/api/team-challenges', (req, res) => {
-    let { createdBy, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB, payoutMode, payoutConfig } = req.body;
+    let { createdBy, game, stakeCoinsPerPerson, stakeControllerpointsPerPerson, teamA, teamB, payoutMode, payoutConfig } = req.body;
     if (!createdBy || !game || !Array.isArray(teamA) || !Array.isArray(teamB)) {
         return res.status(400).json({ error: 'createdBy, game, teamA und teamB erforderlich' });
     }
@@ -1476,16 +1494,16 @@ app.post('/api/team-challenges', (req, res) => {
     if (!inA && !inB) return res.status(400).json({ error: 'Ersteller muss in einem Team sein' });
 
     const coins = stakeCoinsPerPerson || 0;
-    const stars = stakeStarsPerPerson || 0;
-    if (coins < 0 || stars < 0) return res.status(400).json({ error: 'Einsatz darf nicht negativ sein' });
+    const controllerpoints = stakeControllerpointsPerPerson || 0;
+    if (coins < 0 || controllerpoints < 0) return res.status(400).json({ error: 'Einsatz darf nicht negativ sein' });
 
     if (coins > 0) {
         const row = db.prepare('SELECT amount FROM coins WHERE player = ?').get(createdBy);
         if (!row || row.amount < coins) return res.status(400).json({ error: 'Nicht genug Coins' });
     }
-    if (stars > 0) {
-        const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(createdBy);
-        if (!row || row.amount < stars) return res.status(400).json({ error: 'Nicht genug Sterne' });
+    if (controllerpoints > 0) {
+        const row = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(createdBy);
+        if (!row || row.amount < controllerpoints) return res.status(400).json({ error: 'Nicht genug Sterne' });
     }
 
     payoutMode = payoutMode || 'winner_takes_all';
@@ -1495,8 +1513,8 @@ app.post('/api/team-challenges', (req, res) => {
 
     const id = 'tc_' + Date.now();
     db.prepare(
-        'INSERT INTO team_challenges (id, game, stakeCoinsPerPerson, stakeStarsPerPerson, teamA, teamB, status, createdBy, createdAt, acceptances, payoutMode, payoutConfig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, game, coins, stars, JSON.stringify(teamA), JSON.stringify(teamB), 'pending', createdBy, Date.now(), JSON.stringify([createdBy]), payoutMode, payoutConfigStr);
+        'INSERT INTO team_challenges (id, game, stakeCoinsPerPerson, stakeControllerpointsPerPerson, teamA, teamB, status, createdBy, createdAt, acceptances, payoutMode, payoutConfig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, game, coins, controllerpoints, JSON.stringify(teamA), JSON.stringify(teamB), 'pending', createdBy, Date.now(), JSON.stringify([createdBy]), payoutMode, payoutConfigStr);
     res.json({ success: true, id });
 });
 
@@ -1533,10 +1551,10 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
                 }
             }
         }
-        if (tc.stakeStarsPerPerson > 0) {
+        if (tc.stakeControllerpointsPerPerson > 0) {
             for (const p of allPlayers) {
-                const row = db.prepare('SELECT amount FROM stars WHERE player = ?').get(p);
-                if (!row || row.amount < tc.stakeStarsPerPerson) {
+                const row = db.prepare('SELECT amount FROM controllerpoints WHERE player = ?').get(p);
+                if (!row || row.amount < tc.stakeControllerpointsPerPerson) {
                     return res.status(400).json({ error: `${p} hat nicht genug Sterne` });
                 }
             }
@@ -1550,8 +1568,8 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
                 if (tc.stakeCoinsPerPerson > 0) {
                     db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
                 }
-                if (tc.stakeStarsPerPerson > 0) {
-                    db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+                if (tc.stakeControllerpointsPerPerson > 0) {
+                    db.prepare('UPDATE controllerpoints SET amount = amount - ? WHERE player = ?').run(tc.stakeControllerpointsPerPerson, p);
                 }
             }
             db.prepare('UPDATE team_challenges SET status = ?, acceptances = ? WHERE id = ?').run('accepted', JSON.stringify(newAcceptances), req.params.id);
@@ -1563,7 +1581,7 @@ app.put('/api/team-challenges/:id/accept', (req, res) => {
         });
         finalizeAccept();
         // Notify all participants that the duel has started
-        const tcStartPayload = JSON.stringify({ game: tc.game, teamA, teamB, createdBy: tc.createdBy, stakeCoinsPerPerson: tc.stakeCoinsPerPerson, stakeStarsPerPerson: tc.stakeStarsPerPerson, sessionId: sid, type: 'team' });
+        const tcStartPayload = JSON.stringify({ game: tc.game, teamA, teamB, createdBy: tc.createdBy, stakeCoinsPerPerson: tc.stakeCoinsPerPerson, stakeControllerpointsPerPerson: tc.stakeControllerpointsPerPerson, sessionId: sid, type: 'team' });
         const tcStartNow = Date.now();
         for (const p of allPlayers) {
             db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)').run(p, 'duel_start', '', tcStartPayload, tcStartNow, 'active');
@@ -1637,7 +1655,7 @@ app.put('/api/team-challenges/:id/payout', (req, res) => {
     const teamB = JSON.parse(tc.teamB);
     const totalPlayers = teamA.length + teamB.length;
     const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
-    const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
+    const totalStarPot = tc.stakeControllerpointsPerPerson * totalPlayers;
 
     const winners = tc.winnerTeam === 'A' ? teamA : teamB;
     const losers  = tc.winnerTeam === 'A' ? teamB : teamA;
@@ -1693,15 +1711,15 @@ app.put('/api/team-challenges/:id/collect', (req, res) => {
     const payoutAmounts = JSON.parse(tc.payoutAmounts || '{}');
     const payoutStarAmounts = JSON.parse(tc.payoutStarAmounts || '{}');
     const coins = payoutAmounts[player] || 0;
-    const stars = payoutStarAmounts[player] || 0;
+    const controllerpointsPayout = payoutStarAmounts[player] || 0;
     const now = Date.now();
 
     const collectTx = db.transaction(() => {
         if (coins > 0) {
             db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(coins, player);
         }
-        if (stars > 0) {
-            db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(stars, player);
+        if (controllerpointsPayout > 0) {
+            db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(controllerpointsPayout, player);
         }
         db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)')
             .run(player, coins, `Team-Duell Auszahlung (${tc.game})`, now);
@@ -1716,7 +1734,7 @@ app.put('/api/team-challenges/:id/collect', (req, res) => {
     }
 
     broadcast({ type: 'update' });
-    res.json({ success: true, coins, stars });
+    res.json({ success: true, coins, controllerpoints: controllerpointsPayout });
 });
 
 // DELETE /api/team-challenges/:id
@@ -1733,8 +1751,8 @@ app.delete('/api/team-challenges/:id', (req, res) => {
                 if (tc.stakeCoinsPerPerson > 0) {
                     db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(tc.stakeCoinsPerPerson, p);
                 }
-                if (tc.stakeStarsPerPerson > 0) {
-                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(tc.stakeStarsPerPerson, p);
+                if (tc.stakeControllerpointsPerPerson > 0) {
+                    db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(tc.stakeControllerpointsPerPerson, p);
                 }
             }
         });
@@ -1755,7 +1773,7 @@ app.get('/api/ffa-challenges', (req, res) => {
 
 // POST /api/ffa-challenges
 app.post('/api/ffa-challenges', (req, res) => {
-    let { createdBy, game, players, stakeCoinsPerPerson, stakeStarsPerPerson, payoutConfig } = req.body;
+    let { createdBy, game, players, stakeCoinsPerPerson, stakeControllerpointsPerPerson, payoutConfig } = req.body;
     if (!createdBy || !game || !Array.isArray(players)) {
         return res.status(400).json({ error: 'createdBy, game, players erforderlich' });
     }
@@ -1772,12 +1790,12 @@ app.post('/api/ffa-challenges', (req, res) => {
     if (payoutErr) return res.status(400).json({ error: payoutErr });
 
     const coins = parseInt(stakeCoinsPerPerson) || 0;
-    const stars = parseInt(stakeStarsPerPerson) || 0;
+    const controllerpoints = parseInt(stakeControllerpointsPerPerson) || 0;
 
     const id = 'ffa_' + Date.now();
     db.prepare(
-        'INSERT INTO ffa_challenges (id, game, stakeCoinsPerPerson, stakeStarsPerPerson, players, status, payoutConfig, createdBy, createdAt, acceptances) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, game, coins, stars, JSON.stringify(players), 'pending', JSON.stringify(payoutConfig), createdBy, Date.now(), JSON.stringify([createdBy]));
+        'INSERT INTO ffa_challenges (id, game, stakeCoinsPerPerson, stakeControllerpointsPerPerson, players, status, payoutConfig, createdBy, createdAt, acceptances) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, game, coins, controllerpoints, JSON.stringify(players), 'pending', JSON.stringify(payoutConfig), createdBy, Date.now(), JSON.stringify([createdBy]));
     res.json({ success: true, id });
 });
 
@@ -1803,7 +1821,7 @@ app.put('/api/ffa-challenges/:id/accept', (req, res) => {
         const _ffaTx = db.transaction(() => {
             for (const p of players) {
                 if (ffa.stakeCoinsPerPerson > 0) db.prepare('UPDATE coins SET amount = amount - ? WHERE player = ?').run(ffa.stakeCoinsPerPerson, p);
-                if (ffa.stakeStarsPerPerson > 0) db.prepare('UPDATE stars SET amount = amount - ? WHERE player = ?').run(ffa.stakeStarsPerPerson, p);
+                if (ffa.stakeControllerpointsPerPerson > 0) db.prepare('UPDATE controllerpoints SET amount = amount - ? WHERE player = ?').run(ffa.stakeControllerpointsPerPerson, p);
             }
             db.prepare('UPDATE ffa_challenges SET status = ?, acceptances = ? WHERE id = ?').run('accepted', JSON.stringify(newAcceptances), req.params.id);
             db.prepare("INSERT INTO live_sessions (id, game, leader, status, startedAt, challenge_id, challenge_type) VALUES (?, ?, ?, 'running', ?, ?, 'ffa')").run(sid, ffa.game, ffa.createdBy, now, ffa.id);
@@ -1834,7 +1852,7 @@ app.put('/api/ffa-challenges/:id/reject', (req, res) => {
         const refund = db.transaction(() => {
             for (const p of players) {
                 if (ffa.stakeCoinsPerPerson > 0) db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(ffa.stakeCoinsPerPerson, p);
-                if (ffa.stakeStarsPerPerson > 0) db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(ffa.stakeStarsPerPerson, p);
+                if (ffa.stakeControllerpointsPerPerson > 0) db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(ffa.stakeControllerpointsPerPerson, p);
             }
             db.prepare('UPDATE ffa_challenges SET status = ?, resolvedAt = ? WHERE id = ?').run('rejected', Date.now(), req.params.id);
         });
@@ -1889,7 +1907,7 @@ app.put('/api/ffa-challenges/:id/payout', (req, res) => {
     const config = JSON.parse(ffa.payoutConfig || '[]');
 
     const totalPot = ffa.stakeCoinsPerPerson * players.length;
-    const totalStarPot = ffa.stakeStarsPerPerson * players.length;
+    const totalStarPot = ffa.stakeControllerpointsPerPerson * players.length;
 
     const coinPayouts = {};
     let coinRemainder = totalPot;
@@ -1953,15 +1971,15 @@ app.put('/api/ffa-challenges/:id/collect', (req, res) => {
     const payoutAmounts = JSON.parse(ffa.payoutAmounts || '{}');
     const payoutStarAmounts = JSON.parse(ffa.payoutStarAmounts || '{}');
     const coins = payoutAmounts[player] || 0;
-    const stars = payoutStarAmounts[player] || 0;
+    const controllerpointsPayout = payoutStarAmounts[player] || 0;
     const now = Date.now();
 
     const collectTx = db.transaction(() => {
         if (coins > 0) {
             db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(coins, player);
         }
-        if (stars > 0) {
-            db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(stars, player);
+        if (controllerpointsPayout > 0) {
+            db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(controllerpointsPayout, player);
         }
         db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)')
             .run(player, coins, `FFA-Challenge Auszahlung (${ffa.game})`, now);
@@ -1976,7 +1994,7 @@ app.put('/api/ffa-challenges/:id/collect', (req, res) => {
     }
 
     broadcast({ type: 'update' });
-    res.json({ success: true, coins, stars });
+    res.json({ success: true, coins, controllerpoints: controllerpointsPayout });
 });
 
 // DELETE /api/ffa-challenges/:id
@@ -1989,7 +2007,7 @@ app.delete('/api/ffa-challenges/:id', (req, res) => {
         const refund = db.transaction(() => {
             for (const p of players) {
                 if (ffa.stakeCoinsPerPerson > 0) db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(ffa.stakeCoinsPerPerson, p);
-                if (ffa.stakeStarsPerPerson > 0) db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(ffa.stakeStarsPerPerson, p);
+                if (ffa.stakeControllerpointsPerPerson > 0) db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(ffa.stakeControllerpointsPerPerson, p);
             }
         });
         refund();
@@ -2043,7 +2061,7 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
         const loser = winner === c.challenger ? c.opponent : c.challenger;
         if (releaseOnly) {
             const { winnerCoins, loserCoins } = calcPayout(c.stakeCoins * 2, c.payoutMode, c.payoutConfig);
-            const { winnerCoins: winnerStars, loserCoins: loserStars } = calcPayout(c.stakeStars * 2, c.payoutMode, c.payoutConfig);
+            const { winnerCoins: winnerStars, loserCoins: loserStars } = calcPayout(c.stakeControllerpoints * 2, c.payoutMode, c.payoutConfig);
             const payoutAmounts = { [winner]: winnerCoins, [loser]: loserCoins };
             const payoutStarAmounts = { [winner]: winnerStars, [loser]: loserStars };
             db.prepare("UPDATE challenges SET status='released', winner=?, payoutAmounts=?, payoutStarAmounts=?, collected='[]' WHERE id=?")
@@ -2061,11 +2079,11 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
                 }
                 db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(loser, loserCoins - c.stakeCoins, `Duell verloren vs ${winner} (${c.game})`, now);
             }
-            if (c.stakeStars > 0) {
-                const { winnerCoins: winnerStars, loserCoins: loserStars } = calcPayout(c.stakeStars * 2, c.payoutMode, c.payoutConfig);
-                db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, winnerStars, winnerStars);
+            if (c.stakeControllerpoints > 0) {
+                const { winnerCoins: winnerStars, loserCoins: loserStars } = calcPayout(c.stakeControllerpoints * 2, c.payoutMode, c.payoutConfig);
+                db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(winner, winnerStars, winnerStars);
                 if (loserStars > 0) {
-                    db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(loser, loserStars, loserStars);
+                    db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(loser, loserStars, loserStars);
                 }
             }
             db.prepare('UPDATE challenges SET status = ?, winner = ?, resolvedAt = ? WHERE id = ?').run('paid', winner, now, c.id);
@@ -2076,7 +2094,7 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
             winner,
             loser,
             stakeCoins: c.stakeCoins,
-            stakeStars: c.stakeStars
+            stakeControllerpoints: c.stakeControllerpoints
         };
         const notifyNow = Date.now();
         db.prepare('INSERT INTO player_events (target, type, from_player, message, createdAt, status) VALUES (?, ?, ?, ?, ?, ?)')
@@ -2092,7 +2110,7 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
         const config = JSON.parse(ffa.payoutConfig || '[]');
 
         const totalPot = ffa.stakeCoinsPerPerson * players.length;
-        const totalStarPot = ffa.stakeStarsPerPerson * players.length;
+        const totalStarPot = ffa.stakeControllerpointsPerPerson * players.length;
 
         const coinPayouts = {};
         let coinRemainder = totalPot;
@@ -2143,7 +2161,7 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
         const losers  = winnerTeam === 'A' ? teamB : teamA;
         const totalPlayers = teamA.length + teamB.length;
         const totalPot = tc.stakeCoinsPerPerson * totalPlayers;
-        const totalStarPot = tc.stakeStarsPerPerson * totalPlayers;
+        const totalStarPot = tc.stakeControllerpointsPerPerson * totalPlayers;
         const { winnerCoins: winnerTeamCoins, loserCoins: loserTeamCoins } = calcPayout(totalPot, tc.payoutMode, tc.payoutConfig);
         const { winnerCoins: winnerTeamStars, loserCoins: loserTeamStars } = calcPayout(totalStarPot, tc.payoutMode, tc.payoutConfig);
         const baseCoins = Math.floor(winnerTeamCoins / winners.length);
@@ -2181,7 +2199,7 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
                     db.prepare('INSERT INTO history (player, amount, reason, timestamp) VALUES (?, ?, ?, ?)').run(p, coinAmount, `Team-Duell gewonnen (${winnerTeamLabel}) – ${tc.game}`, now);
                 }
                 if (starAmount > 0) {
-                    db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, starAmount, starAmount);
+                    db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, starAmount, starAmount);
                 }
             });
             losers.forEach((p, idx) => {
@@ -2198,7 +2216,7 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
                 if (loserTeamStars > 0) {
                     const loserStarAmount = baseLoserStars + (idx === 0 ? loserStarRemainder : 0);
                     if (loserStarAmount > 0) {
-                        db.prepare('INSERT INTO stars (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, loserStarAmount, loserStarAmount);
+                        db.prepare('INSERT INTO controllerpoints (player, amount) VALUES (?, ?) ON CONFLICT(player) DO UPDATE SET amount = amount + ?').run(p, loserStarAmount, loserStarAmount);
                     }
                 }
             });
@@ -2211,7 +2229,7 @@ function _duelPayout(session, winnerOverride, db, releaseOnly = false) {
             teamA,
             teamB,
             stakeCoinsPerPerson: tc.stakeCoinsPerPerson,
-            stakeStarsPerPerson: tc.stakeStarsPerPerson,
+            stakeControllerpointsPerPerson: tc.stakeControllerpointsPerPerson,
             totalPot,
             totalStarPot,
             baseCoins,
@@ -2614,9 +2632,9 @@ app.post('/api/live-sessions/:id/duel-cancel', (req, res) => {
                     db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(c.stakeCoins, c.challenger);
                     db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(c.stakeCoins, c.opponent);
                 }
-                if (c.stakeStars > 0) {
-                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(c.stakeStars, c.challenger);
-                    db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(c.stakeStars, c.opponent);
+                if (c.stakeControllerpoints > 0) {
+                    db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(c.stakeControllerpoints, c.challenger);
+                    db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(c.stakeControllerpoints, c.opponent);
                 }
                 db.prepare("UPDATE challenges SET status = 'cancelled' WHERE id = ?").run(c.id);
             }
@@ -2626,7 +2644,7 @@ app.post('/api/live-sessions/:id/duel-cancel', (req, res) => {
                 const players = JSON.parse(ffa.players || '[]');
                 for (const p of players) {
                     if (ffa.stakeCoinsPerPerson > 0) db.prepare('UPDATE coins SET amount = amount + ? WHERE player = ?').run(ffa.stakeCoinsPerPerson, p);
-                    if (ffa.stakeStarsPerPerson > 0) db.prepare('UPDATE stars SET amount = amount + ? WHERE player = ?').run(ffa.stakeStarsPerPerson, p);
+                    if (ffa.stakeControllerpointsPerPerson > 0) db.prepare('UPDATE controllerpoints SET amount = amount + ? WHERE player = ?').run(ffa.stakeControllerpointsPerPerson, p);
                 }
                 db.prepare("UPDATE ffa_challenges SET status = 'cancelled' WHERE id = ?").run(ffa.id);
             }
