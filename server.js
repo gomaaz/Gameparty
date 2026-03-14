@@ -948,7 +948,7 @@ app.get('/api/controllerpoints', (req, res) => {
 // POST /api/shop/buy-controllerpoint — Spieler kauft 1 Controller-Punkt für Coins (kein Admin nötig)
 app.post('/api/shop/buy-controllerpoint', (req, res) => {
     const { player } = req.body;
-    const expectedCost = getShopPrice('buy_star', 20);
+    const expectedCost = getShopPrice('buy_controllerpoint', 20);
     if (!player) return res.status(400).json({ error: 'player erforderlich' });
     if (!isShopItemEnabled('buy_controllerpoint')) return res.status(403).json({ error: 'Item deaktiviert' });
     const cdRemaining = checkShopCooldown('buy_controllerpoint', player);
