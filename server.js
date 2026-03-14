@@ -978,7 +978,7 @@ app.put('/api/proposals/:id', (req, res) => {
     const updates = [];
     const params = [];
     for (const [key, value] of Object.entries(req.body)) {
-        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'completedAt', 'pendingCoins', 'medium', 'medium_account'].includes(key)) {
+        if (['status', 'scheduledTime', 'scheduledDay', 'message', 'startedAt', 'completedAt', 'pendingCoins', 'medium', 'medium_account'].includes(key)) {
             updates.push(`${key} = ?`);
             params.push(value);
         }

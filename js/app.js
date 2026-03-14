@@ -2462,14 +2462,9 @@ function getNowPlus10() {
                     const proposals = await api('GET', '/proposals');
                     const proposal = proposals.find(x => x.id === btn.dataset.id);
                     if (!proposal) return;
-                    const gameObj = state.games.find(g => g.name === proposal.game);
-                    const gameCoins = gameObj && gameObj.sessionCoins ? gameObj.sessionCoins : 0;
-                    const coinsAmount = gameCoins || calculateSessionCoins(proposal.players.length, state.attendees.length);
                     await api('PUT', `/proposals/${btn.dataset.id}`, {
                         status: 'completed',
-                        completedAt: Date.now(),
-                        pendingCoins: coinsAmount,
-                        coinsApproved: 0
+                        completedAt: Date.now()
                     });
                     showToast(t('session_ended_neutral'), 'gold');
                     refreshActiveView();
