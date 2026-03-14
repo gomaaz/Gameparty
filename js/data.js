@@ -20,7 +20,7 @@ const CONFIG = {
         SESSION_ALL: 3,         // Session mit ALLEN anwesenden Spielern
         NEW_GENRE: 1            // Neues Genre ausprobiert
     },
-    STAR_PRICE: 20,  // Coins, die ein Stern kostet
+    CONTROLLERPOINT_PRICE: 20,  // Coins, die ein Controller-Punkt kostet
     SHOP_ITEMS: [
         {
             id: 'force_play',
@@ -66,13 +66,13 @@ CONFIG.SHOP_ITEMS.push(
     }
 );
 
-// Add star shop item
+// Add controllerpoint shop item
 CONFIG.SHOP_ITEMS.unshift({
-    id: 'buy_star',
+    id: 'buy_controllerpoint',
     name: 'Controller-Punkt',
-    cost: CONFIG.STAR_PRICE,
+    cost: CONFIG.CONTROLLERPOINT_PRICE,
     icon: '<img src="/svg/console-controller.svg" style="width:2rem;height:2rem">',
-    description: `Kaufe einen Controller-Punkt für ${CONFIG.STAR_PRICE} Coins. Das sind dauerhafte Siegpunkte!`
+    description: `Kaufe einen Controller-Punkt für ${CONFIG.CONTROLLERPOINT_PRICE} Coins. Das sind dauerhafte Siegpunkte!`
 });
 
 async function loadShopPrices() {
@@ -85,8 +85,8 @@ async function loadShopPrices() {
                 item.cost = parseInt(settings[key]) || item.cost;
             }
         });
-        const starItem = CONFIG.SHOP_ITEMS.find(i => i.id === 'buy_star');
-        if (starItem) CONFIG.STAR_PRICE = starItem.cost;
+        const cpItem = CONFIG.SHOP_ITEMS.find(i => i.id === 'buy_controllerpoint');
+        if (cpItem) CONFIG.CONTROLLERPOINT_PRICE = cpItem.cost;
     } catch (e) {
         console.warn('Could not load shop prices from settings:', e);
     }
